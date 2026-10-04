@@ -344,6 +344,26 @@ img{display:block;max-width:100%}
 .nomes-ten input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #bfe6cf;font:inherit;font-size:16px;background:#fff;color:var(--tinta)}
 .nomes-ten input:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px rgba(6,116,71,.15)}
 .dica-ten{margin-top:8px;font-size:12.5px;color:var(--tinta-2)}
+.ok-box{padding-top:0}
+.ok-box .bolao{width:54px;height:54px;margin:0 auto 6px}
+.ok-box h4{font-size:22px;line-height:1.15}
+.ok-box p{margin-top:6px;font-size:14.5px;line-height:1.4}
+.ok-demo{margin-top:6px;font-size:12px;padding:5px 10px}
+.pix{margin-top:12px;padding:12px;gap:9px}
+.pix-top{font-size:15px}
+.pix-logo{width:24px;height:24px;font-size:13px}
+.pix-valor{padding:8px 12px}
+.pix-valor b{font-size:26px}
+.pix-chave small{margin-top:2px}
+.pix-linha{flex-wrap:nowrap;gap:8px}
+.pix-linha b{font-size:22px;white-space:nowrap}
+.pix-btn{padding:9px 13px;font-size:13.5px;white-space:nowrap;flex:0 0 auto}
+.pix-nome{margin-top:4px!important;font-size:13.5px!important;color:var(--tinta-2)}
+.pix-nome b{color:var(--tinta);font-size:14.5px}
+.pix-comp{padding:8px 10px;font-size:13.5px}
+#confOk .cab{margin-bottom:0}
+#confOk .cta{margin-top:10px!important;padding:13px 16px;font-size:17px}
+@media (max-width:360px){.pix-linha b{font-size:20px}.pix-btn{padding:8px 10px;font-size:13px}}
 /* jogo em tela cheia */
 #jogo{position:fixed;inset:0;z-index:55;background:#0b0716;color:#fff;display:flex;flex-direction:column;align-items:center}
 #jogo[hidden]{display:none}
@@ -378,7 +398,7 @@ img{display:block;max-width:100%}
 .rodape small{display:block;margin-top:6px;color:rgba(255,255,255,.7);font-size:13px}
 
 /* confete de bolinhas */
-#confete{position:fixed;inset:0;pointer-events:none;z-index:70}
+#confete{position:fixed;inset:0;pointer-events:none;z-index:49}
 
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
@@ -612,7 +632,7 @@ img{display:block;max-width:100%}
         <div class="pix-chave">
           <small>Chave PIX (celular)</small>
           <div class="pix-linha"><b id="pixChave" tabindex="0"></b><button type="button" id="pixCopiar" class="pix-btn">Copiar chave</button></div>
-          <small>Em nome de</small><b id="pixNome"></b>
+          <small class="pix-nome">Em nome de <b id="pixNome"></b></small>
         </div>
         <p class="pix-comp"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Depois de pagar, <b>mande o comprovante no privado</b>.</span></p>
       </div>
@@ -986,7 +1006,7 @@ const Pix = (() => {
     $("okTit").textContent = "Sua presença está confirmada!";
     $("okTxt").textContent = c.nome.split(" ")[0] + ", seguem os dados pra pagamento. Te esperamos no sábado, 05/12, às 18h30.";
     Pix.valor(c.valor); $("pixBox").hidden = false; $("okEspera").hidden = true; $("okDemo").hidden = true;
-    $("confForm").hidden = true; $("confOk").hidden = false; f.hidden = false; document.body.style.overflow = "hidden";
+    $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0; f.hidden = false; document.body.style.overflow = "hidden";
   };
   const anterior = ls.get("gr-confirmado");
   if (anterior) mostraJa(anterior);
@@ -1066,7 +1086,7 @@ const Pix = (() => {
         $("okTit").textContent = "Você está na lista de espera!";
         $("okTxt").textContent = nome.split(" ")[0] + ", as 100 vagas já foram preenchidas. Se alguém desistir, a organização chama pela ordem da lista e te passa os dados do pagamento.";
         $("okEspera").textContent = "Sua posição na fila: " + r.posicao + "º";
-        $("confForm").hidden = true; $("confOk").hidden = false;
+        $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0;
         $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
         return;
       }
@@ -1076,7 +1096,7 @@ const Pix = (() => {
       Pix.valor(conf.valor);
       Musica.fraseFinal();
       $("okTxt").textContent = nome.split(" ")[0] + ", " + (pessoas === 1 ? "seu nome está na lista!" : "você e mais " + (pessoas - 1) + (pessoas === 2 ? " pessoa estão" : " pessoas estão") + " na lista!") + " Te esperamos no sábado, 05/12, às 18h30.";
-      $("confForm").hidden = true; $("confOk").hidden = false;
+      $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0;
       $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
       Confete.solta(3000, 70);
     } catch (_) {
