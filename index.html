@@ -349,13 +349,17 @@ img{display:block;max-width:100%}
 .ok-box h4{font-size:22px;line-height:1.15}
 .ok-box p{margin-top:6px;font-size:14.5px;line-height:1.4}
 .ok-demo{margin-top:6px;font-size:12px;padding:5px 10px}
-.pix{margin-top:12px;padding:12px;gap:9px}
+.pix{margin-top:12px;padding:12px;gap:9px;grid-template-columns:minmax(0,1fr)}
+.pix > *{min-width:0}
+.pix-comp span{min-width:0;overflow-wrap:anywhere}
+.folha .caixa{overflow-x:hidden}
+.pix-valor{gap:8px;flex-wrap:wrap}
 .pix-top{font-size:15px}
 .pix-logo{width:24px;height:24px;font-size:13px}
 .pix-valor{padding:8px 12px}
 .pix-valor b{font-size:26px}
 .pix-chave small{margin-top:2px}
-.pix-linha{flex-wrap:nowrap;gap:8px}
+.pix-linha{flex-wrap:wrap;gap:8px;row-gap:8px}
 .pix-linha b{font-size:22px;white-space:nowrap}
 .pix-btn{padding:9px 13px;font-size:13.5px;white-space:nowrap;flex:0 0 auto}
 .pix-nome{margin-top:4px!important;font-size:13.5px!important;color:var(--tinta-2)}
@@ -745,7 +749,8 @@ const Musica = (() => {
     fala.currentTime = 0;
     fala.play().then(() => { falaTocou = true; }).catch(() => {});
   }
-  fala.addEventListener("ended", () => { if (entrou && a.paused) comecaMusica(); });
+  let formAberto = false, tocavaAntes = false;
+  fala.addEventListener("ended", () => { if (entrou && a.paused && !formAberto) comecaMusica(); });
   tentaFala();                                                   // alguns navegadores deixam tocar direto
   const primeiroToque = () => { if (!falaTocou) tentaFala(); };  // nos outros, toca no primeiro toque
   addEventListener("pointerdown", primeiroToque, { capture: true, once: true });
@@ -758,27 +763,40 @@ const Musica = (() => {
   }
   function vamos() {
     try {
-      if (!a.paused) a.volume = .2;
+      if (!a.paused) a.pause();
       if (CONFIG.somVamos) {
         grito.currentTime = 0; grito.volume = 1; grito.play().catch(() => {});
         gritoAte = Date.now() + (grito.duration ? grito.duration * 1000 : 2300);
       }
       // libera a frase final pra tocar depois (iPhone só deixa tocar áudio liberado num toque)
       frase.muted = true; frase.play().then(() => { frase.pause(); frase.currentTime = 0; frase.muted = false; }).catch(() => { frase.muted = false; });
-      setTimeout(() => { if (frase.paused) a.volume = VOL; }, 3000);
+
     } catch (_) {}
   }
   function fraseFinal() {
     const espera = Math.max(300, gritoAte - Date.now() + 200);
     setTimeout(() => {
-      if (!a.paused) a.volume = .18;
+      if (!a.paused) a.pause();
       frase.currentTime = 0; frase.muted = false; frase.volume = 1;
       frase.play().catch(() => { a.volume = VOL; });
     }, espera);
   }
-  frase.addEventListener("ended", () => { a.volume = VOL; });
+  frase.addEventListener("ended", () => { a.volume = VOL; });   // a música só volta quando fechar a tela
   function reabrir() { a.pause(); entrou = false; falaTocou = false; tentaFala(); }
-  return { tocar: entrar, reabrir, pausar() { a.pause(); }, vamos, fraseFinal, get tocando() { return !a.paused; } };
+  // ao abrir a confirmação a música para; ao fechar, volta (se estava tocando)
+  function pausaForm() {
+    if (formAberto) return;
+    formAberto = true;
+    tocavaAntes = !a.paused || (entrou && !fala.paused && !fala.ended);
+    a.pause(); fala.pause();
+  }
+  function voltaForm() {
+    formAberto = false;
+    grito.pause(); frase.pause();
+    if (tocavaAntes) { a.volume = VOL; pl.hidden = false; a.play().catch(() => {}); }
+    tocavaAntes = false;
+  }
+  return { tocar: entrar, reabrir, pausar() { a.pause(); }, vamos, fraseFinal, pausaForm, voltaForm, get tocando() { return !a.paused; } };
 })();
 
 const naAbertura = () => !$("intro").hidden && !$("intro").classList.contains("sai");
@@ -1003,6 +1021,7 @@ const Pix = (() => {
     if (c.valor) { const b = document.createElement("button"); b.type = "button"; b.textContent = "Ver PIX"; b.onclick = () => verPix(c); $("jaConf").append(b); }
   };
   const verPix = c => {
+    Musica.pausaForm();
     $("okTit").textContent = "Sua presença está confirmada!";
     $("okTxt").textContent = c.nome.split(" ")[0] + ", seguem os dados pra pagamento. Te esperamos no sábado, 05/12, às 18h30.";
     Pix.valor(c.valor); $("pixBox").hidden = false; $("okEspera").hidden = true; $("okDemo").hidden = true;
@@ -1043,11 +1062,12 @@ const Pix = (() => {
   }));
   const abrir = () => {
     if (Vagas.encerrado()) return;
+    Musica.pausaForm();
     $("confForm").hidden = false; $("confOk").hidden = true; $("confErro").textContent = "";
     f.hidden = false; document.body.style.overflow = "hidden"; pinta();
     setTimeout(() => $("cNome").focus(), 350);
   };
-  const fechar = () => { const voltar = !$("confOk").hidden; f.hidden = true; document.body.style.overflow = ""; if (voltar) scrollTo({ top: 0, behavior: "smooth" }); };
+  const fechar = () => { const voltar = !$("confOk").hidden; f.hidden = true; document.body.style.overflow = ""; Musica.voltaForm(); if (voltar) scrollTo({ top: 0, behavior: "smooth" }); };
   $("bConfirmar").onclick = abrir;
   f.addEventListener("click", e => { if (e.target === f || e.target.closest("[data-fechar]")) fechar(); });
   addEventListener("keydown", e => { if (e.key === "Escape" && !f.hidden) fechar(); });
