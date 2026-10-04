@@ -583,7 +583,7 @@ img{display:block;max-width:100%}
   <div class="info"><b>Hino da Galera <span class="ondas"><i></i><i></i><i></i></span></b>Galera da Raquete</div>
 </div>
 <audio id="musica" src="musica-galera-da-raquete.mp3" loop preload="auto"></audio>
-<audio id="somVamos" src="vamos.mp3" preload="auto"></audio>
+<audio id="somVamos" src="vamos-pix.mp3" preload="auto"></audio>
 <audio id="somFala" src="fala-galera.mp3" preload="auto"></audio>
 <audio id="somFrase" src="frase-jivago.mp3" preload="auto"></audio>
 
@@ -765,15 +765,14 @@ const Musica = (() => {
     try {
       if (!a.paused) a.pause();
       if (CONFIG.somVamos) {
-        grito.currentTime = 0; grito.volume = 1; grito.play().catch(() => {});
-        gritoAte = Date.now() + (grito.duration ? grito.duration * 1000 : 2300);
+        grito.currentTime = 0; grito.volume = 1; grito.play().catch(() => {});   // "VAMOS!" + pausinha + frase do Jivago (um áudio só)
       }
-      // libera a frase final pra tocar depois (iPhone só deixa tocar áudio liberado num toque)
-      frase.muted = true; frase.play().then(() => { frase.pause(); frase.currentTime = 0; frase.muted = false; }).catch(() => { frase.muted = false; });
 
     } catch (_) {}
   }
-  function fraseFinal() {
+  function paraVamos() { grito.pause(); grito.currentTime = 0; }
+  function fraseFinal() { return; /* a frase já vem junto do VAMOS */ }
+  function fraseFinalAntiga() {
     const espera = Math.max(300, gritoAte - Date.now() + 200);
     setTimeout(() => {
       if (!a.paused) a.pause();
@@ -796,7 +795,7 @@ const Musica = (() => {
     if (tocavaAntes) { a.volume = VOL; pl.hidden = false; a.play().catch(() => {}); }
     tocavaAntes = false;
   }
-  return { tocar: entrar, reabrir, pausar() { a.pause(); }, vamos, fraseFinal, pausaForm, voltaForm, get tocando() { return !a.paused; } };
+  return { tocar: entrar, reabrir, pausar() { a.pause(); }, vamos, paraVamos, fraseFinal, pausaForm, voltaForm, get tocando() { return !a.paused; } };
 })();
 
 const naAbertura = () => !$("intro").hidden && !$("intro").classList.contains("sai");
@@ -1096,6 +1095,7 @@ const Pix = (() => {
       $("okDemo").hidden = !demo;
       if (r.vagas) Vagas.pinta({ ...r.vagas, minha: true });
       if (!r.ok) {
+        Musica.paraVamos();
         $("confErro").textContent = r.erro || "Não deu certo. Tente de novo.";
         if (r.lotado) { espera = true; }
         return;
@@ -1120,6 +1120,7 @@ const Pix = (() => {
       $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
       Confete.solta(3000, 70);
     } catch (_) {
+      Musica.paraVamos();
       $("confErro").textContent = "Sem conexão agora. Confira sua internet e tente de novo.";
     } finally {
       enviando = false; bt.disabled = false; pinta();
