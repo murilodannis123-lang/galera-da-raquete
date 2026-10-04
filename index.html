@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Festa de Encerramento & Finals 2026 · Galera da Raquete</title>
+<meta name="description" content="Sábado, 05/12 às 18h30 · Rodízio de pizzas e música ao vivo. Tenistas confirmam até 09/11; de 10/11 a 30/11 abre pra amigos.">
+<meta property="og:title" content="Festa de Encerramento & Finals 2026 · Galera da Raquete">
+<meta property="og:description" content="Sábado, 05/12 às 18h30 · Rodízio de pizzas e música ao vivo. 100 vagas. Tenistas e família até 09/11, amigos de 10/11 a 30/11.">
+<meta property="og:image" content="logo.png">
+<meta name="theme-color" content="#2a1650">
+<link rel="icon" href="icone.png">
+<link rel="apple-touch-icon" href="icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Oswald:wght@500;600;700&family=Press+Start+2P&family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --roxo:#4e308a; --roxo-esc:#2a1650; --roxo-noite:#1a0d33;
+  --verde:#067447; --verde-esc:#03492c; --placar:#0e3a27;
+  --grama1:#0c6a40; --grama2:#0a5e38;
+  --bola:#d8f145; --bola-esc:#b5cf22;
+  --creme:#f7f2e5; --papel:#fffdf7; --tinta:#1f1730; --tinta-2:#5b5470;
+  --linha:#e4dcc6; --erro:#c0392b;
+  --raio:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:"DM Sans",system-ui,sans-serif;color:var(--tinta);
+  background-color:var(--grama2);
+  background-image:repeating-linear-gradient(180deg,var(--grama1) 0 64px,var(--grama2) 64px 128px);
+  min-height:100vh;overflow-x:hidden;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+img{display:block;max-width:100%}
+.wrap{max-width:540px;margin:0 auto;padding:0 16px 120px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ============ ABERTURA ============ */
+#intro{
+  position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  background:radial-gradient(120% 80% at 50% 30%,#3b2272 0%,var(--roxo-esc) 55%,var(--roxo-noite) 100%);
+  color:#fff;text-align:center;padding:24px;transition:opacity .7s ease, visibility .7s;
+}
+#intro.sai{opacity:0;visibility:hidden}
+#intro[hidden]{display:none}
+#intro .quadra{position:absolute;inset:auto 0 0 0;height:34vh;opacity:.18;pointer-events:none}
+.intro-logo{width:min(56vw,250px);aspect-ratio:1;position:relative;animation:quica 1.6s cubic-bezier(.3,0,.4,1) both}
+.intro-logo img{width:100%;height:100%;filter:drop-shadow(0 18px 30px rgba(0,0,0,.45))}
+.intro-logo::after{content:"";position:absolute;left:15%;right:15%;bottom:-26px;height:14px;border-radius:50%;background:rgba(0,0,0,.35);filter:blur(6px);animation:sombra 1.6s cubic-bezier(.3,0,.4,1) both}
+@keyframes quica{0%{transform:translateY(-80vh) rotate(-90deg)}45%{transform:translateY(0) rotate(0)}60%{transform:translateY(-14vh)}75%{transform:translateY(0)}85%{transform:translateY(-3vh)}100%{transform:translateY(0)}}
+@keyframes sombra{0%{opacity:0;transform:scaleX(.3)}45%,75%,100%{opacity:1;transform:scaleX(1)}60%{opacity:.4;transform:scaleX(.6)}}
+.intro-txt{opacity:0;animation:surge .8s 1.4s ease forwards}
+.intro-txt small{display:block;font-family:Oswald,sans-serif;letter-spacing:.32em;font-size:12px;color:var(--bola);margin-bottom:8px}
+.intro-txt h2{font-family:"Playfair Display",serif;font-style:italic;font-size:clamp(26px,7vw,36px);line-height:1.1}
+.btn-entrar{
+  opacity:0;animation:surge .8s 1.9s ease forwards;
+  display:inline-flex;align-items:center;gap:12px;padding:16px 28px;border-radius:999px;
+  background:var(--bola);color:var(--roxo-noite);font-family:Oswald,sans-serif;font-weight:700;font-size:18px;letter-spacing:.06em;
+  box-shadow:0 10px 30px rgba(216,241,69,.35),inset 0 -3px 0 rgba(0,0,0,.15);
+}
+.btn-entrar:active{transform:scale(.97)}
+.btn-entrar svg{width:26px;height:26px;animation:gira 3s linear infinite}
+.intro-dica{opacity:0;animation:surge .8s 2.3s ease forwards;font-size:13px;color:rgba(255,255,255,.65)}
+@keyframes surge{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;margin:0 -16px;padding:36px 22px 40px;text-align:center;color:#fff;overflow:hidden;
+  background:linear-gradient(180deg,var(--roxo-noite) 0%,var(--roxo-esc) 45%,var(--roxo) 100%);
+  border-radius:0 0 36px 36px;box-shadow:0 18px 40px rgba(0,0,0,.35);
+}
+.hero::before{ /* linhas da quadra */
+  content:"";position:absolute;inset:-2px 18px auto 18px;height:100%;pointer-events:none;
+  border:2px solid rgba(255,255,255,.08);border-top:0;border-radius:0 0 28px 28px;
+}
+.hero .estrelas{position:absolute;inset:0;pointer-events:none}
+.hero-logo{width:170px;height:170px;margin:4px auto 18px;position:relative;z-index:1;animation:flutua 5s ease-in-out infinite}
+.hero-logo img{width:100%;height:100%;filter:drop-shadow(0 14px 22px rgba(0,0,0,.5))}
+@keyframes flutua{50%{transform:translateY(-8px) rotate(2deg)}}
+.olho{font-family:Oswald,sans-serif;letter-spacing:.16em;font-size:11.5px;color:var(--bola);position:relative}
+.t1{font-family:"Playfair Display",serif;font-style:italic;font-weight:700;font-size:clamp(34px,10vw,48px);line-height:1;margin:12px 0 6px;position:relative}
+.t2{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(46px,15vw,74px);line-height:.95;letter-spacing:.02em;position:relative;
+  display:flex;align-items:center;justify-content:center;gap:.12em;flex-wrap:wrap}
+.t2 .amp{font-family:"Playfair Display",serif;font-style:italic;color:var(--bola);font-size:.7em}
+.t2 .ano{display:inline-flex;align-items:center;color:var(--bola)}
+.t2 .ano svg{width:.74em;height:.74em;margin:0 .02em;animation:gira 6s linear infinite}
+.t3{margin-top:10px;font-family:Oswald,sans-serif;font-size:clamp(20px,6vw,26px);letter-spacing:.14em;position:relative}
+.t3 b{color:var(--bola);font-weight:600}
+.frase{margin:18px auto 0;max-width:30ch;font-size:16px;line-height:1.5;color:rgba(255,255,255,.85);position:relative}
+
+/* ============ CARTÕES ============ */
+.cartao{
+  background:var(--papel);border-radius:var(--raio);margin-top:22px;padding:24px 20px;position:relative;
+  box-shadow:0 10px 26px rgba(0,0,0,.25);
+}
+.cartao h3{font-family:"Playfair Display",serif;font-weight:900;font-size:26px;color:var(--roxo);line-height:1.1;display:flex;align-items:center;gap:10px}
+.cartao h3 .ic{flex:0 0 auto;width:30px;height:30px}
+.cartao .sub{color:var(--tinta-2);font-size:14.5px;margin-top:6px;line-height:1.45}
+.etq{display:inline-block;font-family:Oswald,sans-serif;font-size:11.5px;letter-spacing:.22em;color:var(--verde);text-transform:uppercase;margin-bottom:6px}
+
+/* ============ PLACAR (data) ============ */
+.placar{background:var(--placar);color:#fff;border-radius:var(--raio);margin-top:-18px;position:relative;z-index:2;padding:18px 16px 16px;
+  box-shadow:0 14px 30px rgba(0,0,0,.35);border:3px solid #0a2b1d;outline:2px solid rgba(255,255,255,.1);outline-offset:-8px}
+.placar .tit{font-family:Oswald,sans-serif;letter-spacing:.3em;font-size:11px;color:var(--bola);text-align:center;margin-bottom:12px}
+.linhas{display:grid;gap:8px}
+.lp{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:10px}
+.lp span{white-space:nowrap;font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.1em;color:rgba(255,255,255,.7);text-align:right}
+.tiles{display:flex;gap:4px;flex-wrap:wrap}
+.tile{background:#082418;border:1px solid rgba(255,255,255,.12);border-radius:5px;min-width:34px;height:40px;padding:0 9px;letter-spacing:.06em;
+  display:grid;place-items:center;font-family:Oswald,sans-serif;font-weight:600;font-size:24px;line-height:1;box-shadow:inset 0 -18px 0 rgba(255,255,255,.04)}
+.tile.am{color:var(--bola)}
+.contagem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.18)}
+.contagem div{text-align:center}
+.contagem b{display:block;background:#082418;border-radius:8px;padding:8px 0;font-family:Oswald,sans-serif;font-size:28px;font-weight:600;color:var(--bola)}
+.contagem small{display:block;margin-top:5px;font-size:10.5px;letter-spacing:.18em;color:rgba(255,255,255,.65)}
+
+/* ============ ATRAÇÕES ============ */
+.atr{display:grid;gap:12px;margin-top:16px}
+.at{display:flex;gap:14px;align-items:center;padding:14px;border-radius:14px;background:var(--creme);border:1px solid var(--linha)}
+.at .ic{flex:0 0 52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--roxo);color:#fff}
+.at .ic svg{width:28px;height:28px}
+.at.verde .ic{background:var(--verde)}
+.at.bola .ic{background:var(--bola);color:var(--roxo-noite)}
+.at b{display:block;font-size:17px}
+.at p{font-size:14px;color:var(--tinta-2);margin-top:2px;line-height:1.35}
+
+/* ============ VALORES ============ */
+.precos{margin-top:16px;display:grid;gap:10px}
+.preco{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;border:1.5px dashed var(--linha);background:#fff;position:relative}
+.preco::before,.preco::after{content:"";position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:var(--papel);transform:translateY(-50%);border:1.5px dashed var(--linha)}
+.preco::before{left:-9px;border-left-color:transparent;border-bottom-color:transparent;transform:translateY(-50%) rotate(45deg)}
+.preco::after{right:-9px;border-right-color:transparent;border-top-color:transparent;transform:translateY(-50%) rotate(45deg)}
+.preco b{font-size:16.5px;display:block}
+.preco small{color:var(--tinta-2);font-size:13.5px;line-height:1.35;display:block;margin-top:2px}
+.valor{font-family:Oswald,sans-serif;font-weight:700;font-size:26px;color:var(--roxo);white-space:nowrap}
+.valor sup{font-size:13px;vertical-align:top;margin-right:2px;position:relative;top:4px}
+.preco.dest{border:2px solid var(--verde);background:linear-gradient(90deg,#eef8f2,#fff)}
+.preco.dest .valor{color:var(--verde)}
+.gratis{font-family:Oswald,sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;background:var(--bola);color:var(--roxo-noite);border-radius:999px;padding:6px 12px}
+.cerveja{margin-top:14px;display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:#fff6d9;border:1px solid #f0dc96;font-size:14.5px}
+.cerveja svg{flex:0 0 28px;height:28px;color:#c58a00}
+
+/* ============ VAGAS ============ */
+.vagas-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+.vagas-num{font-family:Oswald,sans-serif;font-weight:700;font-size:54px;line-height:.9;color:var(--roxo)}
+.vagas-num small{display:block;font-size:16px;color:var(--tinta-2);font-weight:500;letter-spacing:.04em;margin-top:6px}
+.prazo{text-align:right;font-size:13px;color:var(--tinta-2);line-height:1.3}
+.prazo b{display:block;font-family:Oswald,sans-serif;font-size:20px;color:var(--erro);letter-spacing:.03em}
+.cem{display:flex;align-items:center;gap:2px;font-family:Oswald,sans-serif;font-weight:700;font-size:64px;line-height:.9;color:var(--roxo)}
+.cem svg{width:.74em;height:.74em;margin-left:2px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.cem svg:nth-of-type(1){animation:gira 7s linear infinite}
+.cem svg:nth-of-type(2){animation:gira 7s linear infinite reverse}
+.cem-txt{display:block;font-family:Oswald,sans-serif;font-size:15px;letter-spacing:.24em;color:var(--tinta-2);margin-top:6px}
+.mosaico{margin-top:18px;padding:14px 12px;border-radius:14px;background:var(--verde-esc);
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 22px,transparent 22px 44px);box-shadow:inset 0 2px 10px rgba(0,0,0,.35);position:relative}
+.mosaico .grade{display:grid;grid-template-columns:repeat(21,1fr);gap:3px}
+.mosaico i{aspect-ratio:1;border-radius:50%;max-width:100%}
+.mosaico i.v{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+.mosaico i.v.on{background:radial-gradient(circle at 35% 30%,#f6ffb0,var(--bola) 45%,var(--bola-esc));box-shadow:0 1px 3px rgba(0,0,0,.45);animation:acende .5s cubic-bezier(.3,1.6,.5,1) both;animation-delay:var(--d,0s)}
+@keyframes acende{from{transform:scale(.2);opacity:.2}to{transform:scale(1);opacity:1}}
+.mosaico .leg-out{margin-top:10px;display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.7);letter-spacing:.04em}
+.mosaico.cheio{box-shadow:inset 0 2px 10px rgba(0,0,0,.35),0 0 0 3px var(--bola)}
+.mosaico.cheio .leg-out b{color:var(--bola)}
+.vagas-leg b{color:var(--roxo);font-family:Oswald,sans-serif;font-size:16px}
+.vagas-leg{display:flex;justify-content:space-between;font-size:13px;color:var(--tinta-2);margin-top:10px}
+.corra{margin-top:16px;text-align:center;font-family:"Playfair Display",serif;font-style:italic;font-weight:700;font-size:22px;color:var(--verde)}
+
+/* ============ BOTÕES ============ */
+.cta{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin-top:16px;padding:18px 20px;border-radius:16px;
+  background:linear-gradient(180deg,#5c3aa0,var(--roxo));color:#fff;font-family:Oswald,sans-serif;font-weight:700;font-size:21px;letter-spacing:.06em;
+  box-shadow:0 10px 24px rgba(78,48,138,.45),inset 0 -4px 0 rgba(0,0,0,.2);position:relative;overflow:hidden}
+.cta svg{width:26px;height:26px}
+.cta::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);transform:skewX(-20deg);animation:brilho 3.2s ease-in-out infinite}
+@keyframes brilho{0%,60%{left:-60%}100%{left:130%}}
+.cta:active{transform:translateY(1px)}
+.cta[disabled]{background:#8b84a0;box-shadow:none;cursor:not-allowed}
+.cta[disabled]::after{display:none}
+.cta.verde{background:linear-gradient(180deg,#0a8a55,var(--verde));box-shadow:0 10px 24px rgba(6,116,71,.4),inset 0 -4px 0 rgba(0,0,0,.2)}
+.cta.bola{background:var(--bola);color:var(--roxo-noite);box-shadow:0 10px 24px rgba(0,0,0,.25),inset 0 -4px 0 rgba(0,0,0,.12)}
+.ja-conf{margin-top:12px;text-align:center;font-size:14px;color:var(--verde);font-weight:600}
+.atalhos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.atalho{background:rgba(26,13,51,.85);color:#fff;border-radius:14px;padding:14px 12px;text-align:left;display:flex;gap:10px;align-items:center;font-weight:600;font-size:14.5px;line-height:1.2;border:1px solid rgba(255,255,255,.12);text-decoration:none}
+.atalho svg{flex:0 0 30px;height:30px;color:var(--bola)}
+
+.cta.vamos{flex-direction:row}
+.cta.vamos svg{width:38px;height:38px;flex:0 0 38px;animation:gira 4s linear infinite}
+.cta-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.cta.vamos .cta-txt{font-family:"Playfair Display",serif;font-style:italic;font-weight:900;font-size:36px;letter-spacing:.02em}
+.cta-txt small{font-family:Oswald,sans-serif;font-style:normal;font-weight:500;font-size:13px;letter-spacing:.2em;text-transform:uppercase;margin-top:6px;opacity:.85}
+.cta[disabled] .cta-txt{font-family:Oswald,sans-serif;font-style:normal;font-size:19px}
+/* contador de confirmados */
+.lp.conf .tile{color:var(--bola);min-width:58px}
+.lp.conf em{font-style:normal;font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,.75);align-self:center;margin-left:4px}
+.ja-vao{margin-top:16px;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--roxo-esc);color:#fff}
+.ja-vao b{font-family:Oswald,sans-serif;font-size:40px;line-height:1;color:var(--bola);font-variant-numeric:tabular-nums;min-width:2.6ch;text-align:center;flex:0 0 auto}
+.ja-vao span{font-size:15px;line-height:1.35}
+.ja-vao span strong{color:var(--bola)}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));z-index:45;transform:translate(-50%,-140%);transition:transform .5s cubic-bezier(.2,.8,.2,1);
+  display:flex;align-items:center;gap:10px;background:var(--bola);color:var(--roxo-noite);border-radius:999px;padding:10px 18px 10px 10px;font-weight:700;font-size:14.5px;box-shadow:0 12px 30px rgba(0,0,0,.35);max-width:calc(100vw - 32px)}
+.toast svg{width:30px;height:30px;flex:0 0 30px}
+.toast.on{transform:translate(-50%,0)}
+/* ============ LOCAL ============ */
+.local{display:flex;gap:14px;align-items:flex-start;margin-top:14px}
+.local .pin{flex:0 0 44px;height:44px;border-radius:12px;background:var(--verde);color:#fff;display:grid;place-items:center}
+.local .pin svg{width:24px;height:24px}
+.local b{font-size:18px;display:block}
+.local p{color:var(--tinta-2);font-size:14.5px;margin-top:3px;line-height:1.4}
+.btn-mapa{display:inline-flex;margin-top:12px;padding:10px 16px;border-radius:999px;background:var(--creme);border:1px solid var(--linha);font-weight:600;font-size:14px;color:var(--verde);text-decoration:none}
+
+/* ============ ENQUETE ============ */
+.abas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:16px;padding:5px;background:var(--creme);border-radius:14px;border:1px solid var(--linha)}
+.aba{padding:10px 0;border-radius:10px;font-family:Oswald,sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;color:var(--tinta-2)}
+.aba[aria-selected="true"]{background:var(--roxo);color:#fff;box-shadow:0 4px 10px rgba(78,48,138,.35)}
+.fin-lista{display:grid;gap:8px;margin-top:14px}
+.fin{position:relative;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
+  background:#f4f0e4;border:1.5px solid transparent;text-align:left;overflow:hidden;min-height:54px;transition:border-color .2s}
+.fin .barra{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,rgba(78,48,138,.20),rgba(78,48,138,.32));transition:width .9s cubic-bezier(.2,.8,.2,1);z-index:0}
+.fin > *:not(.barra){position:relative;z-index:1}
+.fin .pos{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;font-family:Oswald,sans-serif;font-weight:600;font-size:14px;color:var(--roxo);border:1.5px solid var(--linha)}
+.fin .nm{font-weight:600;font-size:15.5px;line-height:1.2}
+.fin .nm small{display:block;font-weight:500;color:var(--verde);font-size:12px;margin-top:2px}
+.fin .pct{font-family:Oswald,sans-serif;font-weight:600;font-size:17px;color:var(--roxo);text-align:right;line-height:1}
+.fin .pct small{display:block;font-family:"DM Sans",sans-serif;font-weight:500;font-size:11.5px;color:var(--tinta-2);margin-top:3px}
+.fin.meu{border-color:var(--verde)}
+.fin.meu .barra{background:linear-gradient(90deg,rgba(6,116,71,.22),rgba(6,116,71,.38))}
+.fin.meu .pos{background:var(--verde);color:#fff;border-color:var(--verde)}
+.fin.lider .pos{background:var(--bola);border-color:var(--bola-esc);color:var(--roxo-noite)}
+.fin:active{transform:scale(.99)}
+.enq-rodape{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;color:var(--tinta-2)}
+.ao-vivo{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--verde)}
+.ao-vivo::before{content:"";width:8px;height:8px;border-radius:50%;background:#1fbf6c;box-shadow:0 0 0 0 rgba(31,191,108,.6);animation:pulsa 1.6s infinite}
+@keyframes pulsa{70%{box-shadow:0 0 0 8px rgba(31,191,108,0)}100%{box-shadow:0 0 0 0 rgba(31,191,108,0)}}
+
+/* ============ ARCADE (jogo + ranking) ============ */
+.arcade{background:#0b0716;color:#fff;border:4px solid #1f1436;outline:2px solid var(--roxo);outline-offset:-10px;padding:24px 18px}
+.arcade h3{color:var(--bola)}
+.arcade .sub{color:rgba(255,255,255,.7)}
+.px{font-family:"Press Start 2P",monospace}
+.hof{margin-top:16px;background:#000;border-radius:10px;padding:16px 12px;border:2px solid #222;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+.hof .ht{text-align:center;font-size:13px;color:#ff4d6d;margin-bottom:6px;animation:pisca 1.2s steps(2) infinite}
+.hof .hs{text-align:center;font-size:8px;color:#8cf;margin-bottom:14px}
+@keyframes pisca{50%{opacity:.35}}
+.hof ol{list-style:none;display:grid;gap:9px}
+.hof li{display:grid;grid-template-columns:44px 1fr auto;gap:8px;font-size:10px;line-height:1.3;align-items:center}
+.hof li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.hof li:nth-child(1){color:#ffd23f}.hof li:nth-child(2){color:#e6e6e6}.hof li:nth-child(3){color:#ff9f43}
+.hof li:nth-child(n+4){color:#7dd3fc}
+.hof li.eu{background:rgba(216,241,69,.15);outline:1px dashed var(--bola);outline-offset:3px}
+.hof .vazio{text-align:center;font-size:9px;color:#888;line-height:1.8;padding:8px 0}
+.hof-nota{font-size:12px;color:rgba(255,255,255,.55);margin-top:10px;text-align:center}
+
+/* ============ MÚSICA ============ */
+.player{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:10px;
+  background:rgba(26,13,51,.92);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:6px 14px 6px 6px;box-shadow:0 10px 26px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14)}
+.player .bt{width:42px;height:42px;border-radius:50%;background:var(--bola);color:var(--roxo-noite);display:grid;place-items:center;position:relative}
+.player .bt svg{width:20px;height:20px}
+.player .info{font-size:11.5px;line-height:1.2;max-width:128px}
+.player .info b{display:block;font-size:12.5px}
+.ondas{display:inline-flex;gap:2px;align-items:flex-end;height:12px;margin-left:4px;vertical-align:-1px}
+.ondas i{width:3px;background:var(--bola);border-radius:2px;height:4px}
+.tocando .ondas i{animation:onda .9s ease-in-out infinite}
+.tocando .ondas i:nth-child(2){animation-delay:.15s}.tocando .ondas i:nth-child(3){animation-delay:.3s}
+@keyframes onda{50%{height:12px}}
+
+/* ============ MODAL / FOLHA ============ */
+.folha{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,5,22,.6);backdrop-filter:blur(3px)}
+.folha[hidden]{display:none}
+.folha .caixa{width:100%;max-width:540px;max-height:94vh;overflow:auto;background:var(--papel);border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));animation:sobe .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes sobe{from{transform:translateY(100%)}to{transform:none}}
+@media (min-width:600px){.folha{align-items:center}.folha .caixa{border-radius:24px}}
+.cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+.cab h4{font-family:"Playfair Display",serif;font-weight:900;font-size:24px;color:var(--roxo);line-height:1.1}
+.fechar{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--creme);display:grid;place-items:center;font-size:22px;line-height:1;color:var(--tinta-2)}
+.campo{margin-top:16px}
+.campo label,.campo .lb{display:block;font-weight:700;font-size:14px;margin-bottom:7px}
+.campo input[type=text],.campo input[type=tel]{width:100%;padding:14px;border-radius:12px;border:1.5px solid var(--linha);font:inherit;font-size:16px;background:#fff;color:var(--tinta)}
+.campo input:focus{outline:none;border-color:var(--roxo);box-shadow:0 0 0 3px rgba(78,48,138,.15)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:13px 10px;border-radius:12px;border:1.5px solid var(--linha);background:#fff;font-weight:600;font-size:14.5px;line-height:1.25}
+.seg button small{display:block;font-weight:500;color:var(--tinta-2);font-size:12.5px}
+.seg button[aria-pressed="true"]{border-color:var(--roxo);background:#f1ecfb;box-shadow:inset 0 0 0 1px var(--roxo)}
+.agr{display:grid;gap:8px}
+.ag{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--creme);border:1px solid var(--linha)}
+.ag b{font-size:14.5px;display:block}
+.ag small{font-size:12.5px;color:var(--tinta-2)}
+.passo{display:flex;align-items:center;gap:6px}
+.passo button{width:38px;height:38px;border-radius:50%;background:#fff;border:1.5px solid var(--linha);font-size:20px;font-weight:700;color:var(--roxo);display:grid;place-items:center}
+.passo button:disabled{opacity:.35}
+.passo output{min-width:26px;text-align:center;font-family:Oswald,sans-serif;font-weight:600;font-size:20px}
+.resumo{margin-top:16px;border-radius:14px;background:var(--roxo-esc);color:#fff;padding:14px 16px}
+.resumo .ln{display:flex;justify-content:space-between;font-size:13.5px;color:rgba(255,255,255,.78);padding:3px 0}
+.resumo .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.25)}
+.resumo .tot b{font-family:Oswald,sans-serif;font-size:28px;color:var(--bola)}
+.erro{color:var(--erro);font-size:14px;font-weight:600;margin-top:10px;min-height:1px}
+.ok-box{text-align:center;padding:10px 0 4px}
+.ok-box .bolao{width:86px;height:86px;margin:0 auto 12px;animation:quica2 1s ease}
+@keyframes quica2{0%{transform:translateY(-60px)}50%{transform:none}70%{transform:translateY(-14px)}100%{transform:none}}
+.ok-box h4{font-family:"Playfair Display",serif;font-size:28px;color:var(--verde)}
+.ok-box p{margin-top:8px;color:var(--tinta-2);line-height:1.5}
+.ok-box .val{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:10px;background:var(--creme);font-weight:700}
+
+.pix{margin-top:18px;border-radius:16px;border:2px solid #32bcad;background:linear-gradient(180deg,#effbf9,#fff);padding:16px;display:grid;gap:12px}
+.pix-top{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;color:#0f6e64}
+.pix-logo{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#32bcad;color:#fff;font-size:16px;transform:rotate(0deg)}
+.pix-valor{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-radius:12px;background:var(--roxo-esc);color:#fff}
+.pix-valor small{font-size:13px;color:rgba(255,255,255,.75)}
+.pix-valor b{font-family:Oswald,sans-serif;font-size:30px;color:var(--bola);font-variant-numeric:tabular-nums}
+.pix-chave{display:grid;gap:3px}
+.pix-chave small{font-size:12.5px;color:var(--tinta-2);margin-top:6px}
+.pix-chave > b{font-size:16px}
+.pix-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pix-linha b{font-family:Oswald,sans-serif;font-size:26px;letter-spacing:.03em;color:var(--tinta);user-select:all;font-variant-numeric:tabular-nums}
+.pix-btn{padding:11px 16px;border-radius:999px;background:#32bcad;color:#fff;font-weight:700;font-size:14.5px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.pix-btn.ok{background:var(--verde)}
+.pix-comp{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.4;padding:10px 12px;border-radius:12px;background:#fff6d9;border:1px solid #f0dc96}
+.pix-comp svg{flex:0 0 20px;height:20px;color:#c58a00;margin-top:1px}
+.pix-mini{margin-top:12px;font-size:13.5px;color:var(--tinta-2);text-align:center}
+.pix-mini b{color:#0f6e64}
+.ja-conf button{margin-left:6px;color:var(--roxo);text-decoration:underline;font-weight:700;font-size:14px}
+.ok-demo{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:999px;background:#ffe9c7;color:#8a5200;font-size:12.5px;font-weight:600}
+.fases{list-style:none;display:grid;gap:8px;margin-top:16px}
+.fases li{position:relative;display:grid;grid-template-columns:96px 1fr;column-gap:12px;align-items:start;padding:12px 14px;border-radius:12px;background:var(--creme);border:1.5px solid var(--linha)}
+.fases .f-data{grid-row:span 2;font-family:Oswald,sans-serif;font-weight:600;font-size:14px;letter-spacing:.06em;color:var(--roxo);line-height:1.2;padding-top:2px}
+.fases b{font-size:15.5px}
+.fases small{font-size:13px;color:var(--tinta-2);line-height:1.35;padding-right:52px}
+.fases .f-agora{display:none;position:absolute;top:10px;right:10px;font-style:normal;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.12em;padding:3px 8px;border-radius:999px;background:var(--verde);color:#fff}
+.fases li.atual{border-color:var(--verde);background:#eef8f2}
+.fases li.atual .f-agora{display:inline-block}
+.fases li.passou{opacity:.55}
+.fases li.passou .f-data{text-decoration:line-through}
+.ag.trancado{opacity:.6;background:repeating-linear-gradient(135deg,var(--creme) 0 10px,#efe8d6 10px 20px)}
+.ag .tranca{font-size:12.5px;font-weight:700;color:var(--roxo);display:block;margin-top:2px}
+.seg button:disabled{opacity:.55;cursor:not-allowed;background:repeating-linear-gradient(135deg,#fff 0 10px,#f4efe2 10px 20px)}
+.aviso-fase{margin-top:12px;padding:10px 12px;border-radius:12px;background:#f1ecfb;border:1px solid #d9cdf3;font-size:13.5px;line-height:1.4;color:var(--roxo-esc)}
+.espera-tag{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:12px;background:#fff6d9;border:1px solid #f0dc96;font-weight:700}
+.ag-ten{border-color:#bfe6cf;background:#eef8f2}
+.nomes-ten{display:grid;gap:8px;margin-top:8px}
+.nomes-ten label{display:grid;gap:5px;font-size:13.5px;font-weight:700;color:var(--verde)}
+.nomes-ten input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #bfe6cf;font:inherit;font-size:16px;background:#fff;color:var(--tinta)}
+.nomes-ten input:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px rgba(6,116,71,.15)}
+.dica-ten{margin-top:8px;font-size:12.5px;color:var(--tinta-2)}
+/* jogo em tela cheia */
+#jogo{position:fixed;inset:0;z-index:55;background:#0b0716;color:#fff;display:flex;flex-direction:column;align-items:center}
+#jogo[hidden]{display:none}
+.j-top{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 14px 8px;gap:10px}
+.j-top .px{font-size:10px;line-height:1.6}
+.j-top .px b{color:var(--bola)}
+.j-x{width:38px;height:38px;border-radius:50%;background:#221a36;font-size:22px;display:grid;place-items:center}
+.j-area{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:4px 10px 10px;min-height:0}
+#tela{touch-action:none;border:3px solid #2b2047;border-radius:10px;background:#0a5e38;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.j-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.j-pain{pointer-events:auto;background:rgba(11,7,22,.92);border:3px solid var(--roxo);border-radius:10px;padding:22px 18px;width:min(88vw,340px);text-align:center}
+.j-pain h5{font-family:"Press Start 2P",monospace;color:var(--bola);font-size:15px;line-height:1.5}
+.j-pain p{font-size:14px;color:rgba(255,255,255,.8);margin-top:10px;line-height:1.5}
+.j-pain .px-num{font-family:"Press Start 2P",monospace;font-size:22px;color:#ffd23f;margin:14px 0 4px}
+.j-pain input{width:100%;margin-top:12px;padding:12px;border-radius:8px;border:2px solid #3a2d5c;background:#140e26;color:#fff;font:inherit;font-size:16px;text-align:center;text-transform:uppercase}
+.j-pain .cta{margin-top:12px;font-size:17px;padding:14px}
+.j-pain .ok-rank{font-size:12px;color:#8cf;margin-top:10px;min-height:16px}
+.j-dica{font-size:12px;color:rgba(255,255,255,.55);padding:0 14px calc(10px + env(safe-area-inset-bottom));text-align:center}
+
+.duvidas{margin-top:14px;text-align:center;font-size:14.5px;color:var(--tinta-2)}
+.duvidas b{color:var(--roxo)}
+.duvidas a{display:inline-flex;margin-top:8px;padding:9px 16px;border-radius:999px;background:#e9f7ef;color:var(--verde);font-weight:700;text-decoration:none;border:1px solid #bfe6cf}
+.rever{position:absolute;top:14px;left:14px;z-index:3;display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 9px;border-radius:999px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;font-family:Oswald,sans-serif;font-size:12.5px;letter-spacing:.08em}
+.rever svg{width:14px;height:14px;color:var(--bola)}
+.rever:focus-visible,.btn-entrar:focus-visible,.cta:focus-visible{outline:3px solid var(--bola);outline-offset:3px}
+.rodape-rever{position:static;margin-top:16px;font-size:14px;padding:10px 16px 10px 12px}
+/* rodapé */
+.rodape{text-align:center;color:#fff;margin-top:34px}
+.rodape img{width:84px;height:84px;margin:0 auto 10px;opacity:.95}
+.rodape p{font-family:"Playfair Display",serif;font-style:italic;font-weight:700;font-size:30px}
+.rodape small{display:block;margin-top:6px;color:rgba(255,255,255,.7);font-size:13px}
+
+/* confete de bolinhas */
+#confete{position:fixed;inset:0;pointer-events:none;z-index:70}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-bola" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="30" fill="#d8f145"/>
+      <circle cx="32" cy="32" r="30" fill="url(#gb)"/>
+      <path d="M8 14c10 8 14 18 14 18s-4 12-14 20M56 14c-10 8-14 18-14 18s4 12 14 20" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+    </symbol>
+    <radialGradient id="gb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#6b7d00" stop-opacity=".35"/></radialGradient>
+    <symbol id="i-pizza" viewBox="0 0 24 24"><path d="M12 2C7.5 2 3.6 3.6 1.6 5.9L12 22 22.4 5.9C20.4 3.6 16.5 2 12 2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.4 8.5C5.6 6.9 8.6 6 12 6s6.4.9 8.6 2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="11" r="1.4" fill="currentColor"/><circle cx="14.5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-cerva" viewBox="0 0 24 24"><path d="M5 7h10v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z M15 10h2.5a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 7a3 3 0 0 1 3-4c1 0 1.6.4 2 1 .5-.6 1.3-1 2.2-1A2.8 2.8 0 0 1 15 6v1" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 11v6M11.5 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trofeu" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11 M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5 M12 14v4 M8 21h8 M9.5 18h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 10.5v4M5.5 12.5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="11.5" r="1.2" fill="currentColor"/><circle cx="18" cy="14" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5L7 4.5Z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-gente" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.5-3.6 3.2-6 6.5-6s6 2.4 6.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M17 14c2.6 0 4.2 2 4.6 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ ABERTURA ============ -->
+<div id="intro" role="dialog" aria-label="Abertura do convite">
+  <svg class="quadra" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M40 200 L120 20 H280 L360 200 Z M80 200 L148 20 M320 200 L252 20 M100 110 H300 M200 110 V200" fill="none" stroke="#fff" stroke-width="2"/>
+  </svg>
+  <div class="intro-logo"><img src="logo.png" alt="Galera da Raquete · Portal do Lago"></div>
+  <div class="intro-txt">
+    <small>VOCÊ ESTÁ CONVIDADO</small>
+    <h2>Festa de Encerramento<br>&amp; Finals 2026</h2>
+  </div>
+  <button class="btn-entrar" id="entrar" type="button"><svg aria-hidden="true"><use href="#i-bola"/></svg>ENTRAR NA QUADRA</button>
+  <p class="intro-dica">Aumente o som: tem música da galera 🎾</p>
+</div>
+
+<main class="wrap" id="topo">
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <button class="rever" type="button" data-abertura aria-label="Ver a abertura de novo"><svg aria-hidden="true"><use href="#i-play"/></svg>Abertura</button>
+    <canvas class="estrelas" id="estrelas" aria-hidden="true"></canvas>
+    <div class="hero-logo"><img src="logo.png" alt="Logo Galera da Raquete · Portal do Lago"></div>
+    <div class="olho">GALERA DA RAQUETE · PORTAL DO LAGO</div>
+    <h1 class="t1">Festa de Encerramento</h1>
+    <div class="t2" aria-label="e Finals 2026"><span class="amp">&amp;</span><span>FINALS</span>
+      <span class="ano">2<svg aria-hidden="true"><use href="#i-bola"/></svg>26</span></div>
+    <p class="frase">Um ano inteiro de saque, voleio e resenha. Agora é hora de fechar a temporada em grande estilo!</p>
+  </header>
+
+  <!-- ============ PLACAR / DATA ============ -->
+  <section class="placar" aria-label="Data e horário">
+    <div class="tit">● CENTRE COURT ●</div>
+    <div class="linhas">
+      <div class="lp"><span>DIA</span><div class="tiles" id="tDia"></div></div>
+      <div class="lp"><span>HORA</span><div class="tiles" id="tHora"></div></div>
+    </div>
+    <div class="contagem" aria-label="Contagem regressiva">
+      <div><b id="cd">--</b><small>DIAS</small></div>
+      <div><b id="ch">--</b><small>HORAS</small></div>
+      <div><b id="cm">--</b><small>MIN</small></div>
+      <div><b id="cs">--</b><small>SEG</small></div>
+    </div>
+  </section>
+
+  <!-- ============ ATRAÇÕES ============ -->
+  <section class="cartao" aria-labelledby="hAtr">
+    <span class="etq">A noite</span>
+    <h3 id="hAtr">O que vai rolar</h3>
+    <div class="atr">
+      <div class="at"><div class="ic"><svg><use href="#i-pizza"/></svg></div><div><b>Rodízio de pizzas</b><p>À vontade, com refrigerante incluso.</p></div></div>
+      <div class="at verde"><div class="ic"><svg><use href="#i-mic"/></svg></div><div><b>Música ao vivo</b><p>Som de primeira pra comemorar a temporada.</p></div></div>
+      <div class="at bola"><div class="ic"><svg><use href="#i-trofeu"/></svg></div><div><b>Finals 2026</b><p>A grande noite dos campeões das categorias A, B e C.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ============ LOCAL ============ -->
+  <section class="cartao" aria-labelledby="hLocal" id="cLocal">
+    <span class="etq">Onde</span>
+    <h3 id="hLocal">Local</h3>
+    <div class="local">
+      <div class="pin"><svg><use href="#i-pin"/></svg></div>
+      <div><b id="localNome"></b><p id="localEnd"></p><a class="btn-mapa" id="localMapa" target="_blank" rel="noopener" hidden>Abrir no mapa →</a></div>
+    </div>
+  </section>
+
+  <!-- ============ VALORES ============ -->
+  <section class="cartao" aria-labelledby="hVal">
+    <span class="etq">Ingressos</span>
+    <h3 id="hVal">Valores por pessoa</h3>
+    <div class="precos">
+      <div class="preco dest"><div><b>Tenistas inscritos no ranking</b><small>Rodízio de pizzas + refrigerante incluso</small></div><div class="valor"><sup>R$</sup>25</div></div>
+      <div class="preco"><div><b>Família de 1º grau e amigos</b><small>Rodízio + refrigerante · amigos a partir de 10/11</small></div><div class="valor"><sup>R$</sup>45</div></div>
+      <div class="preco"><div><b>Crianças de 6 a 10 anos</b><small>Rodízio de pizzas + refrigerante</small></div><div class="valor"><sup>R$</sup>25</div></div>
+      <div class="preco"><div><b>Crianças até 5 anos</b><small>Entram na festa sem pagar</small></div><div class="gratis">NÃO PAGAM</div></div>
+    </div>
+    <div class="cerveja"><svg><use href="#i-cerva"/></svg><div><b>Cerveja: cada um traz a sua!</b></div></div>
+    <p class="pix-mini">Pagamento via <b>PIX</b>: os dados aparecem assim que você confirmar.</p>
+  </section>
+
+  <!-- ============ VAGAS + CONFIRMAÇÃO ============ -->
+  <section class="cartao" aria-labelledby="hVag" id="confirmar">
+    <span class="etq">Confirmação</span>
+    <h3 id="hVag">Garanta sua vaga</h3>
+    <ol class="fases" aria-label="Calendário de inscrições">
+      <li data-fase="1"><span class="f-data">ATÉ 09/11</span><b>Tenistas do ranking</b><small>+ família de 1º grau: cônjuge, filhos, pais e irmãos</small><i class="f-agora">AGORA</i></li>
+      <li data-fase="2"><span class="f-data">10/11 A 30/11</span><b>Aberto pra amigos</b><small>Amigos e conhecidos podem confirmar e ser incluídos</small><i class="f-agora">AGORA</i></li>
+      <li data-fase="3"><span class="f-data">05/12 · 18H30</span><b>A festa!</b><small>Área de lazer da quadra de tênis</small></li>
+    </ol>
+    <div class="vagas-top">
+      <div><div class="cem" aria-label="100 convidados">1<svg aria-hidden="true"><use href="#i-bola"/></svg><svg aria-hidden="true"><use href="#i-bola"/></svg></div><span class="cem-txt">CONVIDADOS</span></div>
+      <div class="prazo"><span id="prazoQuem">Tenistas: confirme até</span><b id="prazoData">9 DE NOVEMBRO</b><span id="prazoFalta"></span></div>
+    </div>
+    <div class="mosaico" id="mosaico">
+      <div class="grade" id="grade" aria-hidden="true"></div>
+      <div class="leg-out"><span>Cada bolinha é um convidado</span><span id="outTxt">Completou o OUT, lotou!</span></div>
+    </div>
+    <div class="vagas-leg"><span id="vOcup">0 confirmados</span><span><b id="vRest">100</b> <span id="vRestTxt">vagas restantes</span></span></div>
+    <div class="ja-vao" aria-live="polite"><b id="jaVaoN">0</b><span id="jaVaoTxt"></span></div>
+    <p class="corra">Corra e garanta a sua!</p>
+    <button class="cta vamos" id="bConfirmar" type="button"><svg><use href="#i-bola"/></svg><span class="cta-txt" id="bConfTxt">VAMOS!!!<small>Confirmar presença</small></span></button>
+    <p class="ja-conf" id="jaConf" hidden></p>
+    <p class="duvidas" id="duvidas"></p>
+  </section>
+
+  <nav class="atalhos" aria-label="Atalhos" id="atalhos">
+    <a class="atalho" href="#enquete" id="atEnq"><svg><use href="#i-trofeu"/></svg>Enquete das Finals</a>
+    <a class="atalho" href="#arcade"><svg><use href="#i-game"/></svg>Jogo de tênis + ranking</a>
+  </nav>
+
+  <!-- ============ ENQUETE ============ -->
+  <section class="cartao" aria-labelledby="hEnq" id="enquete">
+    <span class="etq">Enquete · Finals 2026</span>
+    <h3 id="hEnq">Quem leva o título?</h3>
+    <p class="sub">Vote no seu favorito entre os 8 finalistas de cada categoria. Vale um voto por categoria, e dá pra trocar até o dia da festa. No fim a gente vê se o grande vencedor é quem todo mundo apostou!</p>
+    <div class="abas" role="tablist" aria-label="Categorias">
+      <button class="aba" role="tab" data-cat="A" aria-selected="true">CATEGORIA A</button>
+      <button class="aba" role="tab" data-cat="B" aria-selected="false">CATEGORIA B</button>
+      <button class="aba" role="tab" data-cat="C" aria-selected="false">CATEGORIA C</button>
+    </div>
+    <div class="fin-lista" id="finLista" role="tabpanel"></div>
+    <div class="enq-rodape"><span id="enqTotal">0 votos</span><span class="ao-vivo" id="enqVivo" hidden>ao vivo</span></div>
+    <p class="erro" id="enqErro"></p>
+  </section>
+
+  <!-- ============ ARCADE ============ -->
+  <section class="cartao arcade" aria-labelledby="hArc" id="arcade">
+    <span class="etq" style="color:#8cf">Fliperama da galera</span>
+    <h3 id="hArc">Tênis da Galera</h3>
+    <p class="sub">Quadra de grama, torcida na arquibancada e você contra a CPU. Arraste o dedo pra correr até a bola. Faça pontos e entre no ranking da galera. Você tem 3 bolas.</p>
+    <button class="cta bola" id="bJogar" type="button"><svg><use href="#i-game"/></svg>JOGAR AGORA</button>
+    <div class="hof">
+      <div class="ht px">HIGH SCORES</div>
+      <div class="hs px">RANKING DA GALERA</div>
+      <ol id="hofLista"></ol>
+    </div>
+    <p class="hof-nota" id="hofNota"></p>
+  </section>
+
+  <footer class="rodape">
+    <img src="logo.png" alt="">
+    <p>Participem!!!</p>
+    <small>Galera da Raquete · Portal do Lago · 2026<br>Dúvidas? Fale com o Dannis</small>
+    <button class="rever rodape-rever" type="button" data-abertura><svg aria-hidden="true"><use href="#i-play"/></svg>Ver a abertura de novo</button>
+  </footer>
+</main>
+
+<!-- ============ PLAYER ============ -->
+<div class="player" id="player" hidden>
+  <button class="bt" id="bMus" type="button" aria-label="Tocar música"><svg><use href="#i-play" id="usoMus"/></svg></button>
+  <div class="info"><b>Hino da Galera <span class="ondas"><i></i><i></i><i></i></span></b>Galera da Raquete</div>
+</div>
+<audio id="musica" src="musica-galera-da-raquete.mp3" loop preload="auto"></audio>
+<audio id="somVamos" src="vamos.mp3" preload="auto"></audio>
+<audio id="somFala" src="fala-galera.mp3" preload="auto"></audio>
+<audio id="somFrase" src="frase-jivago.mp3" preload="auto"></audio>
+
+<!-- ============ CONFIRMAÇÃO ============ -->
+<div class="folha" id="fConf" hidden role="dialog" aria-modal="true" aria-labelledby="hConf">
+  <div class="caixa">
+    <div id="confForm">
+      <div class="cab"><h4 id="hConf">Confirmar presença</h4><button class="fechar" type="button" data-fechar aria-label="Fechar">×</button></div>
+      <p class="sub" style="color:var(--tinta-2);font-size:14px" id="confSub">Sábado, 05/12 às 18h30</p>
+      <p class="aviso-fase" id="avisoFase" hidden></p>
+      <form id="formConf" novalidate>
+        <div class="campo"><label for="cNome">Seu nome completo</label><input type="text" id="cNome" autocomplete="name" maxlength="80" placeholder="Ex.: Maria Souza"></div>
+        <div class="campo"><label for="cWhats">WhatsApp <span style="font-weight:500;color:var(--tinta-2)">(opcional)</span></label><input type="tel" id="cWhats" autocomplete="tel" maxlength="20" placeholder="(19) 99999-9999"></div>
+        <div class="campo"><span class="lb">Você é tenista inscrito no ranking?</span>
+          <div class="seg" id="segTen">
+            <button type="button" data-v="sim" aria-pressed="true">Sim, sou tenista<small>R$ 25</small></button>
+            <button type="button" data-v="nao" aria-pressed="false">Não, sou convidado<small id="segNaoTxt">R$ 45</small></button>
+          </div>
+        </div>
+        <div class="campo" id="blocoTen">
+          <div class="ag ag-ten"><div><b>Tenistas do ranking da sua casa</b><small>Contando você · R$ 25 cada</small></div><div class="passo" data-k="tenistas"><button type="button" data-d="-1" aria-label="Menos tenistas">−</button><output>1</output><button type="button" data-d="1" aria-label="Mais tenistas">+</button></div></div>
+          <div class="nomes-ten" id="nomesTen"></div>
+          <p class="dica-ten" id="dicaTen" hidden>Esses tenistas já ficam confirmados junto com você e não precisam confirmar de novo.</p>
+        </div>
+        <div class="campo"><span class="lb">Quantos agregados vão com você?</span>
+          <div class="agr">
+            <div class="ag"><div><b>Família de 1º grau</b><small>Cônjuge, filhos, pais, irmãos · R$ 45 cada</small></div><div class="passo" data-k="familia"><button type="button" data-d="-1" aria-label="Menos familiares">−</button><output>0</output><button type="button" data-d="1" aria-label="Mais familiares">+</button></div></div>
+            <div class="ag" id="agAmigos"><div><b>Amigos e conhecidos</b><small>R$ 45 cada</small><span class="tranca" id="amigosTranca" hidden>🔒 Libera em 10/11</span></div><div class="passo" data-k="amigos"><button type="button" data-d="-1" aria-label="Menos amigos">−</button><output>0</output><button type="button" data-d="1" aria-label="Mais amigos">+</button></div></div>
+            <div class="ag"><div><b>Crianças de 6 a 10 anos</b><small>R$ 25 cada</small></div><div class="passo" data-k="criancas"><button type="button" data-d="-1" aria-label="Menos crianças de 6 a 10">−</button><output>0</output><button type="button" data-d="1" aria-label="Mais crianças de 6 a 10">+</button></div></div>
+            <div class="ag"><div><b>Crianças até 5 anos</b><small>Não pagam</small></div><div class="passo" data-k="bebes"><button type="button" data-d="-1" aria-label="Menos crianças até 5">−</button><output>0</output><button type="button" data-d="1" aria-label="Mais crianças até 5">+</button></div></div>
+          </div>
+        </div>
+        <div class="resumo" id="resumo"></div>
+        <p class="erro" id="confErro" role="alert"></p>
+        <button class="cta verde vamos" id="bEnviar" type="submit"><svg><use href="#i-bola"/></svg><span class="cta-txt" id="bEnvTxt">VAMOS!!!<small>Confirmar presença</small></span></button>
+      </form>
+    </div>
+    <div id="confOk" hidden>
+      <div class="cab"><span></span><button class="fechar" type="button" data-fechar aria-label="Fechar">×</button></div>
+      <div class="ok-box">
+        <svg class="bolao" aria-hidden="true"><use href="#i-bola"/></svg>
+        <h4 id="okTit">VAMOS!!! Presença confirmada!</h4>
+        <p id="okTxt"></p>
+        <span class="espera-tag" id="okEspera" hidden></span>
+        <p class="ok-demo" id="okDemo" hidden>Prévia: esta confirmação é só de teste e não entrou na lista.</p>
+      </div>
+      <div class="pix" id="pixBox">
+        <div class="pix-top"><span class="pix-logo" aria-hidden="true">◆</span>Agora é só pagar via PIX</div>
+        <div class="pix-valor"><small>Valor total</small><b id="pixValor">R$ 0,00</b></div>
+        <div class="pix-chave">
+          <small>Chave PIX (celular)</small>
+          <div class="pix-linha"><b id="pixChave" tabindex="0"></b><button type="button" id="pixCopiar" class="pix-btn">Copiar chave</button></div>
+          <small>Em nome de</small><b id="pixNome"></b>
+        </div>
+        <p class="pix-comp"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Depois de pagar, <b>mande o comprovante no privado</b>.</span></p>
+      </div>
+      <button class="cta" type="button" id="okEnq" style="margin-top:16px"><svg><use href="#i-trofeu"/></svg>VOTAR NA ENQUETE</button>
+      <button class="cta" type="button" data-fechar style="margin-top:12px;background:var(--creme);color:var(--roxo);box-shadow:none">FECHAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ JOGO ============ -->
+<div id="jogo" hidden role="dialog" aria-modal="true" aria-label="Jogo de tênis">
+  <div class="j-top">
+    <div class="px">PONTOS <b id="jPts">0</b><br>BOLAS <b id="jVidas">●●●</b></div>
+    <div class="px" style="text-align:center" id="jPlacar">0 - 0</div>
+    <button class="j-x" id="jFechar" type="button" aria-label="Fechar jogo">×</button>
+  </div>
+  <div class="j-area" style="position:relative">
+    <canvas id="tela" width="360" height="560" aria-label="Quadra de tênis"></canvas>
+    <div class="j-msg" id="jMsg"></div>
+  </div>
+  <p class="j-dica">Arraste o dedo (ou use ← →) pra mover o tenista de roxo</p>
+</div>
+
+<div class="toast" id="toast" role="status"><svg aria-hidden="true"><use href="#i-bola"/></svg><span id="toastTxt"></span></div>
+<canvas id="confete" aria-hidden="true"></canvas>
+
+<script>
+/* =========================================================
+   DADOS DA FESTA — edite só este bloco
+   ========================================================= */
+const CONFIG = {
+  dataHora: "2026-12-05T18:30:00-03:00",
+  fase2: "2026-11-10T00:00:00-03:00",   // até 09/11: só tenistas do ranking + família de 1º grau
+  prazo: "2026-11-30T23:59:59-03:00",   // de 10/11 a 30/11: aberto pra amigos e conhecidos
+  vagas: 100,
+  precos: { tenista: 25, visitante: 45, crianca: 25, bebe: 0 },
+  local: {
+    nome: "Área de lazer da quadra de tênis",
+    endereco: "Portal do Lago",
+    mapa: null             // link do Google Maps
+  },
+  somVamos: true,          // grito gravado pela galera ao apertar VAMOS!!!
+  pix: { chave: "19997635743", nome: "Daniella Gesualdo" },
+  enquete: false,          // true quando saírem os 8 finalistas de cada categoria (fim de outubro)
+  contato: "Dannis",       // nome de quem tira as dúvidas
+  whatsContato: null,      // ex.: "5519999999999" (vira botão de WhatsApp)
+  api: "https://script.google.com/macros/s/AKfycbzJA8fzDXrlSEX2giXNdz6bzVP7xZdv-H10b2NTneGQ4CnGT9CnypXY4reFgwDkxzre/exec",               // link do App da Web do Google Apps Script (confirmações, enquete e ranking)
+  finalistas: {
+    A: ["Finalista A1","Finalista A2","Finalista A3","Finalista A4","Finalista A5","Finalista A6","Finalista A7","Finalista A8"],
+    B: ["Finalista B1","Finalista B2","Finalista B3","Finalista B4","Finalista B5","Finalista B6","Finalista B7","Finalista B8"],
+    C: ["Finalista C1","Finalista C2","Finalista C3","Finalista C4","Finalista C5","Finalista C6","Finalista C7","Finalista C8"]
+  }
+};
+
+/* ---------- sempre abre no começo, com a tela de abertura ---------- */
+try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (_) {}
+scrollTo(0, 0);
+addEventListener("pageshow", () => scrollTo(0, 0));
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const ls = {
+  get(k, d = null) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+};
+const reais = n => "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const aparelho = (() => {
+  let id = ls.get("gr-aparelho");
+  if (!id) { id = "ap-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); ls.set("gr-aparelho", id); }
+  return id;
+})();
+
+/* ---------- API (Google Apps Script) ---------- */
+const API = (() => {
+  const on = !!CONFIG.api;
+  const tempo = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error("tempo")), ms))]);
+  async function get(acao = "estado") {
+    if (!on) throw new Error("offline");
+    const r = await tempo(fetch(CONFIG.api + "?acao=" + acao + "&t=" + Date.now()), 15000);
+    return r.json();
+  }
+  async function post(dados) {
+    if (!on) throw new Error("offline");
+    const r = await tempo(fetch(CONFIG.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) }), 25000);
+    return r.json();
+  }
+  return { on, get, post };
+})();
+
+/* ---------- Abertura + música ---------- */
+const Musica = (() => {
+  const a = $("musica"), bt = $("bMus"), uso = $("usoMus"), pl = $("player");
+  a.volume = 0.8;
+  const pinta = () => {
+    const tocando = !a.paused;
+    uso.setAttribute("href", tocando ? "#i-pause" : "#i-play");
+    bt.setAttribute("aria-label", tocando ? "Pausar música" : "Tocar música");
+    pl.classList.toggle("tocando", tocando);
+  };
+  a.addEventListener("play", pinta); a.addEventListener("pause", pinta);
+  bt.onclick = () => a.paused ? a.play().catch(() => {}) : a.pause();
+  const grito = $("somVamos"), fala = $("somFala"), frase = $("somFrase");
+  let entrou = false, falaTocou = false, gritoAte = 0;
+  const VOL = .8;
+  const comecaMusica = () => { pl.hidden = false; a.volume = VOL; a.play().catch(() => {}); };
+  // "Fala, Galera da Raquete!" assim que o convite abre
+  function tentaFala() {
+    if (falaTocou) return;
+    fala.currentTime = 0;
+    fala.play().then(() => { falaTocou = true; }).catch(() => {});
+  }
+  fala.addEventListener("ended", () => { if (entrou && a.paused) comecaMusica(); });
+  tentaFala();                                                   // alguns navegadores deixam tocar direto
+  const primeiroToque = () => { if (!falaTocou) tentaFala(); };  // nos outros, toca no primeiro toque
+  addEventListener("pointerdown", primeiroToque, { capture: true, once: true });
+  addEventListener("keydown", primeiroToque, { capture: true, once: true });
+  function entrar() {
+    entrou = true;
+    if (!falaTocou) tentaFala();
+    if (!fala.paused && !fala.ended) return;                     // a música entra quando a fala terminar
+    setTimeout(() => { if (!fala.paused && !fala.ended) return; comecaMusica(); }, 120);
+  }
+  function vamos() {
+    try {
+      if (!a.paused) a.volume = .2;
+      if (CONFIG.somVamos) {
+        grito.currentTime = 0; grito.volume = 1; grito.play().catch(() => {});
+        gritoAte = Date.now() + (grito.duration ? grito.duration * 1000 : 2300);
+      }
+      // libera a frase final pra tocar depois (iPhone só deixa tocar áudio liberado num toque)
+      frase.muted = true; frase.play().then(() => { frase.pause(); frase.currentTime = 0; frase.muted = false; }).catch(() => { frase.muted = false; });
+      setTimeout(() => { if (frase.paused) a.volume = VOL; }, 3000);
+    } catch (_) {}
+  }
+  function fraseFinal() {
+    const espera = Math.max(300, gritoAte - Date.now() + 200);
+    setTimeout(() => {
+      if (!a.paused) a.volume = .18;
+      frase.currentTime = 0; frase.muted = false; frase.volume = 1;
+      frase.play().catch(() => { a.volume = VOL; });
+    }, espera);
+  }
+  frase.addEventListener("ended", () => { a.volume = VOL; });
+  function reabrir() { a.pause(); entrou = false; falaTocou = false; tentaFala(); }
+  return { tocar: entrar, reabrir, pausar() { a.pause(); }, vamos, fraseFinal, get tocando() { return !a.paused; } };
+})();
+
+const naAbertura = () => !$("intro").hidden && !$("intro").classList.contains("sai");
+$("entrar").onclick = () => {
+  Musica.tocar();
+  $("intro").classList.add("sai");
+  setTimeout(() => { $("intro").hidden = true; dispatchEvent(new Event("gr-entrou")); }, 800);
+  Confete.solta(1800, 40);
+};
+// botão "Ver abertura": volta pra primeira tela e toca a fala de novo
+function verAbertura() {
+  const i = $("intro");
+  i.hidden = false; i.classList.remove("sai");
+  i.querySelectorAll(".intro-logo,.intro-logo::after,.intro-txt,.btn-entrar,.intro-dica").forEach(el => { el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; });
+  scrollTo(0, 0);
+  Musica.reabrir();
+}
+document.querySelectorAll("[data-abertura]").forEach(b => b.onclick = verAbertura);
+
+/* ---------- Estrelinhas no céu do hero ---------- */
+(() => {
+  const c = $("estrelas"), x = c.getContext("2d");
+  let est = [];
+  const tam = () => {
+    const r = c.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+    c.width = r.width * d; c.height = r.height * d;
+    est = Array.from({ length: 50 }, () => ({ x: Math.random() * c.width, y: Math.random() * c.height * .6, r: (Math.random() * 1.3 + .3) * d, f: Math.random() * 6 }));
+  };
+  tam(); addEventListener("resize", tam);
+  const loop = t => {
+    x.clearRect(0, 0, c.width, c.height);
+    est.forEach(s => { x.globalAlpha = .35 + .35 * Math.sin(t / 900 + s.f); x.fillStyle = "#fff"; x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); });
+    if (!reduz) requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+})();
+
+/* ---------- Placar: data, hora e contagem ---------- */
+(() => {
+  const alvo = new Date(CONFIG.dataHora);
+  const DIAS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"], MES = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  const tiles = (el, partes) => { el.innerHTML = ""; partes.forEach(([t, am]) => { const d = document.createElement("div"); d.className = "tile" + (am ? " am" : ""); d.textContent = t; el.append(d); }); };
+  const p2 = n => String(n).padStart(2, "0");
+  tiles($("tDia"), [[DIAS[alvo.getDay()]], [p2(alvo.getDate()), true], [MES[alvo.getMonth()]]]);
+  tiles($("tHora"), [[p2(alvo.getHours()) + ":" + p2(alvo.getMinutes()), true]]);
+  const tick = () => {
+    let s = Math.max(0, Math.floor((alvo - Date.now()) / 1000));
+    $("cd").textContent = Math.floor(s / 86400); s %= 86400;
+    $("ch").textContent = p2(Math.floor(s / 3600)); s %= 3600;
+    $("cm").textContent = p2(Math.floor(s / 60)); $("cs").textContent = p2(s % 60);
+  };
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ---------- Local ---------- */
+(() => {
+  const L = CONFIG.local;
+  if (!L.nome && !L.endereco) { $("localNome").textContent = "Local em breve"; $("localEnd").textContent = "A gente avisa o endereço por aqui e no grupo."; return; }
+  $("localNome").textContent = L.nome || "";
+  $("localEnd").textContent = L.endereco || "";
+  if (L.mapa) { $("localMapa").href = L.mapa; $("localMapa").hidden = false; }
+})();
+
+/* ---------- Dúvidas ---------- */
+(() => {
+  const d = $("duvidas"); if (!CONFIG.contato) { d.remove(); return; }
+  d.innerHTML = "Dúvidas? Fale com o <b></b>";
+  d.querySelector("b").textContent = CONFIG.contato;
+  if (CONFIG.whatsContato) {
+    const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+    a.href = "https://wa.me/" + CONFIG.whatsContato + "?text=" + encodeURIComponent("Oi " + CONFIG.contato + "! Dúvida sobre a Festa de Encerramento da Galera da Raquete:");
+    a.textContent = "Chamar no WhatsApp"; d.append(document.createElement("br"), a);
+  }
+})();
+
+/* ---------- Fases das inscrições ---------- */
+const Fase = (() => {
+  const f2 = new Date(CONFIG.fase2), fim = new Date(CONFIG.prazo), festa = new Date(CONFIG.dataHora);
+  const atual = () => Date.now() < f2 ? 1 : Date.now() <= fim ? 2 : 3;
+  const n = atual();
+  document.querySelectorAll(".fases li").forEach(li => {
+    const k = Number(li.dataset.fase);
+    li.classList.toggle("atual", k === n && k < 3);
+    li.classList.toggle("passou", k < n);
+  });
+  const limite = n === 1 ? new Date(f2 - 1000) : fim;
+  const MES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+  $("prazoQuem").textContent = n === 1 ? "Tenistas: confirme até" : "Aberto pra amigos até";
+  $("prazoData").textContent = limite.getDate() + " DE " + MES[limite.getMonth()];
+  $("confSub").textContent = "Sábado, 05/12 às 18h30 · " + (n === 1 ? "tenistas confirmam até 09/11" : "confirmações até 30/11");
+  if (n === 1) {
+    $("avisoFase").hidden = false;
+    $("avisoFase").textContent = "Até 09/11 a confirmação é só pra tenistas do ranking, com a família de 1º grau. Amigos e conhecidos entram a partir de 10/11.";
+  }
+  return { atual: n, limite, amigosLiberados: n >= 2 };
+})();
+
+/* ---------- Vagas ---------- */
+const Vagas = (() => {
+  const total = CONFIG.vagas;
+  // mosaico: as 100 vagas formam a palavra OUT (40 + 34 + 26 bolinhas)
+  const DESENHO = [
+    ".#####..##..##.######",
+    "#######.##..##.######",
+    "##...##.##..##...##..",
+    "##...##.##..##...##..",
+    "##...##.##..##...##..",
+    "##...##.##..##...##..",
+    "#######.######...##..",
+    ".#####...####...####."];
+  const grade = $("grade"), assentos = [];
+  DESENHO.forEach(lin => [...lin].forEach(c => { const i = document.createElement("i"); if (c === "#") { i.className = "v"; assentos.push(i); } grade.append(i); }));
+  // ordem embaralhada (sempre a mesma), pra palavra ir surgindo como mosaico
+  let semente = 7;
+  const sorte = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
+  for (let i = assentos.length - 1; i > 0; i--) { const j = Math.floor(sorte() * (i + 1)); [assentos[i], assentos[j]] = [assentos[j], assentos[i]]; }
+  let acesas = 0;
+  const prazo = new Date(CONFIG.prazo);
+  const encerrado = () => Date.now() > prazo;
+  const faltam = Math.ceil((Fase.limite - Date.now()) / 86400000);
+  $("prazoFalta").textContent = encerrado() ? "prazo encerrado" : faltam <= 1 ? "último dia!" : "faltam " + faltam + " dias";
+  let antes = null, mostrado = 0, pendente = null;
+  addEventListener("gr-entrou", () => { if (pendente) { const t = pendente; pendente = null; setTimeout(() => toast(t), 900); } });
+  const conta = (alvo) => {           // número subindo
+    const de = mostrado, t0 = performance.now(), dur = reduz ? 1 : 1200;
+    const f = t => { const k = Math.min(1, (t - t0) / dur), n = Math.round(de + (alvo - de) * (1 - Math.pow(1 - k, 3)));
+      $("jaVaoN").textContent = n; if (k < 1) requestAnimationFrame(f); else mostrado = alvo; };
+    requestAnimationFrame(f);
+  };
+  const toast = txt => {
+    if (naAbertura()) { pendente = txt; return; }
+    $("toastTxt").textContent = txt; $("toast").classList.add("on");
+    clearTimeout(toast.t); toast.t = setTimeout(() => $("toast").classList.remove("on"), 4500);
+  };
+  const frases = (o, rest) => {
+    if (!o) return "Ninguém confirmou ainda. <strong>Seja o primeiro da galera!</strong>";
+    if (rest <= 0) return "convidados confirmados. <strong>OUT! Lotou. Ainda dá pra entrar na lista de espera.</strong>";
+    if (rest <= 10) return "pessoas já confirmaram. <strong>Só restam " + rest + (rest === 1 ? " vaga!" : " vagas!") + "</strong>";
+    if (o < 10) return (o === 1 ? "pessoa já confirmou" : "pessoas já confirmaram") + ". <strong>Bora fechar essa quadra!</strong>";
+    if (o < total / 2) return "pessoas já confirmaram. <strong>A galera tá chegando!</strong>";
+    return "pessoas já confirmaram. <strong>Mais da metade das vagas já foi!</strong>";
+  };
+  function pinta(v) {
+    const ocup = Math.min(total, v.ocupadas || 0), rest = Math.max(0, total - ocup);
+    if (ocup !== mostrado) conta(ocup);
+    $("jaVaoTxt").innerHTML = frases(ocup, rest);
+    if (antes !== null && ocup > antes && !v.minha) {
+      const n = ocup - antes;
+      toast((n === 1 ? "+1 pessoa acabou de confirmar!" : "+" + n + " pessoas acabaram de confirmar!") + " Já são " + ocup + ".");
+    } else if (antes === null && ocup > 0 && API.on) {
+      setTimeout(() => toast(rest ? ocup + (ocup === 1 ? " pessoa já confirmou" : " pessoas já confirmaram") + "! Restam " + rest + (rest === 1 ? " vaga." : " vagas.") : "Lotou! As 100 vagas foram preenchidas. Lista de espera aberta."), 2500);
+    }
+    if (!v.inicial) antes = ocup;
+    const novas = Math.max(0, ocup - acesas);
+    assentos.forEach((b, i) => {
+      const liga = i < ocup;
+      if (liga && !b.classList.contains("on")) b.style.setProperty("--d", (reduz ? 0 : Math.min(1.6, (i - acesas) * (1.6 / Math.max(novas, 1)))) + "s");
+      b.classList.toggle("on", liga);
+    });
+    acesas = ocup;
+    $("mosaico").classList.toggle("cheio", ocup >= total);
+    $("outTxt").innerHTML = ocup >= total ? "<b>OUT! Lotou · lista de espera aberta</b>" : "Completou o OUT, lotou!";
+    $("vRest").textContent = rest;
+    $("vRestTxt").textContent = rest === 1 ? "vaga restante" : "vagas restantes";
+    $("vOcup").textContent = ocup === 1 ? "1 pessoa confirmada" : ocup + " pessoas confirmadas";
+    const b = $("bConfirmar");
+    if (encerrado()) { b.disabled = true; $("bConfTxt").textContent = "CONFIRMAÇÕES ENCERRADAS"; }
+    else if (rest === 0 && API.on) { $("bConfTxt").innerHTML = "LOTOU!<small>Entrar na lista de espera</small>"; }
+  }
+  pinta({ ocupadas: 0, inicial: true });
+  return { pinta, encerrado, restantes: () => Math.max(0, total - acesas) };
+})();
+
+/* ---------- PIX ---------- */
+const Pix = (() => {
+  const X = CONFIG.pix, fmt = k => k.length === 11 ? `(${k.slice(0, 2)}) ${k.slice(2, 7)}-${k.slice(7)}` : k;
+  $("pixChave").textContent = fmt(X.chave); $("pixNome").textContent = X.nome;
+  $("pixCopiar").onclick = async () => {
+    const b = $("pixCopiar");
+    try { await navigator.clipboard.writeText(X.chave); }
+    catch (_) {
+      const t = document.createElement("textarea"); t.value = X.chave; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.append(t); t.select(); try { document.execCommand("copy"); } catch (_) {} t.remove();
+      const r = document.createRange(); r.selectNodeContents($("pixChave")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
+    b.textContent = "Chave copiada ✓"; b.classList.add("ok");
+    setTimeout(() => { b.textContent = "Copiar chave"; b.classList.remove("ok"); }, 2500);
+  };
+  return { valor(v) { $("pixValor").textContent = reais(v); } };
+})();
+
+/* ---------- Confirmação ---------- */
+(() => {
+  const f = $("fConf"), P = CONFIG.precos;
+  const st = { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 };
+  const LIM = { tenistas: [1, 6] };
+  const lim = k => LIM[k] || [0, 15];
+  function campoNomes() {                       // um campo de nome pra cada tenista além de você
+    const box = $("nomesTen"), precisa = st.tenista ? st.tenistas - 1 : 0;
+    while (box.children.length > precisa) box.lastChild.remove();
+    while (box.children.length < precisa) {
+      const n = box.children.length, lab = document.createElement("label"), inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 80; inp.id = "nomeTen" + (n + 2); inp.autocomplete = "off"; inp.placeholder = "Nome e sobrenome";
+      inp.value = st.nomesTen[n] || "";
+      inp.addEventListener("input", () => { st.nomesTen[n] = inp.value; $("confErro").textContent = ""; });
+      lab.append(document.createTextNode("Nome do " + (n + 2) + "º tenista"), inp); box.append(lab);
+    }
+    $("dicaTen").hidden = precisa === 0;
+    $("blocoTen").hidden = !st.tenista;
+  }
+  let enviando = false, espera = false;
+  // Fase 1: só tenista confirma e não entra amigo
+  if (!Fase.amigosLiberados) {
+    const nao = document.querySelector('#segTen [data-v="nao"]');
+    nao.disabled = true; $("segNaoTxt").textContent = "🔒 libera em 10/11";
+    $("agAmigos").classList.add("trancado"); $("amigosTranca").hidden = false;
+    $("agAmigos").querySelectorAll("button").forEach(b => b.disabled = true);
+  }
+  const mostraJa = c => {
+    $("jaConf").hidden = false;
+    $("jaConf").textContent = "✓ " + c.nome.split(" ")[0] + ", sua presença já está confirmada (" + c.total + (c.total === 1 ? " pessoa" : " pessoas") + ").";
+    if (c.valor) { const b = document.createElement("button"); b.type = "button"; b.textContent = "Ver PIX"; b.onclick = () => verPix(c); $("jaConf").append(b); }
+  };
+  const verPix = c => {
+    $("okTit").textContent = "Sua presença está confirmada!";
+    $("okTxt").textContent = c.nome.split(" ")[0] + ", seguem os dados pra pagamento. Te esperamos no sábado, 05/12, às 18h30.";
+    Pix.valor(c.valor); $("pixBox").hidden = false; $("okEspera").hidden = true; $("okDemo").hidden = true;
+    $("confForm").hidden = true; $("confOk").hidden = false; f.hidden = false; document.body.style.overflow = "hidden";
+  };
+  const anterior = ls.get("gr-confirmado");
+  if (anterior) mostraJa(anterior);
+
+  const calc = () => {
+    const pessoas = (st.tenista ? st.tenistas : 1) + st.familia + st.amigos + st.criancas + st.bebes;
+    const valor = (st.tenista ? st.tenistas * P.tenista : P.visitante) + (st.familia + st.amigos) * P.visitante + st.criancas * P.crianca + st.bebes * P.bebe;
+    return { pessoas, valor };
+  };
+  const pinta = () => {
+    document.querySelectorAll("#segTen button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.v === "sim") === st.tenista)));
+    document.querySelectorAll(".passo").forEach(p => {
+      const k = p.dataset.k; p.querySelector("output").textContent = st[k];
+      const tranca = k === "amigos" && !Fase.amigosLiberados, [mn, mx] = lim(k);
+      p.querySelector('[data-d="-1"]').disabled = tranca || st[k] <= mn;
+      p.querySelector('[data-d="1"]').disabled = tranca || st[k] >= mx;
+    });
+    const { pessoas, valor } = calc();
+    campoNomes();
+    const lin = [[st.tenista ? (st.tenistas === 1 ? "Você (tenista do ranking)" : st.tenistas + "× tenistas do ranking (você + " + (st.tenistas - 1) + ")") : "Você (convidado)", st.tenista ? st.tenistas * P.tenista : P.visitante]];
+    if (st.familia) lin.push([st.familia + "× família de 1º grau", st.familia * P.visitante]);
+    if (st.amigos) lin.push([st.amigos + (st.amigos === 1 ? "× amigo/conhecido" : "× amigos/conhecidos"), st.amigos * P.visitante]);
+    if (st.criancas) lin.push([st.criancas + "× criança 6 a 10 anos", st.criancas * P.crianca]);
+    if (st.bebes) lin.push([st.bebes + "× criança até 5 anos", 0]);
+    espera = API.on && pessoas > Vagas.restantes();
+    if (!enviando) $("bEnvTxt").innerHTML = espera ? "LISTA DE ESPERA<small>Entrar na fila por ordem de chegada</small>" : "VAMOS!!!<small>Confirmar presença</small>";
+    $("resumo").innerHTML = lin.map(([t, v]) => `<div class="ln"><span>${t}</span><span>${v ? reais(v) : "grátis"}</span></div>`).join("") +
+      `<div class="tot"><span>${pessoas} ${pessoas === 1 ? "pessoa" : "pessoas"}</span><b>${reais(valor)}</b></div>`;
+  };
+  document.querySelectorAll("#segTen button").forEach(b => b.onclick = () => { if (b.disabled) return; st.tenista = b.dataset.v === "sim"; pinta(); });
+  document.querySelectorAll(".passo").forEach(p => p.querySelectorAll("button").forEach(b => b.onclick = () => {
+    const k = p.dataset.k, [mn, mx] = lim(k); st[k] = Math.max(mn, Math.min(mx, st[k] + Number(b.dataset.d))); pinta();
+    if (k === "tenistas" && Number(b.dataset.d) > 0) { const ult = $("nomesTen").lastElementChild; if (ult) ult.querySelector("input").focus(); }
+  }));
+  const abrir = () => {
+    if (Vagas.encerrado()) return;
+    $("confForm").hidden = false; $("confOk").hidden = true; $("confErro").textContent = "";
+    f.hidden = false; document.body.style.overflow = "hidden"; pinta();
+    setTimeout(() => $("cNome").focus(), 350);
+  };
+  const fechar = () => { const voltar = !$("confOk").hidden; f.hidden = true; document.body.style.overflow = ""; if (voltar) scrollTo({ top: 0, behavior: "smooth" }); };
+  $("bConfirmar").onclick = abrir;
+  f.addEventListener("click", e => { if (e.target === f || e.target.closest("[data-fechar]")) fechar(); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && !f.hidden) fechar(); });
+  $("okEnq").onclick = () => { fechar(); $("enquete") && $("enquete").scrollIntoView({ behavior: "smooth" }); };
+
+  $("formConf").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (enviando) return;
+    const nome = $("cNome").value.trim().replace(/\s+/g, " ");
+    if (nome.length < 3 || !/\s/.test(nome)) { $("confErro").textContent = "Escreva seu nome e sobrenome."; $("cNome").focus(); return; }
+    const { pessoas, valor } = calc();
+    if (!Fase.amigosLiberados && (!st.tenista || st.amigos)) { $("confErro").textContent = "Até 09/11 só tenistas do ranking com família de 1º grau."; return; }
+    const outrosTenistas = st.tenista ? Array.from({ length: st.tenistas - 1 }, (_, i) => (st.nomesTen[i] || "").trim().replace(/\s+/g, " ")) : [];
+    const faltaNome = outrosTenistas.findIndex(x => x.length < 3 || !/\s/.test(x));
+    if (faltaNome >= 0) { $("confErro").textContent = "Escreva nome e sobrenome do " + (faltaNome + 2) + "º tenista."; $("nomeTen" + (faltaNome + 2)).focus(); return; }
+    const naFila = espera;
+    if (!naFila) Musica.vamos();
+    enviando = true; $("confErro").textContent = "";
+    const bt = $("bEnviar"); bt.disabled = true; $("bEnvTxt").textContent = "ENVIANDO...";
+    try {
+      const demo = !API.on;   // prévia sem servidor: mostra o caminho todo sem gravar nada
+      const dados = { nome, whats: $("cWhats").value.trim(), tenista: st.tenista, tenistas: st.tenista ? st.tenistas : 0, outrosTenistas, familia: st.familia, amigos: st.amigos, criancas: st.criancas, bebes: st.bebes };
+      const r = demo
+        ? await new Promise(ok => setTimeout(() => ok({ ok: true, total: pessoas, valor, demo: true }), 700))
+        : await API.post({ acao: naFila ? "espera" : "confirmar", ...dados });
+      $("okDemo").hidden = !demo;
+      if (r.vagas) Vagas.pinta({ ...r.vagas, minha: true });
+      if (!r.ok) {
+        $("confErro").textContent = r.erro || "Não deu certo. Tente de novo.";
+        if (r.lotado) { espera = true; }
+        return;
+      }
+      $("pixBox").hidden = !!r.espera; $("okEspera").hidden = !r.espera;
+      if (r.espera) {
+        ls.set("gr-espera", { nome, posicao: r.posicao });
+        $("okTit").textContent = "Você está na lista de espera!";
+        $("okTxt").textContent = nome.split(" ")[0] + ", as 100 vagas já foram preenchidas. Se alguém desistir, a organização chama pela ordem da lista e te passa os dados do pagamento.";
+        $("okEspera").textContent = "Sua posição na fila: " + r.posicao + "º";
+        $("confForm").hidden = true; $("confOk").hidden = false;
+        $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
+        return;
+      }
+      const conf = { nome, total: r.total || pessoas, valor: r.valor ?? valor };
+      if (!r.demo) { ls.set("gr-confirmado", conf); mostraJa(conf); }
+      $("okTit").textContent = "VAMOS!!! Presença confirmada!";
+      Pix.valor(conf.valor);
+      Musica.fraseFinal();
+      $("okTxt").textContent = nome.split(" ")[0] + ", " + (pessoas === 1 ? "seu nome está na lista!" : "você e mais " + (pessoas - 1) + (pessoas === 2 ? " pessoa estão" : " pessoas estão") + " na lista!") + " Te esperamos no sábado, 05/12, às 18h30.";
+      $("confForm").hidden = true; $("confOk").hidden = false;
+      $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
+      Confete.solta(3000, 70);
+    } catch (_) {
+      $("confErro").textContent = "Sem conexão agora. Confira sua internet e tente de novo.";
+    } finally {
+      enviando = false; bt.disabled = false; pinta();
+    }
+  });
+})();
+
+/* ---------- Enquete ---------- */
+if (!CONFIG.enquete) { $("enquete").remove(); $("atEnq").remove(); $("okEnq").remove(); $("atalhos").style.gridTemplateColumns = "1fr"; }
+const Enquete = !CONFIG.enquete ? { atualiza() {}, vivo() {} } : (() => {
+  let cat = "A", votos = { A: {}, B: {}, C: {} }, meus = ls.get("gr-votos", {}), enviando = false;
+  const lista = $("finLista");
+  const localVotos = () => {          // sem servidor: só os votos deste aparelho
+    const v = { A: {}, B: {}, C: {} };
+    Object.entries(meus).forEach(([c, f]) => { v[c][f] = 1; });
+    return v;
+  };
+  function pinta() {
+    const nomes = CONFIG.finalistas[cat];
+    const cont = votos[cat] || {};
+    const tot = Object.values(cont).reduce((a, b) => a + b, 0);
+    const max = Math.max(0, ...Object.values(cont));
+    if (lista.children.length !== nomes.length || lista.dataset.cat !== cat) {
+      lista.dataset.cat = cat; lista.innerHTML = "";
+      nomes.forEach((n, i) => {
+        const id = cat + (i + 1);
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "fin"; b.dataset.id = id;
+        b.innerHTML = `<span class="barra"></span><span class="pos">${i + 1}</span><span class="nm"></span><span class="pct"></span>`;
+        b.querySelector(".nm").textContent = n;
+        b.onclick = () => votar(id);
+        lista.append(b);
+      });
+    }
+    [...lista.children].forEach(b => {
+      const id = b.dataset.id, n = cont[id] || 0, p = tot ? Math.round(n / tot * 100) : 0;
+      b.querySelector(".barra").style.width = (tot ? n / tot * 100 : 0) + "%";
+      b.querySelector(".pct").innerHTML = `${p}%<small>${n} ${n === 1 ? "voto" : "votos"}</small>`;
+      const meu = meus[cat] === id;
+      b.classList.toggle("meu", meu);
+      b.classList.toggle("lider", n > 0 && n === max);
+      b.setAttribute("aria-label", b.querySelector(".nm").textContent + ", " + p + " por cento" + (meu ? ", seu voto" : ""));
+      const nm = b.querySelector(".nm"); const sm = nm.querySelector("small");
+      if (meu && !sm) { const s = document.createElement("small"); s.textContent = "✓ seu voto"; nm.append(s); }
+      if (!meu && sm) sm.remove();
+    });
+    $("enqTotal").textContent = tot === 1 ? "1 voto na categoria " + cat : tot + " votos na categoria " + cat;
+  }
+  async function votar(id) {
+    if (enviando || meus[cat] === id) return;
+    const ant = meus[cat];
+    meus[cat] = id; ls.set("gr-votos", meus);
+    // atualiza na hora (otimista)
+    const c = votos[cat] = { ...(votos[cat] || {}) };
+    if (ant && c[ant]) c[ant]--;
+    c[id] = (c[id] || 0) + 1;
+    pinta(); $("enqErro").textContent = "";
+    if (!API.on) return;
+    enviando = true;
+    try {
+      const r = await API.post({ acao: "votar", categoria: cat, finalista: id, aparelho });
+      if (r.ok && r.votos) { votos = r.votos; pinta(); }
+      else if (!r.ok) throw new Error(r.erro);
+    } catch (e) {
+      meus[cat] = ant; if (ant) ls.set("gr-votos", meus); else { delete meus[cat]; ls.set("gr-votos", meus); }
+      $("enqErro").textContent = "Seu voto não foi registrado. Confira a internet e toque de novo.";
+      atualiza();
+    } finally { enviando = false; }
+  }
+  document.querySelectorAll(".aba").forEach(a => a.onclick = () => {
+    cat = a.dataset.cat;
+    document.querySelectorAll(".aba").forEach(x => x.setAttribute("aria-selected", String(x === a)));
+    pinta();
+  });
+  function atualiza(v) {
+    if (v) votos = { A: {}, B: {}, C: {}, ...v };
+    else if (!API.on) votos = localVotos();
+    pinta();
+  }
+  votos = API.on ? votos : localVotos();
+  pinta();
+  return { atualiza, vivo(on) { $("enqVivo").hidden = !on; } };
+})();
+
+/* ---------- Ranking (Hall da fama) ---------- */
+const Ranking = (() => {
+  let lista = ls.get("gr-ranking-local", []);
+  const meuNome = () => ls.get("gr-nome-jogo", "");
+  function pinta() {
+    const ol = $("hofLista"); ol.innerHTML = "";
+    const eu = (meuNome() || "").toLowerCase();
+    if (!lista.length) { ol.innerHTML = '<div class="vazio px">NINGUEM JOGOU AINDA<br>SEJA O PRIMEIRO!</div>'; }
+    const ORD = ["1ST", "2ND", "3RD"];
+    lista.slice(0, 10).forEach((it, i) => {
+      const li = document.createElement("li"); li.className = "px" + (eu && it.nome.toLowerCase() === eu ? " eu" : "");
+      const a = document.createElement("span"); a.textContent = ORD[i] || (i + 1) + "TH";
+      const b = document.createElement("span"); b.textContent = it.nome;
+      const c = document.createElement("span"); c.textContent = String(it.pontos).padStart(5, "0");
+      li.append(a, b, c); ol.append(li);
+    });
+    $("hofNota").textContent = API.on ? "Ranking ao vivo com toda a galera." : "Ranking deste aparelho. O ranking geral liga quando o convite estiver no ar.";
+  }
+  function atualiza(r) { if (Array.isArray(r)) { lista = r; pinta(); } }
+  async function envia(nome, pontos) {
+    ls.set("gr-nome-jogo", nome);
+    if (!API.on) {
+      const k = nome.toLowerCase(), i = lista.findIndex(x => x.nome.toLowerCase() === k);
+      if (i < 0) lista.push({ nome, pontos }); else lista[i].pontos = Math.max(lista[i].pontos, pontos);
+      lista.sort((a, b) => b.pontos - a.pontos); ls.set("gr-ranking-local", lista); pinta();
+      return { ok: true, local: true };
+    }
+    const r = await API.post({ acao: "pontos", nome, pontos });
+    if (r.ok) atualiza(r.ranking);
+    return r;
+  }
+  function posicao(nome) { const k = nome.toLowerCase(); return lista.findIndex(x => x.nome.toLowerCase() === k) + 1; }
+  pinta();
+  return { atualiza, envia, posicao, meuNome };
+})();
+
+/* ---------- Sincronização ao vivo ---------- */
+(() => {
+  if (!API.on) return;
+  let falhas = 0;
+  async function puxa() {
+    try {
+      const r = await API.get("estado");
+      if (r.ok) { Vagas.pinta(r.vagas); Enquete.atualiza(r.votos); Ranking.atualiza(r.ranking); Enquete.vivo(true); falhas = 0; }
+    } catch (_) { falhas++; Enquete.vivo(false); }
+  }
+  puxa();
+  setInterval(() => { if (!document.hidden && $("jogo").hidden) puxa(); }, 12000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) puxa(); });
+})();
+
+/* ---------- Jogo: Tênis da Galera (quadra em perspectiva) ---------- */
+(() => {
+  const tela = $("tela"), g = tela.getContext("2d");
+  const W = 360, H = 560;                    // tamanho lógico
+  const J = $("jogo"), msg = $("jMsg");
+  // projeção: x em [-1.3, 1.3], z de 0 (sua linha de base) a 1 (linha de base da CPU), h = altura
+  const Y_PERTO = 505, Y_HOR = -130, MEIA = 150, K = 1.1;
+  const esc = z => 1 / (1 + K * z);
+  const P = (x, z, h = 0) => { const s = esc(z); return { x: W / 2 + x * MEIA * s, y: Y_HOR + (Y_PERTO - Y_HOR) * s - h * 190 * s, s }; };
+  const G = 2.6;                              // gravidade (unidades/s²)
+
+  let raf = 0, estado = "parado", pts = 0, vidas = 3, nivel = 1, eu = 0, cpu = 0, games = 0, tAnt = 0, pausa = 0, rali = 0;
+  const pl = { x: 0, z: -0.05, alvo: 0, swing: 0, passo: 0, cor: "#7c4dff", short: "#ffffff", pele: "#e3a878", cabelo: "#3a2414", faixa: "#d8f145" };
+  const ia = { x: 0, z: 1.06, vel: 0.9, swing: 0, passo: 0, cor: "#ffffff", short: "#067447", pele: "#c98c5e", cabelo: "#1e140c", faixa: "#4e308a", erro: 0 };
+  const bola = { x: 0, z: 0, h: 0, vx: 0, vz: 0, vh: 0, quem: "eu", quiques: 0, ativa: false };
+
+  /* torcida (gerada uma vez) */
+  const torcida = Array.from({ length: 150 }, (_, i) => ({ x: (i % 30) / 30 * W + Math.random() * 8, y: 34 + Math.floor(i / 30) * 15 + Math.random() * 4,
+    c: ["#f2c6a0", "#c98c5e", "#8a5a3c", "#e3a878"][i % 4], r: ["#4e308a", "#ffffff", "#d8f145", "#067447", "#e74c3c", "#3498db"][Math.floor(Math.random() * 6)], f: Math.random() * 6 }));
+  let festa = 0;   // torcida pulando
+
+  /* sons */
+  let ac = null;
+  const audio = () => (ac = ac || new (window.AudioContext || window.webkitAudioContext)());
+  const tom = (f, d = .06, tipo = "sine", vol = .12) => {
+    try { const a = audio(), o = a.createOscillator(), v = a.createGain(); o.type = tipo; o.frequency.value = f; v.gain.value = vol;
+      o.connect(v).connect(a.destination); o.start(); v.gain.exponentialRampToValueAtTime(.0001, a.currentTime + d); o.stop(a.currentTime + d + .02); } catch (_) {}
+  };
+  const ruido = (d, vol, f1 = 400, f2 = 3000) => {
+    try { const a = audio(), n = a.sampleRate * d, b = a.createBuffer(1, n, a.sampleRate), c = b.getChannelData(0);
+      for (let i = 0; i < n; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.5);
+      const s = a.createBufferSource(), bp = a.createBiquadFilter(), v = a.createGain();
+      bp.type = "bandpass"; bp.frequency.value = (f1 + f2) / 2; bp.Q.value = .5; v.gain.value = vol; s.buffer = b;
+      s.connect(bp).connect(v).connect(a.destination); s.start(); } catch (_) {}
+  };
+  const somRaquete = () => { tom(980, .05, "triangle", .18); ruido(.04, .25, 1500, 5000); };
+  const somQuique = () => tom(320, .04, "sine", .08);
+  const somAplauso = () => ruido(1.4, .22, 600, 4000);
+
+  /* placar */
+  const TEN = ["0", "15", "30", "40"];
+  const placarTxt = () => {
+    if (eu >= 3 && cpu >= 3) return eu === cpu ? "IGUAIS" : (eu > cpu ? "VANT. VOCÊ" : "VANT. CPU");
+    return "VOCÊ " + TEN[Math.min(eu, 3)] + " x " + TEN[Math.min(cpu, 3)] + " CPU";
+  };
+  const hud = () => {
+    $("jPts").textContent = pts;
+    $("jVidas").textContent = "●".repeat(Math.max(0, vidas)) + "○".repeat(3 - Math.max(0, vidas));
+    $("jPlacar").innerHTML = placarTxt() + "<br><b style='color:#8cf'>GAMES " + games + "</b>";
+  };
+  let flashTxt = "", flashCor = "", flashAte = 0;
+  const flash = (t, c) => { flashTxt = t; flashCor = c; flashAte = performance.now() + 1000; };
+
+  function encaixa() {
+    const d = Math.min(devicePixelRatio || 1, 2);
+    tela.width = W * d; tela.height = H * d; g.setTransform(d, 0, 0, d, 0, 0);
+    const area = tela.parentElement.getBoundingClientRect();
+    const e = Math.min((area.width - 16) / W, (area.height - 8) / H);
+    tela.style.width = Math.floor(W * e) + "px"; tela.style.height = Math.floor(H * e) + "px";
+  }
+
+  /* golpe: manda a bola cair em (tx, tz) depois de T segundos */
+  function golpe(de, tx, tz, T) {
+    bola.vx = (tx - bola.x) / T; bola.vz = (tz - bola.z) / T;
+    bola.vh = (G * T * T / 2 - bola.h) / T;
+    bola.quem = de; bola.quiques = 0;
+  }
+  const tempoVoo = () => Math.max(.62, (1.25 - (nivel - 1) * .08) * Math.max(.62, 1 - rali * .045));
+
+  function saque(quem) {
+    bola.ativa = true; pausa = .8; rali = 0; ia.erra = false;
+    if (quem === "eu") { bola.x = pl.x + .12; bola.z = pl.z + .04; bola.h = .55; golpe("eu", (Math.random() - .5) * .9, .72, tempoVoo() * 1.1); pl.swing = 1; }
+    else { bola.x = ia.x - .12; bola.z = ia.z - .04; bola.h = .55; golpe("cpu", (Math.random() - .5) * 1.0, .2, tempoVoo() * 1.15); ia.swing = 1; }
+    estado = "espera";
+  }
+
+  function ponto(meu, motivo) {
+    bola.ativa = false;
+    if (meu) { eu++; pts += 100 * nivel; somAplauso(); festa = 1.6; ia.vel = Math.min(1.5, ia.vel + .05); }
+    else { cpu++; vidas--; tom(160, .35, "sawtooth", .07); }
+    if ((eu >= 4 || cpu >= 4) && Math.abs(eu - cpu) >= 2) {
+      if (eu > cpu) { games++; pts += 500 * nivel; nivel++; flash("GAME!", "#d8f145"); festa = 2.5; }
+      else flash("GAME CPU", "#ff4d6d");
+      eu = 0; cpu = 0;
+    } else flash(meu ? (motivo || "PONTO!") : (motivo || "PERDEU!"), meu ? "#d8f145" : "#ff4d6d");
+    hud();
+    if (vidas <= 0) { setTimeout(fim, 900); estado = "fim"; return; }
+    estado = "intervalo";
+    setTimeout(() => { if (estado === "intervalo") saque(meu ? "eu" : "cpu"); }, 1100);
+  }
+
+  function passo(dt) {
+    // jogador segue o dedo
+    const ax = pl.x; pl.x += (pl.alvo - pl.x) * Math.min(1, dt * 12);
+    pl.x = Math.max(-1.25, Math.min(1.25, pl.x)); pl.passo += Math.abs(pl.x - ax) * 18;
+    pl.swing = Math.max(0, pl.swing - dt * 3.2); ia.swing = Math.max(0, ia.swing - dt * 3.2);
+    festa = Math.max(0, festa - dt);
+    // CPU corre pra onde a bola vai chegar
+    let alvo = 0;
+    if (bola.ativa && bola.vz > 0) { const t = (ia.z - bola.z) / bola.vz; alvo = bola.x + bola.vx * t + ia.erro + (ia.erra ? .45 * Math.sign(ia.erro || 1) : 0); }
+    const bx = ia.x, dx = alvo - ia.x;
+    ia.x += Math.max(-ia.vel * dt, Math.min(ia.vel * dt, dx)); ia.x = Math.max(-1.25, Math.min(1.25, ia.x)); ia.passo += Math.abs(ia.x - bx) * 18;
+
+    if (estado === "espera") { pausa -= dt; if (pausa <= 0) estado = "jogando"; }
+    if (!bola.ativa || (estado !== "jogando" && estado !== "espera")) return;
+
+    const zAnt = bola.z;
+    bola.x += bola.vx * dt; bola.z += bola.vz * dt; bola.h += bola.vh * dt; bola.vh -= G * dt;
+    if (bola.h <= 0) { bola.h = 0; bola.vh = -bola.vh * .62; bola.quiques++; somQuique();
+      if (bola.quiques === 1 && Math.abs(bola.x) > 1.02) return ponto(bola.quem !== "eu", "FORA!");
+    }
+    if (Math.abs(bola.x) > 1.45) bola.vx *= -.3;
+    // rede
+    if ((zAnt - .5) * (bola.z - .5) <= 0 && bola.h < .1) { bola.vz *= -.15; bola.vx *= .3; return ponto(bola.quem !== "eu", "NA REDE!"); }
+
+    // sua raquetada
+    if (bola.vz < 0 && bola.z <= pl.z + .06 && zAnt > pl.z + .06 - .2 && bola.h < .75) {
+      const off = bola.x - pl.x;
+      if (Math.abs(off) <= .3) {
+        const tx = Math.max(-.95, Math.min(.95, bola.x + off * 3.2 + (Math.random() - .5) * .15));
+        rali++; bola.z = pl.z + .06; golpe("eu", tx, .7 + Math.random() * .22, tempoVoo());
+        pl.swing = 1; pts += 10 * nivel; somRaquete(); hud();
+        // às vezes a CPU vai errar (menos nos níveis altos; mais nas bolas anguladas e nos ralis longos)
+        ia.erra = Math.random() < Math.min(.6, Math.max(.08, .28 - nivel * .03) + Math.abs(off) * .5 + rali * .035);
+      }
+    }
+    // raquetada da CPU
+    if (bola.vz > 0 && bola.z >= ia.z - .06 && bola.h < .8) {
+      if (Math.abs(bola.x - ia.x) <= .25) {
+        rali++;
+        const longe = Math.random() < .65, lado = pl.x > .05 ? -1 : pl.x < -.05 ? 1 : (Math.random() < .5 ? -1 : 1);
+        const tx = longe ? lado * (.35 + Math.random() * .55) : (Math.random() - .5) * 1.4;
+        bola.z = ia.z - .06; golpe("cpu", tx, .08 + Math.random() * .25, tempoVoo() * (.95 + Math.random() * .2));
+        ia.swing = 1; ia.erro = (Math.random() - .5) * Math.max(.05, .5 - nivel * .06); somRaquete();
+      }
+    }
+    if (bola.z < -0.32) return ponto(false, bola.quiques ? "PASSOU!" : "PERDEU!");
+    if (bola.z > 1.35) return ponto(true, "WINNER!");
+  }
+
+  /* ---------- desenho ---------- */
+  function quad(pts4, cor) { g.fillStyle = cor; g.beginPath(); pts4.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); g.fill(); }
+  function linha(x1, z1, x2, z2, w = 2) { const a = P(x1, z1), b = P(x2, z2); g.lineWidth = w * (a.s + b.s) / 2; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+
+  function fundo(t) {
+    // arquibancada
+    const yLim = P(0, 1.45).y;
+    const gr = g.createLinearGradient(0, 0, 0, yLim); gr.addColorStop(0, "#140a2a"); gr.addColorStop(1, "#2d1a58");
+    g.fillStyle = gr; g.fillRect(0, 0, W, yLim);
+    torcida.forEach(p => {
+      const pulo = festa > 0 ? Math.abs(Math.sin(t / 110 + p.f)) * 4 * Math.min(1, festa) : Math.sin(t / 700 + p.f) * .6;
+      g.fillStyle = p.r; g.fillRect(p.x - 4, p.y + 4 - pulo, 8, 7);
+      g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y - pulo, 3.4, 0, 7); g.fill();
+      if (festa > 0 && p.f > 3) { g.fillStyle = p.c; g.fillRect(p.x - 6, p.y - 7 - pulo, 2, 6); g.fillRect(p.x + 4, p.y - 7 - pulo, 2, 6); }
+    });
+    // muro com faixa
+    g.fillStyle = "#0b3d27"; g.fillRect(0, yLim - 22, W, 22);
+    g.fillStyle = "#4e308a"; g.fillRect(0, yLim - 22, W, 3);
+    g.font = "bold 10px Oswald, sans-serif"; g.textAlign = "center"; g.fillStyle = "#d8f145";
+    g.fillText("GALERA DA RAQUETE  ·  FINALS 2026  ·  PORTAL DO LAGO", W / 2, yLim - 8);
+    // grama em volta
+    g.fillStyle = "#0a5233"; g.fillRect(0, yLim, W, H - yLim);
+    // faixas da grama (cortada em listras)
+    for (let i = 0; i < 12; i++) {
+      const z1 = -0.45 + i * .16, z2 = z1 + .16;
+      quad([P(-1.9, z1), P(1.9, z1), P(1.9, z2), P(-1.9, z2)], i % 2 ? "#0d6b42" : "#0b6039");
+    }
+    // linhas
+    g.strokeStyle = "rgba(255,255,255,.95)"; g.lineCap = "round";
+    linha(-1, 0, 1, 0, 3); linha(-1, 1, 1, 1, 3);
+    linha(-1, 0, -1, 1); linha(1, 0, 1, 1); linha(-.8, 0, -.8, 1); linha(.8, 0, .8, 1);
+    linha(-.8, .23, .8, .23); linha(-.8, .77, .8, .77); linha(0, .23, 0, .77);
+    linha(0, 0, 0, .025); linha(0, 1, 0, .975);
+  }
+  function rede() {
+    const a = P(-1.12, .5), b = P(1.12, .5), at = P(-1.12, .5, .13), bt = P(1.12, .5, .13);
+    g.fillStyle = "rgba(20,20,20,.55)"; quad([a, b, bt, at], "rgba(15,15,15,.5)");
+    g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = .6;
+    for (let x = -1.1; x <= 1.1; x += .07) { const p = P(x, .5), q = P(x, .5, .13); g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(q.x, q.y); g.stroke(); }
+    g.strokeStyle = "#fff"; g.lineWidth = 2.4; g.beginPath(); g.moveTo(at.x, at.y); g.lineTo(bt.x, bt.y); g.stroke();
+    g.fillStyle = "#2b2b2b"; g.fillRect(a.x - 2, at.y - 2, 3, a.y - at.y + 2); g.fillRect(b.x - 1, bt.y - 2, 3, b.y - bt.y + 2);
+  }
+  function tenista(o, deCostas) {
+    const p = P(o.x, o.z), s = p.s * 1.25;
+    const perna = Math.sin(o.passo) * 5 * s;
+    g.save(); g.translate(p.x, p.y);
+    // sombra
+    g.fillStyle = "rgba(0,0,0,.28)"; g.beginPath(); g.ellipse(0, 0, 17 * s, 5 * s, 0, 0, 7); g.fill();
+    // pernas
+    g.fillStyle = o.pele; g.fillRect(-7 * s, -20 * s + perna * .3, 5 * s, 18 * s - perna * .3); g.fillRect(2 * s, -20 * s - perna * .3, 5 * s, 18 * s + perna * .3);
+    g.fillStyle = "#fff"; g.fillRect(-8 * s, -3 * s + perna * .3, 7 * s, 4 * s); g.fillRect(1 * s, -3 * s - perna * .3, 7 * s, 4 * s);
+    // short
+    g.fillStyle = o.short; g.fillRect(-9 * s, -27 * s, 18 * s, 10 * s);
+    // camiseta
+    g.fillStyle = o.cor; g.beginPath(); g.roundRect(-10 * s, -46 * s, 20 * s, 21 * s, 4 * s); g.fill();
+    // braço livre
+    g.fillStyle = o.pele; g.fillRect(-13 * s, -43 * s, 4 * s, 15 * s);
+    // cabeça
+    g.fillStyle = o.pele; g.beginPath(); g.arc(0, -53 * s, 7 * s, 0, 7); g.fill();
+    g.fillStyle = o.cabelo; g.beginPath(); g.arc(0, -55 * s, 7 * s, deCostas ? 0 : Math.PI, deCostas ? 7 : 2 * Math.PI); g.fill();
+    g.fillStyle = o.faixa; g.fillRect(-7 * s, -57 * s, 14 * s, 2.6 * s);
+    // braço da raquete + raquete
+    const ang = -0.5 + (o.swing > 0 ? Math.sin((1 - o.swing) * Math.PI) * 2.1 : 0) * (deCostas ? -1 : 1);
+    g.save(); g.translate(10 * s, -42 * s); g.rotate(deCostas ? -ang : ang);
+    g.fillStyle = o.pele; g.fillRect(-2 * s, 0, 4 * s, 14 * s);
+    g.fillStyle = "#222"; g.fillRect(-1.3 * s, 13 * s, 2.6 * s, 9 * s);
+    g.strokeStyle = deCostas ? "#d8f145" : "#4e308a"; g.lineWidth = 2.4 * s; g.beginPath(); g.ellipse(0, 29 * s, 6 * s, 8 * s, 0, 0, 7); g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = .6 * s;
+    for (let i = -4; i <= 4; i += 2) { g.beginPath(); g.moveTo(i * s, 22 * s); g.lineTo(i * s, 36 * s); g.stroke(); g.beginPath(); g.moveTo(-5 * s, (29 + i * 1.3) * s); g.lineTo(5 * s, (29 + i * 1.3) * s); g.stroke(); }
+    g.restore();
+    g.restore();
+  }
+  function desenhaBola() {
+    if (!bola.ativa && estado !== "intervalo") return;
+    const ch = P(bola.x, bola.z), p = P(bola.x, bola.z, bola.h);
+    g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(ch.x, ch.y, 5 * ch.s * 1.3, 2 * ch.s * 1.3, 0, 0, 7); g.fill();
+    const r = 5.5 * p.s * 1.25;
+    g.fillStyle = "#d8f145"; g.beginPath(); g.arc(p.x, p.y, r, 0, 7); g.fill();
+    g.strokeStyle = "#fff"; g.lineWidth = Math.max(.8, r * .25);
+    g.beginPath(); g.arc(p.x - r * 1.1, p.y, r * .8, -1, 1); g.stroke();
+    g.beginPath(); g.arc(p.x + r * 1.1, p.y, r * .8, Math.PI - 1, Math.PI + 1); g.stroke();
+  }
+  function desenha(t) {
+    fundo(t);
+    tenista(ia, false);
+    if (bola.z > .5) desenhaBola();
+    rede();
+    if (bola.z <= .5) desenhaBola();
+    tenista(pl, true);
+    if (performance.now() < flashAte) {
+      g.font = "16px 'Press Start 2P', monospace"; g.textAlign = "center";
+      g.fillStyle = "rgba(10,5,22,.7)"; g.fillRect(40, H / 2 + 26, W - 80, 40);
+      g.fillStyle = flashCor; g.fillText(flashTxt, W / 2, H / 2 + 54);
+    }
+  }
+  function loop(t) {
+    const dt = Math.min(.033, (t - (tAnt || t)) / 1000); tAnt = t;
+    passo(dt); desenha(t);
+    if (!J.hidden) raf = requestAnimationFrame(loop);
+  }
+
+  /* ---------- telas ---------- */
+  function painel(html) { msg.innerHTML = `<div class="j-pain">${html}</div>`; }
+  function inicio() {
+    painel(`<h5>TÊNIS DA<br>GALERA</h5><p>Você é o tenista de <b style="color:#b79cff">roxo</b>, embaixo. Arraste o dedo pra correr até a bola. Bater com a ponta da raquete manda a bola pro canto!</p><p>Devolução vale 10 · ponto 100 · game 500. Você tem 3 bolas.</p><button class="cta bola" id="jIni" type="button">COMEÇAR</button>`);
+    $("jIni").onclick = comeca;
+  }
+  function comeca() {
+    msg.innerHTML = ""; pts = 0; vidas = 3; nivel = 1; eu = 0; cpu = 0; games = 0; ia.vel = .7; ia.x = 0; pl.x = pl.alvo = 0;
+    hud(); saque("eu");
+  }
+  function fim() {
+    estado = "fim"; bola.ativa = false;
+    const nome = Ranking.meuNome();
+    painel(`<h5>GAME OVER</h5><div class="px-num">${String(pts).padStart(5, "0")}</div><p>pontos · ${games} ${games === 1 ? "game" : "games"}</p>
+      <input id="jNome" maxlength="24" placeholder="SEU NOME" autocomplete="nickname">
+      <button class="cta bola" id="jSalvar" type="button">SALVAR NO RANKING</button>
+      <div class="ok-rank px" id="jOk"></div>
+      <button class="cta" id="jDenovo" type="button" style="background:#221a36;box-shadow:none">JOGAR DE NOVO</button>`);
+    $("jNome").value = nome;
+    $("jDenovo").onclick = comeca;
+    $("jSalvar").onclick = async () => {
+      const n = $("jNome").value.trim().replace(/\s+/g, " ");
+      if (n.length < 2) { $("jOk").textContent = "DIGITE SEU NOME"; $("jNome").focus(); return; }
+      if (pts <= 0) { $("jOk").textContent = "FAÇA PONTOS PRIMEIRO!"; return; }
+      const b = $("jSalvar"); b.disabled = true; b.textContent = "SALVANDO...";
+      try {
+        const r = await Ranking.envia(n, pts);
+        if (!r.ok) throw new Error(r.erro);
+        const p = Ranking.posicao(n);
+        $("jOk").textContent = p ? "VOCÊ ESTÁ EM " + p + "º LUGAR!" : "SALVO!";
+        b.textContent = "SALVO ✓";
+        if (p === 1) Confete.solta(2500, 60);
+      } catch (_) { $("jOk").textContent = "SEM CONEXÃO. TENTE DE NOVO"; b.disabled = false; b.textContent = "SALVAR NO RANKING"; }
+    };
+  }
+
+  /* ---------- controles ---------- */
+  const mover = cx => { const r = tela.getBoundingClientRect(); pl.alvo = ((cx - r.left) / r.width - .5) * 2 * 1.35; };
+  tela.addEventListener("pointerdown", e => mover(e.clientX));
+  tela.addEventListener("pointermove", e => mover(e.clientX));
+  tela.addEventListener("touchmove", e => { e.preventDefault(); mover(e.touches[0].clientX); }, { passive: false });
+  const teclas = {};
+  addEventListener("keydown", e => { if (J.hidden) return; if (e.key === "ArrowLeft" || e.key === "ArrowRight") { teclas[e.key] = true; e.preventDefault(); } if (e.key === "Escape") fecha(); });
+  addEventListener("keyup", e => { teclas[e.key] = false; });
+  setInterval(() => { if (J.hidden) return; if (teclas.ArrowLeft) pl.alvo -= .05; if (teclas.ArrowRight) pl.alvo += .05; pl.alvo = Math.max(-1.3, Math.min(1.3, pl.alvo)); }, 16);
+
+  function abre() { J.hidden = false; document.body.style.overflow = "hidden"; encaixa(); estado = "parado"; bola.ativa = false; hud(); inicio(); tAnt = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+  function fecha() { J.hidden = true; document.body.style.overflow = ""; estado = "parado"; cancelAnimationFrame(raf); msg.innerHTML = ""; }
+  $("bJogar").onclick = abre; $("jFechar").onclick = fecha;
+  addEventListener("resize", () => { if (!J.hidden) encaixa(); });
+})();
+
+/* ---------- Confete de bolinhas de tênis ---------- */
+const Confete = (() => {
+  const c = $("confete"), x = c.getContext("2d");
+  let ps = [], ate = 0, rodando = false;
+  const tam = () => { const d = Math.min(devicePixelRatio || 1, 2); c.width = innerWidth * d; c.height = innerHeight * d; x.setTransform(d, 0, 0, d, 0, 0); };
+  tam(); addEventListener("resize", tam);
+  const CORES = ["#d8f145", "#ffffff", "#4e308a", "#067447"];
+  function solta(ms = 2500, n = 60) {
+    if (reduz) return;
+    ate = performance.now() + ms;
+    for (let i = 0; i < n; i++) ps.push({ x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * .5, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, r: 4 + Math.random() * 6, a: Math.random() * 6, va: (Math.random() - .5) * .2, cor: CORES[i % 4], bola: i % 3 === 0 });
+    if (!rodando) { rodando = true; requestAnimationFrame(loop); }
+  }
+  function loop() {
+    x.clearRect(0, 0, innerWidth, innerHeight);
+    ps.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += .05; p.a += p.va;
+      x.save(); x.translate(p.x, p.y); x.rotate(p.a);
+      if (p.bola) {
+        x.fillStyle = "#d8f145"; x.beginPath(); x.arc(0, 0, p.r, 0, 7); x.fill();
+        x.strokeStyle = "#fff"; x.lineWidth = 1.4; x.beginPath(); x.arc(-p.r * 1.1, 0, p.r * .8, -1, 1); x.stroke(); x.beginPath(); x.arc(p.r * 1.1, 0, p.r * .8, Math.PI - 1, Math.PI + 1); x.stroke();
+      } else { x.fillStyle = p.cor; x.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); }
+      x.restore();
+    });
+    ps = ps.filter(p => p.y < innerHeight + 30);
+    if (ps.length) requestAnimationFrame(loop); else { rodando = false; x.clearRect(0, 0, innerWidth, innerHeight); }
+  }
+  return { solta };
+})();
+</script>
+</body>
+</html>
