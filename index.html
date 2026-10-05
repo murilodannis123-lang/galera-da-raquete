@@ -368,6 +368,16 @@ img{display:block;max-width:100%}
 #confOk .cab{margin-bottom:0}
 #confOk .cta{margin-top:10px!important;padding:13px 16px;font-size:17px}
 @media (max-width:360px){.pix-linha b{font-size:20px}.pix-btn{padding:8px 10px;font-size:13px}}
+.brinde{position:relative;display:flex;gap:12px;align-items:center;margin:14px 0 4px;padding:12px 14px;border-radius:16px;
+  background:var(--bola);color:var(--roxo-noite);box-shadow:0 0 0 3px rgba(216,241,69,.25),0 8px 22px rgba(216,241,69,.25);animation:brilhaBrinde 2.4s ease-in-out infinite}
+.brinde::after{content:"";position:absolute;left:34px;bottom:-9px;border:9px solid transparent;border-bottom:0;border-top-color:var(--bola)}
+.brinde svg{flex:0 0 34px;height:34px;color:var(--roxo);animation:balanca 1.8s ease-in-out infinite;transform-origin:50% 90%}
+.brinde b{display:block;font-family:"Press Start 2P",monospace;font-size:12px;letter-spacing:.02em;margin-bottom:5px}
+.brinde span{font-size:14px;line-height:1.35}
+@keyframes brilhaBrinde{50%{box-shadow:0 0 0 6px rgba(216,241,69,.12),0 8px 30px rgba(216,241,69,.45)}}
+@keyframes balanca{25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.hof li:nth-child(1) span:nth-child(3)::after{content:" 🎁";font-family:system-ui,sans-serif}
+.j-brinde{display:block;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(216,241,69,.14);border:1px dashed var(--bola);color:var(--bola);font-weight:700;font-size:13px}
 /* jogo em tela cheia */
 #jogo{position:fixed;inset:0;z-index:55;background:#0b0716;color:#fff;display:flex;flex-direction:column;align-items:center}
 #jogo[hidden]{display:none}
@@ -537,7 +547,7 @@ img{display:block;max-width:100%}
 
   <nav class="atalhos" aria-label="Atalhos" id="atalhos">
     <a class="atalho" href="#enquete" id="atEnq"><svg><use href="#i-trofeu"/></svg>Enquete das Finals</a>
-    <a class="atalho" href="#arcade"><svg><use href="#i-game"/></svg>Jogo de tênis + ranking</a>
+    <a class="atalho" href="#arcade"><svg><use href="#i-game"/></svg>Jogo de tênis · 1º lugar ganha brinde</a>
   </nav>
 
   <!-- ============ ENQUETE ============ -->
@@ -559,6 +569,10 @@ img{display:block;max-width:100%}
   <section class="cartao arcade" aria-labelledby="hArc" id="arcade">
     <span class="etq" style="color:#8cf">Fliperama da galera</span>
     <h3 id="hArc">Tênis da Galera</h3>
+    <div class="brinde" role="note">
+      <svg aria-hidden="true"><use href="#i-trofeu"/></svg>
+      <div><b>Vale brinde!</b><span>Quem estiver em <strong>1º lugar no ranking</strong> no dia da festa ganha um brinde da Galera.</span></div>
+    </div>
     <p class="sub">Quadra de grama, torcida na arquibancada e você contra a CPU. Arraste o dedo pra correr até a bola. Faça pontos e entre no ranking da galera. Você tem 3 bolas.</p>
     <button class="cta bola" id="bJogar" type="button"><svg><use href="#i-game"/></svg>JOGAR AGORA</button>
     <div class="hof">
@@ -1272,6 +1286,7 @@ const Ranking = (() => {
   const ia = { x: 0, z: 1.06, vel: 0.9, swing: 0, passo: 0, cor: "#ffffff", short: "#067447", pele: "#c98c5e", cabelo: "#1e140c", faixa: "#4e308a", erro: 0 };
   const bola = { x: 0, z: 0, h: 0, vx: 0, vz: 0, vh: 0, quem: "eu", quiques: 0, ativa: false };
 
+  const logo = new Image(); logo.src = "logo.png";
   /* torcida (gerada uma vez) */
   const torcida = Array.from({ length: 150 }, (_, i) => ({ x: (i % 30) / 30 * W + Math.random() * 8, y: 34 + Math.floor(i / 30) * 15 + Math.random() * 4,
     c: ["#f2c6a0", "#c98c5e", "#8a5a3c", "#e3a878"][i % 4], r: ["#4e308a", "#ffffff", "#d8f145", "#067447", "#e74c3c", "#3498db"][Math.floor(Math.random() * 6)], f: Math.random() * 6 }));
@@ -1414,14 +1429,25 @@ const Ranking = (() => {
     // muro com faixa
     g.fillStyle = "#0b3d27"; g.fillRect(0, yLim - 22, W, 22);
     g.fillStyle = "#4e308a"; g.fillRect(0, yLim - 22, W, 3);
-    g.font = "bold 10px Oswald, sans-serif"; g.textAlign = "center"; g.fillStyle = "#d8f145";
-    g.fillText("GALERA DA RAQUETE  ·  FINALS 2026  ·  PORTAL DO LAGO", W / 2, yLim - 8);
+    g.font = "bold 10px Oswald, sans-serif"; g.fillStyle = "#d8f145";
+    g.textAlign = "center"; g.fillText("GALERA DA RAQUETE", W * .22, yLim - 8); g.fillText("FINALS 2026", W * .78, yLim - 8);
+    if (logo.complete && logo.naturalWidth) {
+      const d = 46;   // logo no centro do muro, como placa
+      g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = 6; g.shadowOffsetY = 2;
+      g.drawImage(logo, W / 2 - d / 2, yLim - 22 - d / 2 + 6, d, d); g.restore();
+    }
     // grama em volta
     g.fillStyle = "#0a5233"; g.fillRect(0, yLim, W, H - yLim);
     // faixas da grama (cortada em listras)
     for (let i = 0; i < 12; i++) {
       const z1 = -0.45 + i * .16, z2 = z1 + .16;
       quad([P(-1.9, z1), P(1.9, z1), P(1.9, z2), P(-1.9, z2)], i % 2 ? "#0d6b42" : "#0b6039");
+    }
+    // logo pintado na grama, atrás da linha de base da CPU (em perspectiva)
+    if (logo.complete && logo.naturalWidth) {
+      const a = P(0, 1.22), s = a.s, d = 120 * s;
+      g.save(); g.globalAlpha = .55; g.translate(a.x, a.y); g.scale(1, .42);
+      g.drawImage(logo, -d / 2, -d / 2, d, d); g.restore();
     }
     // linhas
     g.strokeStyle = "rgba(255,255,255,.95)"; g.lineCap = "round";
@@ -1500,7 +1526,7 @@ const Ranking = (() => {
   /* ---------- telas ---------- */
   function painel(html) { msg.innerHTML = `<div class="j-pain">${html}</div>`; }
   function inicio() {
-    painel(`<h5>TÊNIS DA<br>GALERA</h5><p>Você é o tenista de <b style="color:#b79cff">roxo</b>, embaixo. Arraste o dedo pra correr até a bola. Bater com a ponta da raquete manda a bola pro canto!</p><p>Devolução vale 10 · ponto 100 · game 500. Você tem 3 bolas.</p><button class="cta bola" id="jIni" type="button">COMEÇAR</button>`);
+    painel(`<h5>TÊNIS DA<br>GALERA</h5><p>Você é o tenista de <b style="color:#b79cff">roxo</b>, embaixo. Arraste o dedo pra correr até a bola. Bater com a ponta da raquete manda a bola pro canto!</p><p>Devolução vale 10 · ponto 100 · game 500. Você tem 3 bolas.</p><span class="j-brinde">🏆 1º lugar do ranking no dia da festa ganha brinde!</span><button class="cta bola" id="jIni" type="button">COMEÇAR</button>`);
     $("jIni").onclick = comeca;
   }
   function comeca() {
@@ -1526,7 +1552,7 @@ const Ranking = (() => {
         const r = await Ranking.envia(n, pts);
         if (!r.ok) throw new Error(r.erro);
         const p = Ranking.posicao(n);
-        $("jOk").textContent = p ? "VOCÊ ESTÁ EM " + p + "º LUGAR!" : "SALVO!";
+        $("jOk").textContent = p === 1 ? "VOCÊ É O 1º! O BRINDE É SEU... POR ENQUANTO!" : p ? "VOCÊ ESTÁ EM " + p + "º LUGAR! O 1º GANHA BRINDE" : "SALVO!";
         b.textContent = "SALVO ✓";
         if (p === 1) Confete.solta(2500, 60);
       } catch (_) { $("jOk").textContent = "SEM CONEXÃO. TENTE DE NOVO"; b.disabled = false; b.textContent = "SALVAR NO RANKING"; }
