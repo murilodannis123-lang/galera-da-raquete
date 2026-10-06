@@ -390,6 +390,14 @@ img{display:block;max-width:100%}
 @keyframes balanca{25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
 .hof li:nth-child(1) span:nth-child(3)::after{content:" 🎁";font-family:system-ui,sans-serif}
 .j-brinde{display:block;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(216,241,69,.14);border:1px dashed var(--bola);color:var(--bola);font-weight:700;font-size:13px}
+.pix-whats{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#25d366;color:#0b3d22;text-decoration:none;
+  box-shadow:0 8px 20px rgba(37,211,102,.35),inset 0 -3px 0 rgba(0,0,0,.12);min-width:0}
+.pix-whats svg{flex:0 0 34px;width:34px;height:34px;color:#fff}
+.pix-whats span{display:flex;flex-direction:column;min-width:0}
+.pix-whats b{font-family:Oswald,sans-serif;font-size:19px;letter-spacing:.06em;color:#fff;line-height:1.1}
+.pix-whats small{font-size:12.5px;line-height:1.3;color:#0b3d22;font-weight:600;margin-top:3px}
+.pix-whats:active{transform:translateY(1px)}
+.pix-whats.foi{background:#1fa855}
 /* jogo em tela cheia */
 #jogo{position:fixed;inset:0;z-index:55;background:#0b0716;color:#fff;display:flex;flex-direction:column;align-items:center}
 #jogo[hidden]{display:none}
@@ -664,7 +672,10 @@ img{display:block;max-width:100%}
           <div class="pix-linha"><b id="pixChave" tabindex="0"></b><button type="button" id="pixCopiar" class="pix-btn">Copiar chave</button></div>
           <small class="pix-nome">Em nome de <b id="pixNome"></b></small>
         </div>
-        <p class="pix-comp"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Depois de pagar, <b>mande o comprovante no privado</b>.</span></p>
+        <a class="pix-whats" id="pixWhats" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
+          <span><b id="pixWhatsTxt">ENVIAR COMPROVANTE</b><small>Depois de pagar, toque aqui e anexe o print do PIX</small></span>
+        </a>
       </div>
       <button class="cta" type="button" id="okEnq" style="margin-top:16px"><svg><use href="#i-trofeu"/></svg>VOTAR NA ENQUETE</button>
       <button class="cta" type="button" data-fechar style="margin-top:12px;background:var(--creme);color:var(--roxo);box-shadow:none">FECHAR</button>
@@ -705,7 +716,7 @@ const CONFIG = {
     mapa: null             // link do Google Maps
   },
   somVamos: true,          // grito gravado pela galera ao apertar VAMOS!!!
-  pix: { chave: "19997635743", nome: "Daniella Gesualdo" },
+  pix: { chave: "19997635743", nome: "Daniella Gesualdo", whats: "5519997635743" },   // whats: número que recebe os comprovantes
   enquete: false,          // true quando saírem os 8 finalistas de cada categoria (fim de outubro)
   contato: "Dannis",       // nome de quem tira as dúvidas
   whatsContato: null,      // ex.: "5519999999999" (vira botão de WhatsApp)
@@ -1010,7 +1021,23 @@ const Pix = (() => {
     b.textContent = "Chave copiada ✓"; b.classList.add("ok");
     setTimeout(() => { b.textContent = "Copiar chave"; b.classList.remove("ok"); }, 2500);
   };
-  return { valor(v) { $("pixValor").textContent = reais(v); } };
+  // botão "Enviar comprovante": abre o WhatsApp da Daniella com os dados já escritos
+  function comprovante(c) {
+    const linhas = [
+      "Olá, " + X.nome.split(" ")[0] + "! 🎾 Segue o comprovante do PIX da *Festa de Encerramento da Galera da Raquete* (05/12).",
+      "",
+      "*Nome:* " + c.nome,
+      "*Pessoas:* " + c.total + (c.detalhe ? " (" + c.detalhe + ")" : ""),
+      "*Valor:* " + reais(c.valor),
+      "",
+      "📎 Comprovante em anexo:"
+    ];
+    const a = $("pixWhats");
+    a.href = "https://wa.me/" + X.whats + "?text=" + encodeURIComponent(linhas.join("\n"));
+    a.classList.remove("foi"); $("pixWhatsTxt").textContent = "ENVIAR COMPROVANTE";
+    a.onclick = () => { setTimeout(() => { a.classList.add("foi"); $("pixWhatsTxt").textContent = "ABRIR WHATSAPP DE NOVO"; }, 600); };
+  }
+  return { valor(v) { $("pixValor").textContent = reais(v); }, comprovante };
 })();
 
 /* ---------- Confirmação ---------- */
@@ -1049,7 +1076,7 @@ const Pix = (() => {
     Musica.pausaForm();
     $("okTit").textContent = "Sua presença está confirmada!";
     $("okTxt").textContent = c.nome.split(" ")[0] + ", seguem os dados pra pagamento. Te esperamos no sábado, 05/12, às 18h30.";
-    Pix.valor(c.valor); $("pixBox").hidden = false; $("okEspera").hidden = true; $("okDemo").hidden = true;
+    Pix.valor(c.valor); Pix.comprovante(c); $("pixBox").hidden = false; $("okEspera").hidden = true; $("okDemo").hidden = true;
     $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0; f.hidden = false; document.body.style.overflow = "hidden";
   };
   const anterior = ls.get("gr-confirmado");
@@ -1136,10 +1163,17 @@ const Pix = (() => {
         $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
         return;
       }
-      const conf = { nome, total: r.total || pessoas, valor: r.valor ?? valor };
+      const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+      const det = [];
+      if (st.tenista) det.push(plural(st.tenistas, "tenista", "tenistas")); else det.push("1 convidado");
+      if (st.familia) det.push(plural(st.familia, "família", "família"));
+      if (st.amigos) det.push(plural(st.amigos, "amigo", "amigos"));
+      if (st.criancas) det.push(plural(st.criancas, "criança 6-10", "crianças 6-10"));
+      if (st.bebes) det.push(plural(st.bebes, "criança até 5", "crianças até 5"));
+      const conf = { nome, total: r.total || pessoas, valor: r.valor ?? valor, detalhe: det.join(", ") };
       if (!r.demo) { ls.set("gr-confirmado", conf); mostraJa(conf); }
       $("okTit").textContent = "VAMOS!!! Presença confirmada!";
-      Pix.valor(conf.valor);
+      Pix.valor(conf.valor); Pix.comprovante(conf);
       Musica.fraseFinal();
       $("okTxt").textContent = nome.split(" ")[0] + ", " + (pessoas === 1 ? "seu nome está na lista!" : "você e mais " + (pessoas - 1) + (pessoas === 2 ? " pessoa estão" : " pessoas estão") + " na lista!") + " Te esperamos no sábado, 05/12, às 18h30.";
       $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0;
