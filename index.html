@@ -716,7 +716,7 @@ const CONFIG = {
     mapa: null             // link do Google Maps
   },
   somVamos: true,          // grito gravado pela galera ao apertar VAMOS!!!
-  pix: { chave: "19997635743", nome: "Daniella Gesualdo", whats: "5519997635743" },   // whats: número que recebe os comprovantes
+  pix: { chave: "19997635743", nome: "Daniella Gesualdo", whats: "5519996194094" },   // whats: número que recebe os comprovantes
   enquete: false,          // true quando saírem os 8 finalistas de cada categoria (fim de outubro)
   contato: "Dannis",       // nome de quem tira as dúvidas
   whatsContato: null,      // ex.: "5519999999999" (vira botão de WhatsApp)
@@ -1024,7 +1024,7 @@ const Pix = (() => {
   // botão "Enviar comprovante": abre o WhatsApp da Daniella com os dados já escritos
   function comprovante(c) {
     const linhas = [
-      "Olá, " + X.nome.split(" ")[0] + "! 🎾 Segue o comprovante do PIX da *Festa de Encerramento da Galera da Raquete* (05/12).",
+      "Olá! 🎾 Segue o comprovante do PIX da *Festa de Encerramento da Galera da Raquete* (05/12).",
       "",
       "*Nome:* " + c.nome,
       "*Pessoas:* " + c.total + (c.detalhe ? " (" + c.detalhe + ")" : ""),
