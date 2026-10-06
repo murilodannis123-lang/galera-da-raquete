@@ -728,6 +728,16 @@ const CONFIG = {
   }
 };
 
+/* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
+const VERSAO = "202610061625";
+(async () => {
+  try {
+    const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
+    const nova = (await r.text()).trim();
+    if (nova && nova !== VERSAO && !location.search.includes("v=" + nova)) location.replace(location.pathname + "?v=" + nova + location.hash);
+  } catch (_) {}
+})();
+
 /* ---------- sempre abre no começo, com a tela de abertura ---------- */
 try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (_) {}
 scrollTo(0, 0);
