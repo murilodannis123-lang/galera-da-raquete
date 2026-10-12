@@ -729,7 +729,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202610061625";
+const VERSAO = "202610121430";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
@@ -1314,12 +1314,22 @@ const Ranking = (() => {
 /* ---------- Sincronização ao vivo ---------- */
 (() => {
   if (!API.on) return;
-  let falhas = 0;
+  let falhas = 0, tenta = null;
+  // mostra na hora os últimos números que este celular recebeu; se o Google demorar, a tela não fica vazia
+  const CACHE = "gr-estado-cache", guardado = ls.get(CACHE, null);
+  if (guardado && guardado.vagas) {
+    try { Vagas.pinta({ ...guardado.vagas, inicial: true }); Ranking.atualiza(guardado.ranking); Enquete.atualiza(guardado.votos); } catch (_) {}
+  }
   async function puxa() {
+    clearTimeout(tenta);
     try {
       const r = await API.get("estado");
-      if (r.ok) { Vagas.pinta(r.vagas); Enquete.atualiza(r.votos); Ranking.atualiza(r.ranking); Enquete.vivo(true); falhas = 0; }
-    } catch (_) { falhas++; Enquete.vivo(false); }
+      if (r.ok) {
+        Vagas.pinta(r.vagas); Enquete.atualiza(r.votos); Ranking.atualiza(r.ranking); Enquete.vivo(true); falhas = 0;
+        const { minha, ...vagas } = r.vagas || {};
+        ls.set(CACHE, { vagas, ranking: r.ranking, votos: r.votos, em: Date.now() });
+      }
+    } catch (_) { falhas++; Enquete.vivo(false); if (falhas <= 3) tenta = setTimeout(puxa, 4000); }   // falhou: tenta de novo logo
   }
   puxa();
   setInterval(() => { if (!document.hidden && $("jogo").hidden) puxa(); }, 12000);
