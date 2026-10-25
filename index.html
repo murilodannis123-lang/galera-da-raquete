@@ -729,7 +729,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202610121430";
+const VERSAO = "202610251035";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
@@ -1308,6 +1308,15 @@ const Ranking = (() => {
   }
   function posicao(nome) { const k = nome.toLowerCase(); return lista.findIndex(x => x.nome.toLowerCase() === k) + 1; }
   pinta();
+  // pontuações que não conseguiram ser salvas: tenta de novo quando o convite abre
+  setTimeout(async () => {
+    if (!API.on) return;
+    let fila = ls.get("gr-pontos-pendentes", []);
+    for (const it of fila.slice()) {
+      try { const r = await envia(it.nome, it.pontos); if (r && r.ok) fila = fila.filter(x => x !== it); } catch (_) {}
+    }
+    ls.set("gr-pontos-pendentes", fila);
+  }, 4000);
   return { atualiza, envia, posicao, meuNome };
 })();
 
@@ -1621,7 +1630,12 @@ const Ranking = (() => {
         $("jOk").textContent = p === 1 ? "VOCÊ É O 1º! O BRINDE É SEU... POR ENQUANTO!" : p ? "VOCÊ ESTÁ EM " + p + "º LUGAR! O 1º GANHA BRINDE" : "SALVO!";
         b.textContent = "SALVO ✓";
         if (p === 1) Confete.solta(2500, 60);
-      } catch (_) { $("jOk").textContent = "SEM CONEXÃO. TENTE DE NOVO"; b.disabled = false; b.textContent = "SALVAR NO RANKING"; }
+      } catch (e) {
+        // mostra o motivo de verdade (antes todo erro aparecia como "sem conexão")
+        const msg = e && e.message && e.message !== "Failed to fetch" && !/tempo|offline/i.test(e.message) ? e.message.toUpperCase() : "SEM CONEXÃO. TENTE DE NOVO";
+        $("jOk").textContent = msg; b.disabled = false; b.textContent = "SALVAR NO RANKING";
+        try { const fila = ls.get("gr-pontos-pendentes", []); fila.push({ nome: n, pontos: pts, quando: Date.now() }); ls.set("gr-pontos-pendentes", fila.slice(-5)); } catch (_) {}
+      }
     };
   }
 
