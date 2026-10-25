@@ -633,33 +633,36 @@ function abertura(forcar) {
   el.innerHTML = bolas.map((b) => `<span class="intro-bola" style="left:${b.x}%;top:${b.y}%;animation-duration:${b.dur.toFixed(2)}s;animation-delay:${b.ini.toFixed(2)}s">${BOLA(b.t)}</span>`).join('')
     + `<div class="intro-logo"><img src="icones/logo.png" alt=""></div><div class="intro-txt"><b class="cond" style="font-size:13px;letter-spacing:4px;color:var(--bola)">PORTAL DO LAGO</b><div class="cond" style="font-size:30px;font-weight:800">Open de Tênis</div></div>`;
   document.body.appendChild(el);
-  somQuique(bolas, el);
+  somQuique(el);
   setTimeout(() => el.classList.add('sai'), 2800);
   setTimeout(() => el.remove(), 3600);
 }
-// som das bolinhas quicando, feito na hora (sem arquivo). O navegador só libera som depois de um toque:
+// som de uma bolinha quicando, feito na hora (sem arquivo). O navegador só libera som depois de um toque:
 // se ainda estiver bloqueado, toca no primeiro toque durante a abertura (ou ao tocar no logo pra rever).
-function somQuique(bolas, intro) {
+function somQuique(intro) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   let ctx; try { ctx = new AC(); } catch (e) { return; }
-  const ruido = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.05), ctx.sampleRate);
-  const d = ruido.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
-  const pok = (t, vol, grave) => {
-    const o = ctx.createOscillator(), g = ctx.createGain();           // corpo da batida
-    o.frequency.setValueAtTime(grave ? 150 : 240 + Math.random() * 80, t); o.frequency.exponentialRampToValueAtTime(grave ? 60 : 110, t + 0.08);
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + (grave ? 0.18 : 0.09));
-    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.2);
-    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), gn = ctx.createGain();   // estalo do feltro
-    n.buffer = ruido; f.type = 'bandpass'; f.frequency.value = grave ? 700 : 1400 + Math.random() * 600; gn.gain.value = vol * 0.8;
-    n.connect(f).connect(gn).connect(ctx.destination); n.start(t);
+  // uma bolinha só, quicando devagar junto com o logo: batida grave e abafada, cada quique mais fraco
+  const ruido = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.03), ctx.sampleRate);
+  const d = ruido.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
+  const saida = ctx.createBiquadFilter(); saida.type = 'lowpass'; saida.frequency.value = 3200; saida.connect(ctx.destination);
+  const pok = (t, vol) => {
+    // corpo oco da bola, agudo o bastante pra sair no alto-falante do celular
+    [[420, 300, 1, 0.12], [900, 700, 0.35, 0.04]].forEach(([f1, f2, k, dur]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * k, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(saida); o.start(t); o.stop(t + dur + 0.02);
+    });
+    const n = ctx.createBufferSource(), gn = ctx.createGain();          // toque do feltro na quadra
+    n.buffer = ruido; gn.gain.value = vol * 0.5; n.connect(gn).connect(saida); n.start(t);
   };
   const tocar = () => {
     if (!intro.isConnected || intro.classList.contains('sai')) return ctx.close();
     const t0 = ctx.currentTime + 0.02;
-    // quiques aos 45%, 75% e 100% da animação, cada um mais fraco
-    bolas.forEach((b) => [[0.45, 0.16], [0.75, 0.07], [1, 0.03]].forEach(([p, v]) => pok(t0 + b.ini + b.dur * p, v, false)));
-    [[0.45, 0.5], [0.75, 0.25], [1, 0.1]].forEach(([p, v]) => pok(t0 + 1.6 * p, v, true));   // o logo
+    // 4 quiques lentos, nos mesmos tempos do logo (35%, 60%, 78% e 92% dos 2,4 s da animação)
+    [[0.35, 0.5], [0.6, 0.34], [0.78, 0.22], [0.92, 0.12]].forEach(([p, v]) => pok(t0 + 2.4 * p, v));
     setTimeout(() => ctx.close(), 4000);
   };
   let foi = false; const uma = () => { if (!foi && ctx.state === 'running') { foi = true; tocar(); } };
