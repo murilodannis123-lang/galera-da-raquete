@@ -287,31 +287,41 @@ async function telaPlacar(id) {
     <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fechado ? 'Prazo encerrado. Agora só a coordenação pode alterar este placar.' : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Cada correção fica registrada.'}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="set"><span></span><b style="text-align:center;font-size:13px">${esc(a.nome)}</b><b style="text-align:center;font-size:13px">${esc(b.nome)}</b></div>
-      ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 30 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
+      ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
         <input class="campo" name="a${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[0] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(a.nome)}" ${fechado ? 'disabled' : ''}>
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
-      <span class="dica"><b style="color:var(--verm)">Tie-break</b> só se der 1×1 nos sets (ex.: 10/8). Pontos: 2×0 = 25/5 · 2×1 = 20/10.</span>
+      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9). Pontos: 2×0 = 25/5 · 2×1 = 20/10.</span>
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
     <p id="placar-msg" role="status"></p>
   </form>`;
 }
+// tie-break só abre quando cada um venceu um set
+function empatou(form) {
+  const v = [0, 1].map((i) => [Number(form['a' + i].value), Number(form['b' + i].value)]);
+  return form.a0.value !== '' && form.b0.value !== '' && form.a1.value !== '' && form.b1.value !== '' &&
+    v.every(([x, y]) => M.setValido(x, y, false)) && (v[0][0] > v[0][1]) !== (v[1][0] > v[1][1]);
+}
 function lerSets(form) {
   const sets = [];
   for (let i = 0; i < 3; i++) {
-    const x = form['a' + i].value, y = form['b' + i].value;
+    const x = form['a' + i].value, y = form['b' + i].value, nome = i === 2 ? 'tie-break' : (i + 1) + 'º set';
     if (x === '' && y === '') continue;
-    if (x === '' || y === '') return { erro: 'Preencha os dois lados do ' + (i + 1) + 'º set.' };
+    if (x === '' || y === '') return { erro: 'Preencha os dois lados do ' + nome + '.' };
+    if (!M.setValido(Number(x), Number(y), i === 2)) return { erro: i === 2 ? 'Tie-break vai até ' + M.TB + ' com 2 pontos de diferença (ex.: ' + M.TB + '×8, 11×9).' : 'O ' + nome + ' não pode terminar ' + x + '×' + y + '. Vale 6×0 a 6×4, 7×5 ou 7×6.' };
     sets.push([Number(x), Number(y)]);
   }
-  try { return { sets, r: M.resultado(sets) }; } catch (e) { return { sets, erro: 'Placar incompleto ou inválido.' }; }
+  try { return { sets, r: M.resultado(sets) }; } catch (e) { return { sets, erro: sets.length === 2 ? 'Deu 1×1 nos sets: falta o tie-break.' : 'Placar incompleto.' }; }
 }
 function previaPlacar(form) {
   const el = document.getElementById('previa'); if (!el) return;
   const g = S.jogos.find((x) => x.id === form.dataset.id) || {};
+  const abre = empatou(form);
+  ['a2', 'b2'].forEach((k) => { if (!abre) form[k].value = ''; form[k].disabled = !abre || form.a0.disabled; form[k].closest('.set').style.opacity = abre ? '1' : '.45'; });
   const { r, erro } = lerSets(form);
-  if (erro || !r) { el.innerHTML = '<b class="cond" style="font-size:20px">Resultado: incompleto</b>'; return; }
+  const meio = form.a1.value !== '' && form.b1.value !== '';
+  if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
   const ven = porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
   el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${Math.max(r.ptsA, r.ptsB)} / +${Math.min(r.ptsA, r.ptsB)} pts${pneu ? ' · PNEU 6×0' : ''}</div>`;
@@ -452,7 +462,7 @@ function telaAdmin() {
     <section class="card" style="display:flex;flex-direction:column;gap:10px">
       <b class="cond" style="font-size:20px">${mes ? 'Mês aberto: ' + nomeMes(mes.id) : 'Nenhum mês aberto'}</b>
       ${mes ? `<span class="dica">${S.jogos.filter((g) => g.sets).length} placares · ${pend.length} pendentes · ${S.jogos.filter((g) => !g.jogador_b).length} standby</span>
-        ${S.admin.confirmar ? `<div class="card" style="border:2px solid var(--roxo)"><b>Rodar ${nomeMes(mes.id)} agora?</b><p class="dica" style="margin:6px 0 10px">${pend.length ? pend.length + ' jogo(s) sem placar vão ficar com 0 pontos para os dois (regra 2.4).' : 'Todos os jogos têm placar.'} Depois abre ${nomeMes(proxMes(mes.id))} com os novos confrontos.</p>
+        ${S.admin.confirmar ? `<div class="card" style="border:2px solid var(--roxo)"><b>Rodar ${nomeMes(mes.id)} agora?</b><p class="dica" style="margin:6px 0 10px">Depois abre ${nomeMes(proxMes(mes.id))} com os novos confrontos.</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="cancelarRodar">Segurar mês</button><button class="btn btn-roxo" data-acao="rodar">Confirmar</button></div></div>`
         : `<button class="btn btn-roxo" data-acao="pedirRodar">Rodar ${nomeMes(mes.id)} e abrir ${nomeMes(proxMes(mes.id))}</button><span class="dica">Nada roda sozinho. Pode segurar o mês o quanto precisar.</span>`}`
       : `<label class="rot">Mês<input class="campo" id="novoMes" type="month" value="${sugestao}"></label><button class="btn btn-roxo" data-acao="abrirMes">Abrir mês e gerar confrontos</button>`}
@@ -619,11 +629,46 @@ function abertura(forcar) {
   try { if (!forcar && sessionStorage.getItem('abertura')) return; sessionStorage.setItem('abertura', '1'); } catch (e) { /* sem storage: mostra mesmo */ }
   let sem = 7; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
   const el = document.createElement('div'); el.className = 'intro'; el.setAttribute('aria-hidden', 'true');
-  el.innerHTML = Array.from({ length: 26 }, (_, i) => `<span class="intro-bola" style="left:${Math.round(rnd() * 92)}%;top:${Math.round(10 + rnd() * 80)}%;animation-duration:${(1.1 + rnd() * 0.6).toFixed(2)}s;animation-delay:${(i * 0.06 + rnd() * 0.3).toFixed(2)}s">${BOLA(Math.round(14 + rnd() * 18))}</span>`).join('')
+  const bolas = Array.from({ length: 26 }, (_, i) => ({ x: Math.round(rnd() * 92), y: Math.round(10 + rnd() * 80), dur: 1.1 + rnd() * 0.6, ini: i * 0.06 + rnd() * 0.3, t: Math.round(14 + rnd() * 18) }));
+  el.innerHTML = bolas.map((b) => `<span class="intro-bola" style="left:${b.x}%;top:${b.y}%;animation-duration:${b.dur.toFixed(2)}s;animation-delay:${b.ini.toFixed(2)}s">${BOLA(b.t)}</span>`).join('')
     + `<div class="intro-logo"><img src="icones/logo.png" alt=""></div><div class="intro-txt"><b class="cond" style="font-size:13px;letter-spacing:4px;color:var(--bola)">PORTAL DO LAGO</b><div class="cond" style="font-size:30px;font-weight:800">Open de Tênis</div></div>`;
   document.body.appendChild(el);
+  somQuique(bolas, el);
   setTimeout(() => el.classList.add('sai'), 2800);
   setTimeout(() => el.remove(), 3600);
+}
+// som das bolinhas quicando, feito na hora (sem arquivo). O navegador só libera som depois de um toque:
+// se ainda estiver bloqueado, toca no primeiro toque durante a abertura (ou ao tocar no logo pra rever).
+function somQuique(bolas, intro) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  let ctx; try { ctx = new AC(); } catch (e) { return; }
+  const ruido = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.05), ctx.sampleRate);
+  const d = ruido.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+  const pok = (t, vol, grave) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();           // corpo da batida
+    o.frequency.setValueAtTime(grave ? 150 : 240 + Math.random() * 80, t); o.frequency.exponentialRampToValueAtTime(grave ? 60 : 110, t + 0.08);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + (grave ? 0.18 : 0.09));
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.2);
+    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), gn = ctx.createGain();   // estalo do feltro
+    n.buffer = ruido; f.type = 'bandpass'; f.frequency.value = grave ? 700 : 1400 + Math.random() * 600; gn.gain.value = vol * 0.8;
+    n.connect(f).connect(gn).connect(ctx.destination); n.start(t);
+  };
+  const tocar = () => {
+    if (!intro.isConnected || intro.classList.contains('sai')) return ctx.close();
+    const t0 = ctx.currentTime + 0.02;
+    // quiques aos 45%, 75% e 100% da animação, cada um mais fraco
+    bolas.forEach((b) => [[0.45, 0.16], [0.75, 0.07], [1, 0.03]].forEach(([p, v]) => pok(t0 + b.ini + b.dur * p, v, false)));
+    [[0.45, 0.5], [0.75, 0.25], [1, 0.1]].forEach(([p, v]) => pok(t0 + 1.6 * p, v, true));   // o logo
+    setTimeout(() => ctx.close(), 4000);
+  };
+  let foi = false; const uma = () => { if (!foi && ctx.state === 'running') { foi = true; tocar(); } };
+  if (ctx.state === 'running') return uma();
+  ctx.onstatechange = uma;
+  const libera = () => { document.removeEventListener('pointerdown', libera, true); ctx.resume().catch(() => {}); };
+  document.addEventListener('pointerdown', libera, true);
+  ctx.resume().catch(() => {});
+  setTimeout(() => { document.removeEventListener('pointerdown', libera, true); if (!foi && ctx.state !== 'closed') ctx.close(); }, 2800);
 }
 function fogos() {
   const cores = ['#D8F145', '#FF6B6B', '#4FC3F7', '#FFD54F', '#B388FF'];

@@ -1,8 +1,18 @@
 // Motor do ranking — regras do regulamento 01-2025
 // 7.1: 2x0 = 25 / 5 · 2x1 = 20 / 10 · 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois
 // 7.1.4 desempate: pontos, vitórias, saldo de sets, saldo de games, average (games pró ÷ contra)
+// set normal: 6×0 a 6×4, 7×5 ou 7×6 · tie-break (só no 1×1): até 10, vencendo por 2 (10×8, 11×9, 12×10…)
+export const TB = 10;
+export function setValido(x, y, tieBreak) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x === y) return false;
+  const mx = Math.max(x, y), mn = Math.min(x, y);
+  if (tieBreak) return mx >= TB && mx - mn >= 2 && (mx === TB || mx - mn === 2);
+  return (mx === 6 && mn <= 4) || (mx === 7 && (mn === 5 || mn === 6));
+}
 export function resultado(sets) {
   let a = 0, b = 0, ga = 0, gb = 0;
+  if (!Array.isArray(sets) || sets.length < 2 || sets.length > 3) throw new Error('placar inválido: ' + JSON.stringify(sets));
+  sets.forEach(([x, y], i) => { if (!setValido(x, y, i === 2)) throw new Error('placar inválido: ' + JSON.stringify(sets)); });
   // 3º set = tie-break: no saldo de games conta só 1 game pra quem venceu (shortcut: confirmar com a coordenação)
   sets.forEach(([x, y], i) => {
     if (i === 2) { ga += x > y ? 1 : 0; gb += y > x ? 1 : 0; } else { ga += x; gb += y; }
