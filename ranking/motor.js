@@ -1,13 +1,13 @@
 // Motor do ranking — regras do regulamento 01-2025
-// Pontos como o Ranking Online calcula na prática (conferido com 3 jogos reais em 26/10/2026):
-//   vencedor = 23 + saldo de games dele · perdedor = 17 + saldo de games dele (os dois somam 40)
+// Pontos (regra da coordenação, igual ao Ranking Online; conferida com 3 jogos reais em 26/10/2026):
+//   vencedor = 35 − games que perdeu · perdedor = 5 + games que ganhou · vale para 2×0 e 2×1
 //   ex.: 6/0 6/0 → 35 e 5 · 6/2 6/2 → 31 e 9 · 5/7 7/5 6/10 → 23 e 17
 //   o tie-break conta como set, mas os pontos dele não entram nos games
 // 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois · 2.6: WO = 35 (como 6/0 6/0) e 0 pra quem deu o WO
 // 7.1.4 desempate: pontos, vitórias, saldo de sets, saldo de games, average (games pró ÷ contra)
 // set normal: 6×0 a 6×4, 7×5 ou 7×6 · tie-break (só no 1×1): até 10, vencendo por 2 (10×8, 11×9, 12×10…)
 export const TB = 10;
-export const PONTOS = { vitoria: 23, derrota: 17 };
+export const PONTOS = { vitoria: 35, derrota: 5 };
 export function setValido(x, y, tieBreak) {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x === y) return false;
   const mx = Math.max(x, y), mn = Math.min(x, y);
@@ -25,7 +25,8 @@ export function resultado(sets) {
   });
   if (!((a === 2 && b <= 1) || (b === 2 && a <= 1))) throw new Error('placar inválido: ' + JSON.stringify(sets));
   const aV = a > b;
-  return { aVenceu: aV, ptsA: (aV ? PONTOS.vitoria : PONTOS.derrota) + (ga - gb), ptsB: (aV ? PONTOS.derrota : PONTOS.vitoria) + (gb - ga), setsA: a, setsB: b, gamesA: ga, gamesB: gb };
+  // vencedor perde 1 ponto por game que levou; perdedor ganha 1 ponto por game que fez
+  return { aVenceu: aV, ptsA: aV ? PONTOS.vitoria - gb : PONTOS.derrota + ga, ptsB: aV ? PONTOS.derrota + gb : PONTOS.vitoria - ga, setsA: a, setsB: b, gamesA: ga, gamesB: gb };
 }
 export function jogador(id, nome, grupo, tp) {
   return { id, nome, grupo, tp: tp || 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 };
@@ -53,7 +54,7 @@ export function rodarMes(lista, jogos, standbyIds) {
     if (g.woDe) {
       const L = porId[g.woDe], W = porId[g.woDe === g.a ? g.b : g.a];
       if (!L || !W) continue;
-      W.tp += PONTOS.vitoria + 12; W.vi++; W.sp += 2; W.gp += 12;   // conta como 6/0 6/0: 35 pontos (igual ao Ranking Online)
+      W.tp += PONTOS.vitoria; W.vi++; W.sp += 2; W.gp += 12;   // conta como 6/0 6/0: 35 pontos (igual ao Ranking Online)
       L.de++; L.sc += 2; L.gc += 12;
       continue;
     }
