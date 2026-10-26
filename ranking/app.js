@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026203957';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026203957';
-import { REGULAMENTO } from './regulamento.js?v=20261026203957';
-import { PRIVACIDADE } from './privacidade.js?v=20261026203957';
+import * as M from './motor.js?v=20261026204122';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026204122';
+import { REGULAMENTO } from './regulamento.js?v=20261026204122';
+import { PRIVACIDADE } from './privacidade.js?v=20261026204122';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -603,7 +603,8 @@ function chaveSVG({ sf, fin, campeao, titulo }) {
 const ABA_TORNEIO = (t) => `<div style="background:#2A1650;padding:0 16px 8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1.4fr">${[['finals', 'FINALS'], ['duplas', '10º DUPLAS']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${t === v}" data-acao="torneio" data-v="${v}">${r}</button>`).join('')}</div></div>`;
 function telaDuplas() {
   return voltar('Torneios', '10º Torneio de Duplas Portal do Lago') + ABA_TORNEIO('duplas') + `<div class="conteudo">
-    <section class="card" style="background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
+    <section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
+      <img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">
       ${TROFEU(56)}
       <small style="color:var(--bola);font-weight:700;letter-spacing:2px">TORNEIO DE DUPLAS</small>
       <b class="cond" style="font-size:30px;line-height:1.1">10ª edição</b>
