@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026102338';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026102338';
-import { REGULAMENTO } from './regulamento.js?v=20261026102338';
-import { PRIVACIDADE } from './privacidade.js?v=20261026102338';
+import * as M from './motor.js?v=20261026102805';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026102805';
+import { REGULAMENTO } from './regulamento.js?v=20261026102805';
+import { PRIVACIDADE } from './privacidade.js?v=20261026102805';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,6 +38,13 @@ const porId = (id) => S.jogadores.find((j) => j.id === id);
 function listaGeral() {
   return S.jogadores.filter((j) => j.ativo && j.joga)
     .sort((a, b) => (a.posicao ?? 9999) - (b.posicao ?? 9999) || b.tp - a.tp || a.nome.localeCompare(b.nome));
+}
+// pontuação ao vivo (como o Ranking Online): pontos gravados + os jogos do mês aberto que já têm placar ou WO.
+// Ao rodar o mês esses jogos passam a fazer parte dos pontos gravados (não conta duas vezes).
+function rankingVivo() {
+  const jogos = S.mesAtual ? S.jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets))
+    .map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })) : [];
+  return M.rodarMes(listaGeral(), jogos, []);
 }
 function posicoes() {
   const geral = {}, grupo = {};
@@ -225,7 +232,7 @@ function faixa() {
   const itens = [];
   (S.niver || []).forEach((j) => itens.push(['ANIVERSARIANTE DO DIA', 'Parabéns, ' + j.nome + '!']));
   const { geral } = posicoes();
-  const lider = listaGeral()[0];
+  const lider = rankingVivo()[0];
   const jl = lider && S.jogos.find((g) => g.sets && (g.jogador_a === lider.id || g.jogador_b === lider.id));
   if (jl && vencedor(jl) === lider.id) itens.push(['LÍDER VENCEU', lider.nome + ' venceu o jogo do mês']);
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
@@ -236,7 +243,8 @@ function faixa() {
 
 function slides() {
   const lista = S.patros.map((p) => ({ tipo: 'p', ...p }));
-  const tops = ['A', 'B', 'C', 'D'].map((g) => ({ tipo: 't', g, js: (g === 'D' ? listaGeral() : listaGeral().filter((j) => j.grupo === g)).slice(0, 4) })).filter((t) => t.js.length);
+  const vivo = rankingVivo();
+  const tops = ['A', 'B', 'C', 'D'].map((g) => ({ tipo: 't', g, js: (g === 'D' ? vivo : vivo.filter((j) => j.grupo === g)).slice(0, 4) })).filter((t) => t.js.length);
   const out = []; let t = 0;
   lista.forEach((p, i) => { out.push(p); if (i % 2 === 1 && tops[t]) out.push(tops[t++]); });
   while (tops[t]) out.push(tops[t++]);
@@ -254,7 +262,8 @@ function renderCarrossel() {
 
 function telaRanking() {
   const aba = S.abaRk, geral = aba === 'D';
-  const lista = geral ? listaGeral() : listaGeral().filter((j) => j.grupo === aba);
+  const vivo = rankingVivo();
+  const lista = geral ? vivo : vivo.filter((j) => j.grupo === aba);
   return voltar('Ranking', geral ? 'Dynamics · todos juntos, jogos pelo geral' : 'Grupo ' + aba + ' · 8 primeiros vão ao Finals') + `
   <div style="background:#2A1650;padding:0 16px 14px"><div class="abas" role="tablist" style="grid-template-columns:1.4fr 1fr 1fr 1fr">
     ${[['D', 'DYNAMICS'], ['A', 'A'], ['B', 'B'], ['C', 'C']].map(([id, r]) => `<button class="aba" role="tab" aria-selected="${aba === id}" data-acao="abaRk" data-v="${id}">${r}</button>`).join('')}
@@ -498,7 +507,7 @@ function telaFinals() {
     ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
   if (!fz) {
-    const top = listaGeral().filter((j) => j.grupo === aba).slice(0, 8);
+    const top = rankingVivo().filter((j) => j.grupo === aba).slice(0, 8);
     return voltar('Finals ' + ano, 'Os 8 melhores de cada grupo') + abas + `<div class="conteudo">
       <div class="card" style="font-size:13px;line-height:1.45">A coordenação monta o Finals quando o ranking fechar. Chave 1: 1º, 3º, 6º e 8º · Chave 2: 2º, 4º, 5º e 7º. Todos contra todos, os 2 melhores de cada chave cruzam na semifinal.</div>
       ${tit('Classificados até agora')}
