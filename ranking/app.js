@@ -559,7 +559,7 @@ function telaAdmin() {
       <button class="btn btn-roxo" type="submit">Publicar</button></form>
     <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>
       ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
-        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ' <span class="tag" style="background:#FDECEC;color:var(--verm)">INATIVO</span>'}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
+        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ` <span class="tag" style="background:#FDECEC;color:var(--verm)">FORA DO RANKING</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="reativar" data-id="${j.id}">Voltar ao ranking</button>`}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
         <select class="campo" style="width:64px;height:40px;padding:0 6px" data-acao="grupo" data-id="${j.id}" aria-label="Grupo de ${esc(j.nome)}">${['A', 'B', 'C'].map((g) => `<option ${g === j.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select>
         <button class="btn btn-linha" style="height:40px;padding:0 8px;font-size:11px" data-acao="resetSenha" data-id="${j.id}" title="Volta a senha para ${SENHA_INICIAL}">Senha</button>
         <button class="switch" role="switch" aria-checked="${j.admin}" data-acao="admin" data-id="${j.id}" aria-label="Admin: ${esc(j.nome)}" ${j.dono ? 'disabled' : ''}><i></i></button>
@@ -689,6 +689,10 @@ const ACOES = {
   finEncerrar: (el) => comTrava('Lançando bônus…', async () => { S.admin.finConf = null; await finEncerrar(el.dataset.v); }, 'Finals encerrado e bônus no ranking.'),
   finApagar: (el) => comTrava('', () => finApagar(el.dataset.v), 'Finals apagado.'),
   resetSenha: (el) => comTrava('', async () => { const r = await sb.rpc('admin_resetar_senha', { p_jogador: el.dataset.id }); if (r.error) throw r.error; }, 'Senha voltou para ' + SENHA_INICIAL + '.'),
+  // volta com os pontos que tinha, no fim da fila; a coordenação ajusta a posição se precisar (regra 8.2)
+  reativar: (el) => comTrava('', async () => {
+    const r = await sb.from('jogadores').update({ ativo: true, standby: false, posicao: listaGeral().length + 1 }).eq('id', el.dataset.id); if (r.error) throw r.error;
+  }, 'Jogador de volta ao ranking.'),
   recusar: (el) => comTrava('', async () => { const r = await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Inscrição recusada.'),
   atualizar: () => comTrava('', async () => {}, ''),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
