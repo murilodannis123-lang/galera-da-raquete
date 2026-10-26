@@ -313,7 +313,7 @@ async function telaPlacar(id, fin) {
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
         <input class="campo" name="a${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[0] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(a.nome)}" ${fechado ? 'disabled' : ''}>
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
-      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9). Pontos: vencedor 35 − games que perdeu · perdedor 5 + games que ganhou (tie-break não conta games).</span>
+      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9).</span>
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
