@@ -112,6 +112,13 @@ export function chavesFinals(ids) {
   if (ids.length !== 8) throw new Error('O Finals precisa de 8 jogadores por grupo.');
   return ids.map((id, i) => ({ id, seed: i + 1, chave: [1, 2, 1, 2, 2, 1, 2, 1][i] }));
 }
+// sorteio estilo ATP Finals: 1º na Chave 1, 2º na Chave 2; 3º/4º, 5º/6º e 7º/8º são sorteados, um pra cada chave
+export function sortearChaves(ids, rnd = Math.random) {
+  if (ids.length !== 8) throw new Error('O Finals precisa de 8 jogadores por grupo.');
+  const chave = [1, 2];
+  for (let p = 2; p < 8; p += 2) { const c = rnd() < 0.5 ? 1 : 2; chave.push(c, 3 - c); }
+  return ids.map((id, i) => ({ id, seed: i + 1, chave: chave[i] }));
+}
 // todos contra todos dentro da chave (melhor seed primeiro)
 export function todosContraTodos(ids) {
   const pares = [];

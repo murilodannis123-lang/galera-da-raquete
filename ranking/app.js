@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026190355';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026190355';
-import { REGULAMENTO } from './regulamento.js?v=20261026190355';
-import { PRIVACIDADE } from './privacidade.js?v=20261026190355';
+import * as M from './motor.js?v=20261026191657';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026191657';
+import { REGULAMENTO } from './regulamento.js?v=20261026191657';
+import { PRIVACIDADE } from './privacidade.js?v=20261026191657';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,7 +20,7 @@ let sb = null;
 const S = {
   busca: {},
   eu: null, jogadores: [], meses: [], mesAtual: null, jogos: [], avisos: [], patros: [], config: {},
-  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null },
+  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
   finals: [], fvagas: [], fjogos: [], emails: {}, niver: []
 };
 
@@ -529,34 +529,61 @@ function linhaFinals(g, fz) {
     <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${placarHTML(g.sets)}</a>` : placarHTML(g.sets)) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
   </div>`;
 }
+// colunas lado a lado das duas chaves do Finals
+const fzCel = (j, extra = '', ok = false) => `<div class="fz-cel${ok ? ' ok' : ''}">${avatar(j, 28)}<span class="fz-nm">${esc(j ? j.nome : '—')}</span>${extra}</div>`;
+const fzCols = (c1, c2) => `<div class="fz-cols"><section class="fz-col" aria-label="Chave 1"><b class="fz-tit">CHAVE 1</b>${c1}</section><section class="fz-col" aria-label="Chave 2"><b class="fz-tit">CHAVE 2</b>${c2}</section></div>`;
+const fzSorteio = (a, b, pa, pb) => `<div class="fz-sort"><b>SORTEIO</b><br>${pa}º ${esc(a ? a.nome : '—')}<br>ou ${pb}º ${esc(b ? b.nome : '—')}</div>`;
+// colunas de um sorteio (antes de montar): ids na ordem 1º..8º e a chave de cada um
+const fzColsSorteio = (vagas) => fzCols(...[1, 2].map((c) => vagas.filter((v) => v.chave === c).map((v) => fzCel(porId(v.id), `<small>${v.seed}º</small>`)).join('')));
+const fzProj = (rotA, a, rotB, b) => `<div class="card fz-proj"><span><small>${rotA}</small><b>${esc(a ? a.nome : 'a definir')}</b></span><span class="vs-mini" aria-hidden="true"><span class="vs-txt">VS</span></span><span style="text-align:right"><small>${rotB}</small><b>${esc(b ? b.nome : 'a definir')}</b></span></div>`;
+
 function telaFinals() {
-  const ano = anoFinals(), aba = S.abaFin || (S.eu.grupo || 'A');
+  const ano = anoFinals(), aba = S.abaFin || (S.eu.grupo || 'A'), vista = S.vistaFin || 'chave';
   const { fz, vg, js, t, semis, final } = dadosFinals(ano, aba);
-  const abas = `<div style="background:#2A1650;padding:0 16px 14px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1fr 1fr">
-    ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div></div>`;
+  const abas = `<div style="background:#2A1650;padding:0 16px 14px;display:flex;flex-direction:column;gap:8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1fr 1fr">
+    ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div>
+    <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[['chave', 'CHAVEAMENTO'], ['class', 'CLASSIFICAÇÃO']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${vista === v}" data-acao="vistaFin" data-v="${v}">${r}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
-  if (!fz) {
-    const top = rankingVivo().filter((j) => j.grupo === aba).slice(0, 8);
-    return voltar('Finals ' + ano, 'Os 8 melhores de cada grupo') + abas + `<div class="conteudo">
-      <div class="card" style="font-size:13px;line-height:1.45">A coordenação monta o Finals quando o ranking fechar. Chave 1: 1º, 3º, 6º e 8º · Chave 2: 2º, 4º, 5º e 7º. Todos contra todos, os 2 melhores de cada chave cruzam na semifinal.</div>
-      ${tit('Classificados até agora')}
-      ${top.map((j, i) => `<div class="linha-rk fin" style="display:flex;align-items:center;gap:10px"><b class="cond" style="font-size:20px;width:30px;color:var(--verde)">${i + 1}º</b>${avatar(j, 36)}<span style="flex-grow:1;font-weight:600">${esc(j.nome)}</span><span class="tag" style="background:#EFEAF8;color:var(--roxo)">CHAVE ${[1, 2, 1, 2, 2, 1, 2, 1][i]}</span></div>`).join('') || '<p class="dica">Nenhum jogador neste grupo.</p>'}
+  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio')) + abas;
+  const grupo = rankingVivo().filter((j) => j.grupo === aba);
+
+  if (vista === 'class') {
+    const noFinals = new Set(fz ? vg.map((v) => v.jogador) : grupo.slice(0, 8).map((j) => j.id));
+    return cab + `<div class="conteudo">
+      ${grupo.length ? BUSCA('Buscar jogador…') + NADA : ''}
+      <span class="dica">${fz ? 'Verde = está no Finals.' : 'Verde = os 8 primeiros, que vão ao Finals se o ranking fechasse agora.'} TP pontos · V vitórias · D derrotas</span>
+      ${grupo.map((j, i) => { const ok = noFinals.has(j.id); return `<div class="linha-rk${ok ? ' fin' : ''}" ${dn(j.nome)}><div style="display:flex;align-items:center;gap:10px">
+        <b class="cond" style="font-size:20px;width:30px;color:${ok ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 36)}
+        <span style="flex-grow:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}</span>
+        <span class="dica" style="white-space:nowrap">${j.vi}V ${j.de}D</span><b class="cond" style="font-size:20px;color:var(--roxo);min-width:40px;text-align:right">${j.tp}</b></div></div>
+        ${!fz && i === 7 && grupo.length > 8 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador neste grupo.</p>'}
     </div>`;
   }
-  const seed = Object.fromEntries(vg.map((v) => [v.jogador, v.seed]));
-  const tabela = (c) => `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Chave ${c}</b>
-    <div style="display:grid;grid-template-columns:1fr 30px 30px 40px;gap:4px;font-size:11px;color:var(--tinta2);font-weight:700"><span></span><span>J</span><span>V</span><span>PTS</span></div>
-    ${t[c - 1].map((x, i) => { const j = porId(x.id); return `<div style="display:grid;grid-template-columns:1fr 30px 30px 40px;gap:4px;align-items:center;padding:6px;border-radius:10px;${i < 2 ? 'background:#E3F0E8' : ''}">
-      <span style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i + 1}º ${esc(j && j.nome)} <small class="dica">(${seed[x.id]}º)</small></span><span>${x.j}</span><span>${x.vi}</span><b style="color:var(--roxo)">${x.tp}</b></div>`; }).join('')}
-    <small class="dica">Verde = vai pra semifinal</small></section>
-    ${js.filter((g) => g.fase === 'grupos' && g.chave === c).map((g) => linhaFinals(g, fz)).join('')}`;
+
+  if (!fz) {
+    const top = grupo.slice(0, 8);
+    const sorteios = [2, 4, 6].map((k) => fzSorteio(top[k], top[k + 1], k + 1, k + 2)).join('');
+    return cab + `<div class="conteudo">
+      <div class="card" style="font-size:13px;line-height:1.45"><b>Sorteio no estilo ATP Finals.</b> O 1º do grupo vai pra Chave 1 e o 2º pra Chave 2. Os pares 3º/4º, 5º/6º e 7º/8º são sorteados: um de cada par pra cada chave. Todos contra todos dentro da chave; os 2 melhores cruzam na semifinal (1º de uma chave x 2º da outra) e os vencedores fazem a final.</div>
+      ${tit('Como está agora')}
+      ${top.length ? fzCols(fzCel(top[0], '<small>1º</small>') + sorteios, fzCel(top[1], '<small>2º</small>') + sorteios) : '<p class="dica">Nenhum jogador neste grupo.</p>'}
+      <span class="dica">Muda conforme o ranking. O sorteio é feito pela coordenação quando o ranking fechar.</span>
+    </div>`;
+  }
+
+  const col = (c) => t[c - 1].map((x, i) => fzCel(porId(x.id), `<small title="${x.vi} vitórias, ${x.j} jogos">${x.tp}</small>`, i < 2)).join('');
+  const jogosChave = (c) => js.filter((g) => g.fase === 'grupos' && g.chave === c).map((g) => linhaFinals(g, fz)).join('');
+  const ld = (c, k) => (fz.fase === 'grupos' && t[c - 1][k] ? porId(t[c - 1][k].id) : null);
+  const mata = tit('Mata-mata') + (semis.length ? semis.map((g, k) => `<small class="dica">Semifinal ${k + 1}</small>` + linhaFinals(g, fz)).join('')
+      : fzProj('1º da Chave 1', ld(1, 0), '2º da Chave 2', ld(2, 1)) + fzProj('1º da Chave 2', ld(2, 0), '2º da Chave 1', ld(1, 1)))
+    + `<small class="dica">Final</small>` + (final ? linhaFinals(final, fz) : fzProj('Vencedor da Semi 1', null, 'Vencedor da Semi 2', null));
   let campeao = '';
-  if (fz.fase === 'encerrado' && final && final.sets) { const c = porId(M.resultado(final.sets).aVenceu ? final.jogador_a : final.jogador_b); campeao = `<div class="card" style="background:var(--noite);color:#fff;border:0;text-align:center"><small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÃO DO GRUPO ${aba}</small><div class="cond" style="font-size:28px;font-weight:800">${esc(c && c.nome)}</div><small style="color:rgba(255,255,255,.75)">Bônus no ranking: campeão 30 · vice 25 · semifinal 20 · fase de grupos 15</small></div>`; }
-  return voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + FASES[fz.fase]) + abas + `<div class="conteudo">
+  if (fz.fase === 'encerrado' && final && final.sets) { const c = porId(M.resultado(final.sets).aVenceu ? final.jogador_a : final.jogador_b); campeao = `<div class="card" style="background:var(--noite);color:#fff;border:0;text-align:center"><div style="display:flex;justify-content:center">${TROFEU(44)}</div><small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÃO DO GRUPO ${aba}</small><div class="cond" style="font-size:28px;font-weight:800">${esc(c && c.nome)}</div><small style="color:rgba(255,255,255,.75)">Bônus no ranking: campeão 30 · vice 25 · semifinal 20 · fase de grupos 15</small></div>`; }
+  const grupos = tit('Fase de grupos') + fzCols(col(1), col(2)) + `<span class="dica">Número = pontos na chave · verde = vai pra semifinal. Jogo sem placar vale 0 pros dois.</span>`
+    + tit('Jogos da Chave 1') + jogosChave(1) + tit('Jogos da Chave 2') + jogosChave(2);
+  return cab + `<div class="conteudo">
     ${campeao}
-    ${final ? tit('Final') + linhaFinals(final, fz) : ''}
-    ${semis.length ? tit('Semifinais') + semis.map((g) => linhaFinals(g, fz)).join('') : ''}
-    ${tit('Fase de grupos')}${tabela(1)}${tabela(2)}
+    ${fz.fase === 'grupos' ? grupos + mata : mata + grupos}
   </div>`;
 }
 
@@ -634,7 +661,9 @@ function adminFinals() {
         return `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #F0EDF5;padding-top:8px">${cab}
           <span class="dica">Marcados vão ao Finals (${marc.length} de 8). Se um classificado não puder, desmarque e marque o próximo.</span>
           ${lista.slice(0, 14).map((j, i) => `<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" data-fin="${gr}" value="${j.id}" ${marc.includes(j.id) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--roxo)">${i + 1}º ${esc(j.nome)}</label>`).join('')}
-          <button class="btn btn-roxo" data-acao="finMontar" data-v="${gr}" ${marc.length === 8 ? '' : 'disabled'}>Montar Finals do Grupo ${gr}</button></div>`;
+          ${S.admin.sorteio[gr] ? `<b style="font-size:14px;margin-top:4px">Resultado do sorteio</b>${fzColsSorteio(S.admin.sorteio[gr])}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finSortear" data-v="${gr}">Sortear de novo</button><button class="btn btn-roxo" data-acao="finMontar" data-v="${gr}">Confirmar e montar</button></div>`
+          : `<button class="btn btn-roxo" data-acao="finSortear" data-v="${gr}" ${marc.length === 8 ? '' : 'disabled'}>Sortear as chaves do Grupo ${gr}</button><span class="dica">1º na Chave 1, 2º na Chave 2; 3º/4º, 5º/6º e 7º/8º sorteados (estilo ATP Finals). Você vê o resultado antes de confirmar.</span>`}</div>`;
       }
       const feitos = js.filter((g) => g.fase === 'grupos' && g.sets).length, total = js.filter((g) => g.fase === 'grupos').length;
       const conf = S.admin.finConf === gr;
@@ -688,14 +717,18 @@ async function rodarMes(abrirProx = true) {
   if (abrirProx) await abrirMes(proxMes(mes.id));
 }
 async function finMontar(gr) {
-  const ano = ANO(), ordem = listaGeral().map((j) => j.id);
-  const ids = (S.admin.fin[gr] || listaGeral().filter((j) => j.grupo === gr).slice(0, 8).map((j) => j.id)).slice().sort((x, y) => ordem.indexOf(x) - ordem.indexOf(y));
-  const ch = M.chavesFinals(ids);
+  const ano = ANO(), ids = idsFinals(gr);
+  const ch = S.admin.sorteio[gr];
+  if (!ch || ch.map((v) => v.id).join() !== ids.join()) throw new Error('Faça o sorteio de novo: a lista mudou.');
   let r = await sb.from('finals').insert({ ano, grupo: gr, fase: 'grupos' }); if (r.error) throw r.error;
   r = await sb.from('finals_vagas').insert(ch.map((v) => ({ ano, grupo: gr, seed: v.seed, chave: v.chave, jogador: v.id }))); if (r.error) throw r.error;
   const jogos = [1, 2].flatMap((c) => M.todosContraTodos(ch.filter((v) => v.chave === c).map((v) => v.id)).map(([a, b]) => ({ ano, grupo: gr, fase: 'grupos', chave: c, jogador_a: a, jogador_b: b })));
   r = await sb.from('finals_jogos').insert(jogos); if (r.error) throw r.error;
-  delete S.admin.fin[gr];
+  delete S.admin.fin[gr]; delete S.admin.sorteio[gr];
+}
+function idsFinals(gr) {
+  const ordem = listaGeral().map((j) => j.id);
+  return (S.admin.fin[gr] || listaGeral().filter((j) => j.grupo === gr).slice(0, 8).map((j) => j.id)).slice().sort((x, y) => ordem.indexOf(x) - ordem.indexOf(y));
 }
 async function finAvancar(gr, fase) {
   const ano = ANO(), { t, semis } = dadosFinals(ano, gr);
@@ -737,7 +770,9 @@ const ACOES = {
   abertura: () => abertura(true),
   embreve: () => toast('Em breve no app.'),
   abaRk: (el) => { S.abaRk = el.dataset.v; render(); },
+  vistaFin: (el) => { S.vistaFin = el.dataset.v; render(); },
   abaFin: (el) => { S.abaFin = el.dataset.v; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
+  finSortear: (el) => { try { S.admin.sorteio[el.dataset.v] = M.sortearChaves(idsFinals(el.dataset.v)); render(); } catch (e) { toast(e.message); } },
   finMontar: (el) => comTrava('Montando…', () => finMontar(el.dataset.v), 'Finals montado: chaves e jogos criados.'),
   finSemi: (el) => comTrava('', () => finAvancar(el.dataset.v, 'semi'), 'Semifinais geradas.'),
   finFinal: (el) => comTrava('', () => finAvancar(el.dataset.v, 'final'), 'Final gerada.'),
@@ -859,7 +894,7 @@ document.addEventListener('click', (ev) => {
 });
 document.addEventListener('change', (ev) => {
   const el = ev.target;
-  if (el.dataset && el.dataset.fin) { S.admin.fin[el.dataset.fin] = [...document.querySelectorAll(`[data-fin="${el.dataset.fin}"]:checked`)].map((x) => x.value); render(); return; }
+  if (el.dataset && el.dataset.fin) { delete S.admin.sorteio[el.dataset.fin]; S.admin.fin[el.dataset.fin] = [...document.querySelectorAll(`[data-fin="${el.dataset.fin}"]:checked`)].map((x) => x.value); render(); return; }
   if (el.dataset && el.dataset.acao === 'grupo') comTrava('', async () => { const r = await sb.from('jogadores').update({ grupo: el.value }).eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Grupo atualizado.');
 });
 // foto do perfil: corta quadrada, reduz pra 480px e envia pro Storage (pasta do próprio usuário)
