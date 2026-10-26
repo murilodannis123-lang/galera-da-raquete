@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026204122';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026204122';
-import { REGULAMENTO } from './regulamento.js?v=20261026204122';
-import { PRIVACIDADE } from './privacidade.js?v=20261026204122';
+import * as M from './motor.js?v=20261026204440';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026204440';
+import { REGULAMENTO } from './regulamento.js?v=20261026204440';
+import { PRIVACIDADE } from './privacidade.js?v=20261026204440';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,7 +20,7 @@ let sb = null;
 const S = {
   busca: {}, curtidas: {},
   eu: null, jogadores: [], meses: [], mesAtual: null, jogos: [], avisos: [], patros: [], config: {},
-  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, torneio: 'finals', mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
+  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
   finals: [], fvagas: [], fjogos: [], emails: {}, niver: []
 };
 
@@ -30,7 +30,7 @@ function toast(t) {
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
 const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
-const voltar = (titulo, sub) => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="#/" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
+const voltar = (titulo, sub, para = '#/') => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="${para}" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 
 // busca por nome: o texto fica guardado por tela e é reaplicado a cada render
@@ -270,7 +270,7 @@ const MENU = [
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
   { nome: 'Enquetes', ic: IC('<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" fill-opacity=".1"/><rect x="6" y="7" width="9" height="2.4" rx="1.2" fill="currentColor" stroke="none"/><rect x="6" y="11" width="12" height="2.4" rx="1.2" fill="currentColor" fill-opacity=".45" stroke="none"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Preciso falar com a coordenação do ranking.') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
-  { nome: 'Torneios', href: () => '#/finals', ic: TROFEU(26) },
+  { nome: 'Torneios', href: () => '#/torneios', ic: TROFEU(26) },
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
 ];
 
@@ -600,9 +600,18 @@ function chaveSVG({ sf, fin, campeao, titulo }) {
   return `<div class="chave-svg" role="img" aria-label="Chaveamento: ${esc(sf.map((x) => (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}"><svg viewBox="0 0 ${W} 214" width="100%" font-family="Inter,system-ui,sans-serif">${o}</svg></div>`;
 }
 
-const ABA_TORNEIO = (t) => `<div style="background:#2A1650;padding:0 16px 8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1.4fr">${[['finals', 'FINALS'], ['duplas', '10º DUPLAS']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${t === v}" data-acao="torneio" data-v="${v}">${r}</button>`).join('')}</div></div>`;
+// lista de torneios: cada um abre a sua tela
+function telaTorneios() {
+  const ano = anoFinals(), fases = ['A', 'B', 'C'].map((g) => (S.finals.find((x) => x.ano === ano && x.grupo === g) || {}).fase).filter(Boolean);
+  const stFin = !fases.length ? 'Os 8 melhores de cada grupo · aguardando o sorteio' : fases.every((f) => f === 'encerrado') ? 'Encerrado · veja os campeões' : 'Em andamento · ' + FASES[fases.find((f) => f !== 'encerrado')];
+  const cartao = (href, tit, sub, tag, fundo) => `<a class="card tor" href="${href}">${fundo || ''}<span class="tor-ic">${TROFEU(46)}</span><span class="tor-tx"><b class="cond">${tit}</b><small>${sub}</small>${tag ? `<span class="tag" style="background:var(--bola);color:var(--noite);align-self:flex-start;margin-top:4px">${tag}</span>` : ''}</span><span class="tor-seta" aria-hidden="true">›</span></a>`;
+  return voltar('Torneios', 'Portal do Lago Open de Tênis') + `<div class="conteudo">
+    ${cartao('#/finals', 'Finals ' + ano, esc(stFin), '')}
+    ${cartao('#/duplas', '10º Torneio de Duplas', 'Portal do Lago Open de Tênis', 'EM BREVE', '<img class="tor-logo" src="icones/logo.png" alt="" aria-hidden="true">')}
+  </div>`;
+}
 function telaDuplas() {
-  return voltar('Torneios', '10º Torneio de Duplas Portal do Lago') + ABA_TORNEIO('duplas') + `<div class="conteudo">
+  return voltar('10º Torneio de Duplas', 'Portal do Lago Open de Tênis', '#/torneios') + `<div class="conteudo">
     <section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
       <img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">
       ${TROFEU(56)}
@@ -615,14 +624,13 @@ function telaDuplas() {
   </div>`;
 }
 function telaFinals() {
-  if (S.torneio === 'duplas') return telaDuplas();
   const ano = anoFinals(), aba = S.abaFin || (S.eu.grupo || 'A'), vista = S.vistaFin || 'chave';
   const { fz, vg, js, t, semis, final } = dadosFinals(ano, aba);
   const abas = `<div style="background:#2A1650;padding:0 16px 14px;display:flex;flex-direction:column;gap:8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1fr 1fr">
     ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div>
     <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[['chave', 'CHAVEAMENTO'], ['class', 'CLASSIFICAÇÃO']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${vista === v}" data-acao="vistaFin" data-v="${v}">${r}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
-  const cab = voltar('Torneios', 'Finals ' + ano + ' · Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio')) + ABA_TORNEIO('finals') + abas;
+  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas;
   const grupo = rankingVivo().filter((j) => j.grupo === aba);
 
   if (vista === 'class') {
@@ -883,9 +891,8 @@ const ACOES = {
   abertura: () => abertura(true),
   embreve: () => toast('Em breve no app.'),
   abaRk: (el) => { S.abaRk = el.dataset.v; render(); },
-  torneio: (el) => { S.torneio = el.dataset.v; render(); },
   vistaFin: (el) => { S.vistaFin = el.dataset.v; render(); },
-  abaFin: (el) => { S.abaFin = el.dataset.v; S.torneio = 'finals'; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
+  abaFin: (el) => { S.abaFin = el.dataset.v; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
   curtir: async (el) => {
     const id = el.dataset.id, lista = S.curtidas[id] = S.curtidas[id] || [], tinha = lista.includes(S.eu.id);
     if (tinha) lista.splice(lista.indexOf(S.eu.id), 1); else lista.push(S.eu.id);
@@ -1139,6 +1146,8 @@ async function render() {
       : rota === 'jogos' ? await telaJogos()
       : rota === 'placar' ? await telaPlacar(arg)
       : rota === 'fplacar' ? await telaPlacar(arg, true)
+      : rota === 'torneios' ? telaTorneios()
+      : rota === 'duplas' ? telaDuplas()
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
       : rota === 'privacidade' ? telaPrivacidade()
