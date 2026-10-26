@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026191657';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026191657';
-import { REGULAMENTO } from './regulamento.js?v=20261026191657';
-import { PRIVACIDADE } from './privacidade.js?v=20261026191657';
+import * as M from './motor.js?v=20261026192203';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026192203';
+import { REGULAMENTO } from './regulamento.js?v=20261026192203';
+import { PRIVACIDADE } from './privacidade.js?v=20261026192203';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -303,7 +303,7 @@ async function telaJogos() {
   const { geral } = posicoes();
   // ordem da barragem: pela posição do primeiro de cada par; standby no fim
   const jogos = (mes ? await jogosDoMes(mes.id) : []).slice().sort((x, y) => (!x.jogador_b) - (!y.jogador_b) || (geral[x.jogador_a] || 999) - (geral[y.jogador_a] || 999));
-  const pode = (g) => S.eu.admin || (mes.status === 'aberto' && (g.jogador_a === S.eu.id || g.jogador_b === S.eu.id));
+  const pode = (g) => mes.status === 'aberto' && (S.eu.admin || g.jogador_a === S.eu.id || g.jogador_b === S.eu.id);
   return voltar('Jogos do ranking', 'Pelo geral (Dynamics) · bolinha ao lado do nome = traz as bolinhas') + `
   <div style="background:#2A1650;padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff">
     <button class="ic-btn" data-acao="mesVer" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
@@ -336,12 +336,12 @@ async function telaPlacar(id, fin) {
   const fz = fin && S.finals.find((x) => x.ano === g.ano && x.grupo === g.grupo);
   const participa = g.jogador_a === S.eu.id || g.jogador_b === S.eu.id;
   const p = fin ? null : prazo();
-  const fechado = !S.eu.admin && (fin ? !fz || fz.fase !== g.fase : (!mes || mes.status !== 'aberto' || (p && p.dias === 'Prazo encerrado')));
+  const fechado = fin ? !S.eu.admin && (!fz || fz.fase !== g.fase) : (!mes || mes.status !== 'aberto' || (!S.eu.admin && p && p.dias === 'Prazo encerrado'));
   if (!participa && !S.eu.admin) return voltar('Gravar placar') + '<div class="conteudo"><p class="erro">Você só grava o placar do seu jogo.</p></div>';
   const sets = (g.sets || []).concat([[], [], []]).slice(0, 3);
   return voltar('Gravar placar', fin ? 'Finals · Grupo ' + g.grupo + ' · ' + FASES[g.fase] : nomeMes(g.mes)) + `
   <form class="conteudo" data-form="placar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">
-    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? 'Prazo encerrado. Agora só a coordenação pode alterar este placar.' : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Cada correção fica registrada.'}</div>
+    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? (mes && mes.status !== 'aberto' ? 'Mês encerrado. Pra corrigir, a coordenação reabre o mês no Admin.' : 'Prazo encerrado. Agora só a coordenação pode alterar este placar.') : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Cada correção fica registrada.'}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="set"><span></span><b style="text-align:center;font-size:13px">${esc(a.nome)}</b><b style="text-align:center;font-size:13px">${esc(b.nome)}</b></div>
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
@@ -597,7 +597,7 @@ function telaAdmin() {
   const pend = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de);
   const ativos = S.jogadores.filter((j) => j.ativo && j.joga).sort((a, b) => a.nome.localeCompare(b.nome));
   const opcoes = ativos.map((j) => `<option value="${j.id}">${esc(j.nome)}</option>`).join('');
-  const sugestao = mes ? proxMes(mes.id) : mesId(new Date());
+  const ult = S.meses.map((m) => m.id).sort().pop(), sugestao = mes ? proxMes(mes.id) : ult ? proxMes(ult) : mesId(new Date());
   const pends = S.jogadores.filter((j) => j.pendente);
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
     ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição. Ele entra com os pontos de quem estava na posição (regra 5.1).</span>
@@ -617,6 +617,7 @@ function telaAdmin() {
         : `<button class="btn btn-roxo" data-acao="pedirRodar">Encerrar ${nomeMes(mes.id)} e calcular os pontos</button><span class="dica">Os jogos de ${nomeMes(mes.id)} estão valendo. Só encerre depois do prazo (último dia do mês): aí os pontos entram no ranking e você pode abrir o próximo mês. Nada encerra sozinho.</span>`}`
       : `<label class="rot">Mês<input class="campo" id="novoMes" type="month" value="${sugestao}"></label><button class="btn btn-roxo" data-acao="abrirMes">Abrir mês e gerar confrontos</button>`}
     </section>
+    ${cardReabrir()}
     ${pend.length ? `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Ainda sem placar</b>${pend.map((g) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:14px">${esc((porId(g.jogador_a) || {}).nome)} x ${esc((porId(g.jogador_b) || {}).nome)}</span><a class="btn btn-linha" style="height:40px;font-size:12px" href="#/placar/${g.id}">Gravar placar</a></div>`).join('')}</section>` : ''}
     ${mes ? `<form class="card" data-form="addJogo" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Adicionar jogo ao mês</b><span class="dica">Pra quem entrou de última hora ou ficou fora da rodada.</span>
       <label class="rot">Jogador 1<select class="campo" name="a" required><option value="">Escolher…</option>${opcoes}</select></label>
@@ -649,6 +650,33 @@ function telaAdmin() {
   </div>`;
 }
 
+// último mês encerrado pode ser reaberto pra corrigir placar esquecido; depois é só encerrar de novo
+function cardReabrir() {
+  const fech = S.meses.filter((m) => m.status === 'fechado').sort((a, b) => (a.id < b.id ? 1 : -1))[0];
+  if (!fech) return '';
+  const depois = S.meses.filter((m) => m.id > fech.id);
+  const travado = depois.some((m) => m.status === 'fechado') || (depois.length && S.jogos.some((g) => depois.some((m) => m.id === g.mes) && (g.sets || g.wo_de)));
+  const conf = S.admin.reabrir === fech.id;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Corrigir ${nomeMes(fech.id)} (já encerrado)</b>
+    ${travado ? `<span class="dica">Não dá pra reabrir: ${depois.map((m) => nomeMes(m.id)).join(', ')} já tem placar.</span>`
+      : conf ? `<span class="dica">Tira de todo mundo os pontos que ${nomeMes(fech.id)} somou e volta o mês pra "em andamento". Você corrige o placar em Jogos do ranking e depois encerra de novo.${depois.length ? ` <b>${nomeMes(depois[0].id)} (sem placar ainda) será apagado</b> e os confrontos saem de novo quando você abrir.` : ''}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="reabrirCancelar">Voltar</button><button class="btn btn-roxo" data-acao="reabrir" data-v="${fech.id}">Confirmar</button></div>`
+      : `<button class="btn btn-linha" data-acao="reabrirPedir" data-v="${fech.id}">Reabrir ${nomeMes(fech.id)} pra corrigir placar</button><span class="dica">Pra quando alguém esqueceu de gravar ou gravou errado depois de encerrado.</span>`}
+  </section>`;
+}
+async function reabrirMes(id) {
+  const jogos = await jogosDoMes(id, true);
+  const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
+  const validos = jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de }));
+  const nova = M.desfazerMes(listaGeral(), validos, standby).map((j, i) => ({ ...j, posicao: i + 1 }));
+  for (const m of S.meses.filter((x) => x.id > id)) {
+    let r = await sb.from('jogos').delete().eq('mes', m.id); if (r.error) throw r.error;
+    r = await sb.from('meses').delete().eq('id', m.id); if (r.error) throw r.error;
+  }
+  await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
+  const r = await sb.from('meses').update({ status: 'aberto', fechado_em: null }).eq('id', id); if (r.error) throw r.error;
+  S.jogosPorMes = {};
+}
 function adminFinals() {
   const ano = ANO();
   return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Finals ${ano}</b>
@@ -772,6 +800,9 @@ const ACOES = {
   abaRk: (el) => { S.abaRk = el.dataset.v; render(); },
   vistaFin: (el) => { S.vistaFin = el.dataset.v; render(); },
   abaFin: (el) => { S.abaFin = el.dataset.v; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
+  reabrirPedir: (el) => { S.admin.reabrir = el.dataset.v; render(); },
+  reabrirCancelar: () => { S.admin.reabrir = null; render(); },
+  reabrir: (el) => comTrava('Reabrindo…', async () => { S.admin.reabrir = null; await reabrirMes(el.dataset.v); }, 'Mês reaberto: corrija o placar e encerre de novo.'),
   finSortear: (el) => { try { S.admin.sorteio[el.dataset.v] = M.sortearChaves(idsFinals(el.dataset.v)); render(); } catch (e) { toast(e.message); } },
   finMontar: (el) => comTrava('Montando…', () => finMontar(el.dataset.v), 'Finals montado: chaves e jogos criados.'),
   finSemi: (el) => comTrava('', () => finAvancar(el.dataset.v, 'semi'), 'Semifinais geradas.'),

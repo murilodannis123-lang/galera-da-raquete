@@ -82,6 +82,13 @@ export function rodarMes(lista, jogos, standbyIds, h2h) {
   for (const id of standbyIds) if (id) porId[id].tp += 25;
   return ordenar(lista.map((j) => porId[j.id]), h2h);
 }
+// reabrir mês encerrado: tira exatamente o que aquele mês somou (os pontos são só somas) e reordena
+export function desfazerMes(lista, jogos, standbyIds) {
+  const zero = lista.map((j) => ({ ...j, tp: 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 }));
+  const soma = Object.fromEntries(rodarMes(zero, jogos, standbyIds).map((j) => [j.id, j]));
+  const K = ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc'];
+  return ordenar(lista.map((j) => ({ ...j, ...Object.fromEntries(K.map((k) => [k, j[k] - soma[j.id][k]])) })));
+}
 // admin coloca jogador novo numa posição: ele herda os pontos de quem estava ali
 // e fica logo acima no desempate (shortcut: regra de pontos do novo ainda não definida pela coordenação)
 export function inserir(lista, novo, posicao) {
