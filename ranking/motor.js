@@ -152,6 +152,13 @@ export function tabelaChave(ids, jogos) {
 export function semifinais(t1, t2) { return [[t1[0].id, t2[1].id], [t2[0].id, t1[1].id]]; }
 export function vencedorDe(g) { return resultado(g.sets).aVenceu ? g.a : g.b; }
 // bônus por jogador depois da final
+// bônus ao vivo durante o Finals: quem está nos grupos 15, semifinalista 20; vice/campeão quando a final tiver placar
+export function bonusParcial(ids8, semis, final) {
+  if (final && final.sets) return bonusFinals(ids8, semis, final);
+  const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
+  semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });
+  return b;
+}
 export function bonusFinals(ids8, semis, final) {
   const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
   semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });

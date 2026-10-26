@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026204440';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026204440';
-import { REGULAMENTO } from './regulamento.js?v=20261026204440';
-import { PRIVACIDADE } from './privacidade.js?v=20261026204440';
+import * as M from './motor.js?v=20261026205007';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026205007';
+import { REGULAMENTO } from './regulamento.js?v=20261026205007';
+import { PRIVACIDADE } from './privacidade.js?v=20261026205007';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -58,7 +58,13 @@ function listaGeral() {
 function rankingVivo() {
   const jogos = S.mesAtual ? S.jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets))
     .map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })) : [];
-  return M.rodarMes(listaGeral(), jogos, []);
+  // Finals em andamento: o bônus já aparece na pontuação a cada placar (oficial quando a coordenação encerrar)
+  const bonus = {};
+  S.finals.filter((fz) => fz.fase !== 'encerrado').forEach((fz) => {
+    const { vg, semis, final } = dadosFinals(fz.ano, fz.grupo);
+    Object.assign(bonus, M.bonusParcial(vg.map((v) => v.jogador), semis.map(pg), final ? pg(final) : null));
+  });
+  return M.rodarMes(listaGeral().map((j) => (bonus[j.id] ? { ...j, tp: j.tp + bonus[j.id] } : j)), jogos, []);
 }
 function posicoes() {
   const geral = {}, grupo = {};
@@ -572,8 +578,10 @@ const fzProj = (rotA, a, rotB, b) => `<div class="card fz-proj"><span><small>${r
 
 // chaveamento desenhado (semis → final → troféu), no estilo de chave de campeonato
 const nomeCurto = (j) => { if (!j) return ''; const n = j.nome.trim().split(/\s+/)[0]; return n.length > 11 ? n.slice(0, 10) + '…' : n; };
-function chaveSVG({ sf, fin, campeao, titulo }) {
-  const W = 400, OURO = '#E8B923', box = (x, y, w, rot, j, ven, proj) => {
+// chaves[c] = linhas da chave: { j, txt, pts, ok }; sf[k] = [a, b, jogo, rotA, rotB, projeção]; fin = [f1, f2, final]
+function chaveSVG({ chaves, sf, fin, campeao, titulo }) {
+  const W = 660, OURO = '#E8B923', VERDE = '#4ADE80';
+  const box = (x, y, w, rot, j, ven, proj) => {
     const cor = ven ? OURO : '#fff';
     return `<rect x="${x}" y="${y}" width="${w}" height="40" rx="6" fill="${ven ? 'rgba(232,185,35,.12)' : 'rgba(255,255,255,.04)'}" stroke="${cor}" stroke-width="${ven ? 2.2 : 1.4}"/>
       <text x="${x + w / 2}" y="${y + 13}" text-anchor="middle" font-size="8.5" font-weight="700" letter-spacing=".8" fill="${ven ? OURO : 'rgba(255,255,255,.55)'}">${esc(rot)}</text>
@@ -581,23 +589,38 @@ function chaveSVG({ sf, fin, campeao, titulo }) {
   };
   const placar = (x, y, g) => (g && g.sets ? `<text x="${x}" y="${y}" text-anchor="middle" font-size="9.5" font-weight="600" fill="rgba(255,255,255,.7)">${esc(placarTxt(g.sets))}</text>` : '');
   const linha = (d, ok) => `<path d="${d}" fill="none" stroke="${ok ? OURO : 'rgba(255,255,255,.8)'}" stroke-width="1.5"/>`;
-  // colunas: semi 86 · finalista 66 · troféu 52 (simétrico)
-  const L1 = 4, L2 = 104, C = 174, R2 = 230, R1 = 310, Y = [58, 150], YF = 104;
+  const cabec = (x, t) => `<text x="${x}" y="52" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.6" fill="rgba(255,255,255,.5)">${t}</text>`;
+  // colunas: chave 106 · semifinal 88 · finalista 66 · troféu 52 (simétrico)
+  const BX = [6, 548], SX = [128, 444], FX = [232, 362], C = 304, BY = 64, Y = [76, 172], YF = 124;
   let o = `<text x="${W / 2}" y="26" text-anchor="middle" font-family="'Barlow Semi Condensed',sans-serif" font-size="22" font-weight="800" letter-spacing="1" fill="${OURO}">${esc(titulo)}</text>`;
-  [[L1, L1 + 86, L2, 0], [R1, R1, R2 + 66, 1]].forEach(([xs, ancS, ancF, k]) => {
-    const [a, b, g, ra, rb, proj] = sf[k], v = g && g.sets ? vencedor(g) : null;
-    o += box(xs, Y[0], 86, ra, a, v && a && v === a.id, proj) + box(xs, Y[1], 86, rb, b, v && b && v === b.id, proj);
-    o += placar(xs + 43, Y[1] + 54, g);
-    const mx = k ? ancS - 8 : ancS + 8;
+  o += cabec(BX[0] + 53, 'FASE DE GRUPOS') + cabec(SX[0] + 44, 'SEMIFINAL 1') + cabec(W / 2, 'FINAL') + cabec(SX[1] + 44, 'SEMIFINAL 2') + cabec(BX[1] + 53, 'FASE DE GRUPOS');
+  [0, 1].forEach((k) => {
+    // bloco da chave
+    const bx = BX[k];
+    o += `<rect x="${bx}" y="${BY}" width="106" height="172" rx="8" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.8)" stroke-width="1.4"/>
+      <text x="${bx + 53}" y="${BY + 18}" text-anchor="middle" font-family="'Barlow Semi Condensed',sans-serif" font-size="13" font-weight="800" letter-spacing="2" fill="#D8F145">CHAVE ${k + 1}</text>`;
+    (chaves[k] || []).forEach((l, i) => {
+      const y = BY + 30 + i * 34;
+      o += `<rect x="${bx + 5}" y="${y}" width="96" height="30" rx="5" fill="${l.ok ? 'rgba(74,222,128,.14)' : 'transparent'}"/>
+        <text x="${bx + 11}" y="${y + 19}" font-size="11.5" font-weight="${l.j ? 700 : 600}" fill="${l.ok ? VERDE : l.j ? '#fff' : 'rgba(255,255,255,.5)'}"${l.j ? '' : ' font-style="italic"'}>${esc(l.j ? nomeCurto(l.j) : l.txt)}</text>
+        ${l.pts != null ? `<text x="${bx + 96}" y="${y + 19}" text-anchor="end" font-size="11" font-weight="800" fill="${l.ok ? VERDE : 'rgba(255,255,255,.7)'}">${l.pts}</text>` : ''}`;
+    });
+    // 1º da chave segue pra semifinal do mesmo lado
+    o += linha(k ? `M${bx} ${Y[0] + 20}H${SX[1] + 88}` : `M${bx + 106} ${Y[0] + 20}H${SX[0]}`, false);
+    // semifinal
+    const [a, b, g, ra, rb, proj] = sf[k], v = g && g.sets ? vencedor(g) : null, sx = SX[k];
+    o += box(sx, Y[0], 88, ra, a, v && a && v === a.id, proj) + box(sx, Y[1], 88, rb, b, v && b && v === b.id, proj) + placar(sx + 44, Y[1] + 54, g);
+    const ancS = k ? sx : sx + 88, mx = k ? ancS - 8 : ancS + 8, ancF = k ? FX[1] + 66 : FX[0];
     o += linha(`M${ancS} ${Y[0] + 20}H${mx}V${Y[1] + 20}H${ancS}M${mx} ${YF + 20}H${ancF}`, !!v);
+    // finalista
     const f = fin[k], fv = fin[2] && fin[2].sets ? vencedor(fin[2]) : null;
-    o += box(k ? R2 : L2, YF, 66, 'FINALISTA', f, fv && f && fv === f.id, false);
-    o += linha(k ? `M${R2} ${YF + 20}H${C + 52}` : `M${L2 + 66} ${YF + 20}H${C}`, fv && f && fv === f.id);
+    o += box(FX[k], YF, 66, 'FINALISTA', f, fv && f && fv === f.id, false);
+    o += linha(k ? `M${FX[1]} ${YF + 20}H${C + 52}` : `M${FX[0] + 66} ${YF + 20}H${C}`, fv && f && fv === f.id);
   });
   o += `<rect x="${C}" y="${YF - 12}" width="52" height="64" rx="8" fill="rgba(232,185,35,.08)" stroke="${OURO}" stroke-width="1.6"/>
     <g transform="translate(${C + 6} ${YF - 6}) scale(.84)">${TROFEU(48).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</g>`;
   o += campeao ? `<text x="${W / 2}" y="${YF + 72}" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.5" fill="${OURO}">CAMPEÃO</text><text x="${W / 2}" y="${YF + 88}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">${esc(nomeCurto(campeao))}</text>` : placar(W / 2, YF + 70, fin[2]);
-  return `<div class="chave-svg" role="img" aria-label="Chaveamento: ${esc(sf.map((x) => (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}"><svg viewBox="0 0 ${W} 214" width="100%" font-family="Inter,system-ui,sans-serif">${o}</svg></div>`;
+  return `<div class="chave-svg"><div class="chave-scroll"><svg viewBox="0 0 ${W} 250" width="${W}" height="250" font-family="Inter,system-ui,sans-serif" role="img" aria-label="Chaveamento: ${esc(sf.map((x, k) => 'semifinal ' + (k + 1) + ', ' + (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}">${o}</svg></div><small class="chave-dica">← arraste pro lado pra ver as chaves →</small></div>`;
 }
 
 // lista de torneios: cada um abre a sua tela
@@ -654,7 +677,7 @@ function telaFinals() {
       ${tit('Como está agora')}
       ${top.length ? fzCols(fzCel(top[0], '<small>1º</small>') + sorteios, fzCel(top[1], '<small>2º</small>') + sorteios) : '<p class="dica">Nenhum jogador neste grupo.</p>'}
       <span class="dica">Muda conforme o ranking. O sorteio é feito pela coordenação quando o ranking fechar.</span>
-      ${tit('Chaveamento')}${chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, sf: [[null, null, null, '1º CHAVE 1', '2º CHAVE 2'], [null, null, null, '1º CHAVE 2', '2º CHAVE 1']], fin: [null, null, null] })}
+      ${tit('Chaveamento')}${chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: [0, 1].map((c) => [{ j: top[c], pts: null }, { txt: 'sorteio 3º/4º' }, { txt: 'sorteio 5º/6º' }, { txt: 'sorteio 7º/8º' }]), sf: [[null, null, null, '1º CHAVE 1', '2º CHAVE 2'], [null, null, null, '1º CHAVE 2', '2º CHAVE 1']], fin: [null, null, null] })}
     </div>`;
   }
 
@@ -666,7 +689,7 @@ function telaFinals() {
   const sv = semis.map((g) => (g.sets ? porId(vencedor(g)) : null));
   const fins = final ? [porId(final.jogador_a), porId(final.jogador_b), final] : [sv[0] || null, sv[1] || null, null];
   const camp = final && final.sets ? porId(vencedor(final)) : null;
-  const desenho = chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, sf: sfs, fin: fins, campeao: camp });
+  const desenho = chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: t.map((tc) => tc.map((x, i) => ({ j: porId(x.id), pts: x.tp, ok: i < 2 }))), sf: sfs, fin: fins, campeao: camp });
   const chaveT = tit('Chaveamento') + desenho;
   const mata = (semis.length || final ? tit('Jogos do mata-mata') : '') + (semis.length ? semis.map((g, k) => `<small class="dica">Semifinal ${k + 1}</small>` + linhaFinals(g, fz)).join('')
       : '') + (final ? `<small class="dica">Final</small>` + linhaFinals(final, fz) : '');
@@ -1165,6 +1188,7 @@ async function render() {
   if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   aplicarBusca();
+  document.querySelectorAll('.chave-scroll').forEach((el) => { el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2; });
   window.scrollTo(0, 0);
 }
 
