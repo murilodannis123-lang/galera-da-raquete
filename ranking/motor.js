@@ -3,7 +3,7 @@
 //   vencedor = 23 + saldo de games dele · perdedor = 17 + saldo de games dele (os dois somam 40)
 //   ex.: 6/0 6/0 → 35 e 5 · 6/2 6/2 → 31 e 9 · 5/7 7/5 6/10 → 23 e 17
 //   o tie-break conta como set, mas os pontos dele não entram nos games
-// 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois · 2.6: WO = 25 e 0
+// 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois · 2.6: WO = 35 (como 6/0 6/0) e 0 pra quem deu o WO
 // 7.1.4 desempate: pontos, vitórias, saldo de sets, saldo de games, average (games pró ÷ contra)
 // set normal: 6×0 a 6×4, 7×5 ou 7×6 · tie-break (só no 1×1): até 10, vencendo por 2 (10×8, 11×9, 12×10…)
 export const TB = 10;
@@ -53,7 +53,7 @@ export function rodarMes(lista, jogos, standbyIds) {
     if (g.woDe) {
       const L = porId[g.woDe], W = porId[g.woDe === g.a ? g.b : g.a];
       if (!L || !W) continue;
-      W.tp += 25; W.vi++; W.sp += 2; W.gp += 12;
+      W.tp += PONTOS.vitoria + 12; W.vi++; W.sp += 2; W.gp += 12;   // conta como 6/0 6/0: 35 pontos (igual ao Ranking Online)
       L.de++; L.sc += 2; L.gc += 12;
       continue;
     }
