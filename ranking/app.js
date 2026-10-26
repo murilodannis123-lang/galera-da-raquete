@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026133648';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026133648';
-import { REGULAMENTO } from './regulamento.js?v=20261026133648';
-import { PRIVACIDADE } from './privacidade.js?v=20261026133648';
+import * as M from './motor.js?v=20261026154618';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026154618';
+import { REGULAMENTO } from './regulamento.js?v=20261026154618';
+import { PRIVACIDADE } from './privacidade.js?v=20261026154618';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18,6 +18,7 @@ const ehNoite = () => { const h = new Date().getHours(); return h >= 18 || h < 6
 
 let sb = null;
 const S = {
+  busca: {},
   eu: null, jogadores: [], meses: [], mesAtual: null, jogos: [], avisos: [], patros: [], config: {},
   jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null },
   finals: [], fvagas: [], fjogos: [], emails: {}, niver: []
@@ -31,6 +32,19 @@ function toast(t) {
 const avatar = (j, tam) => `<span class="avatar" style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 const voltar = (titulo, sub) => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="#/" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+
+// busca por nome: o texto fica guardado por tela e é reaplicado a cada render
+const semAcento = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const BUSCA = (ph) => `<input class="campo busca" type="search" data-busca placeholder="${esc(ph)}" aria-label="${esc(ph)}" value="${esc(S.busca[telaAtual()] || '')}" autocomplete="off">`;
+const dn = (...nomes) => `data-nome="${esc(semAcento(nomes.filter(Boolean).join(' ')))}"`;
+const telaAtual = () => location.hash.replace(/^#\/?/, '').split('/')[0] || 'inicio';
+function aplicarBusca() {
+  const q = semAcento(S.busca[telaAtual()] || '').trim();
+  let vis = 0;
+  document.querySelectorAll('[data-nome]').forEach((el) => { const ok = !q || el.dataset.nome.includes(q); el.hidden = !ok; if (ok) vis++; });
+  const nada = document.getElementById('busca-nada'); if (nada) nada.hidden = !q || vis > 0;
+}
+const NADA = '<p class="dica" id="busca-nada" hidden>Ninguém com esse nome.</p>';
 
 // ---------- dados ----------
 const porId = (id) => S.jogadores.find((j) => j.id === id);
@@ -270,9 +284,10 @@ function telaRanking() {
     ${[['D', 'DYNAMICS'], ['A', 'A'], ['B', 'B'], ['C', 'C']].map(([id, r]) => `<button class="aba" role="tab" aria-selected="${aba === id}" data-acao="abaRk" data-v="${id}">${r}</button>`).join('')}
   </div></div>
   <div class="conteudo">
+    ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
     <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games</span>
     ${lista.map((j, i) => { const fin = !geral && i < 8, sg = j.gp - j.gc; return `
-      <div class="linha-rk${fin ? ' fin' : ''}">
+      <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
           <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
@@ -296,8 +311,9 @@ async function telaJogos() {
     <button class="ic-btn" data-acao="mesVer" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
   </div>
   <div class="conteudo">
+    ${jogos.length ? BUSCA('Buscar jogador…') + NADA : ''}
     ${jogos.map((g) => { const a = porId(g.jogador_a), b = porId(g.jogador_b), v = vencedor(g); return `
-      <div class="card" style="padding:12px;display:flex;flex-direction:column;gap:10px">
+      <div class="card" ${dn(a && a.nome, b && b.nome)} style="padding:12px;display:flex;flex-direction:column;gap:10px">
         ${b ? `<div class="confronto">
           <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 48)}<span class="nm"><span>${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span><small>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small>${v === g.jogador_a ? VENCEU : ''}</span></div>
           <b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
@@ -592,14 +608,14 @@ function telaAdmin() {
       <span class="dica" style="margin-top:-4px">Foto/cartaz aparece no aviso. PDF vira um botão "Abrir". Até 10 MB.</span>
       <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" name="faixa" style="width:20px;height:20px;accent-color:var(--roxo)">Mostrar também na faixa de notícias</label>
       <button class="btn btn-roxo" type="submit">Publicar</button></form>
-    <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>
-      ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
-        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ` <span class="tag" style="background:#FDECEC;color:var(--verm)">FORA DO RANKING</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="reativar" data-id="${j.id}">Voltar ao ranking</button>`}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
+    <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>${BUSCA('Buscar jogador…')}${NADA}
+      ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div ${dn(j.nome, S.emails[j.id])} style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
+        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ` <span class="tag" style="background:#FDECEC;color:var(--verm)">FORA DO RANKING</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="reativar" data-id="${j.id}">Voltar ao ranking</button>`}${j.ativo && j.joga ? (j.standby ? ` <span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="standbyAdm" data-v="0" data-id="${j.id}">Tirar do standby</button>` : ` <button class="tag" style="background:#F0EDF5;color:var(--tinta2);border:0" data-acao="standbyAdm" data-v="1" data-id="${j.id}">Pôr em standby</button>`) : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
         <select class="campo" style="width:64px;height:40px;padding:0 6px" data-acao="grupo" data-id="${j.id}" aria-label="Grupo de ${esc(j.nome)}">${['A', 'B', 'C'].map((g) => `<option ${g === j.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select>
         <button class="btn btn-linha" style="height:40px;padding:0 8px;font-size:11px" data-acao="resetSenha" data-id="${j.id}" title="Volta a senha para ${SENHA_INICIAL}">Senha</button>
         <button class="switch" role="switch" aria-checked="${j.admin}" data-acao="admin" data-id="${j.id}" aria-label="Admin: ${esc(j.nome)}" ${j.dono ? 'disabled' : ''}><i></i></button>
       </div>`).join('')}
-      <span class="dica">Chave = admin · "Senha" volta a senha da pessoa para ${SENHA_INICIAL}.</span>
+      <span class="dica">Standby vale a partir da próxima rodada; pra jogar ainda neste mês, use "Adicionar jogo ao mês". Chave = admin · "Senha" volta a senha da pessoa para ${SENHA_INICIAL}.</span>
     </section>
   </div>`;
 }
@@ -732,6 +748,9 @@ const ACOES = {
   reativar: (el) => comTrava('', async () => {
     const r = await sb.from('jogadores').update({ ativo: true, standby: false, posicao: listaGeral().length + 1 }).eq('id', el.dataset.id); if (r.error) throw r.error;
   }, 'Jogador de volta ao ranking.'),
+  standbyAdm: (el) => comTrava('', async () => {
+    const r = await sb.from('jogadores').update({ standby: el.dataset.v === '1' }).eq('id', el.dataset.id); if (r.error) throw r.error;
+  }, el.dataset.v === '1' ? 'Jogador em standby.' : 'Jogador fora do standby: entra nos jogos da próxima rodada.'),
   // apaga o placar (o jogo volta a ficar pendente); pede um segundo toque pra confirmar
   cancelarPlacar: (el) => {
     if (el.dataset.ok !== '1') { el.dataset.ok = '1'; el.textContent = 'Toque de novo para apagar o placar'; el.style.background = '#FDECEC'; return; }
@@ -871,6 +890,7 @@ async function trocarFoto(file) {
   } catch (e) { console.error(e); toast('Erro na foto: ' + (e.message || e)); }
 }
 document.addEventListener('change', (ev) => { if (ev.target.matches && ev.target.matches('input[data-foto]')) trocarFoto(ev.target.files[0]); });
+document.addEventListener('input', (ev) => { if (ev.target.matches('[data-busca]')) { S.busca[telaAtual()] = ev.target.value; aplicarBusca(); } });
 document.addEventListener('input', (ev) => { const f = ev.target.closest('form[data-form="placar"]'); if (f) previaPlacar(f); });
 document.addEventListener('submit', async (ev) => {
   const f = ev.target.closest('form[data-form]'); if (!f) return;
@@ -970,6 +990,7 @@ async function render() {
   if (rota === 'avisos') marcarAvisosVistos();
   if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
+  aplicarBusca();
   window.scrollTo(0, 0);
 }
 
