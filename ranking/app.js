@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026190215';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026190215';
-import { REGULAMENTO } from './regulamento.js?v=20261026190215';
-import { PRIVACIDADE } from './privacidade.js?v=20261026190215';
+import * as M from './motor.js?v=20261026190355';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026190355';
+import { REGULAMENTO } from './regulamento.js?v=20261026190355';
+import { PRIVACIDADE } from './privacidade.js?v=20261026190355';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -315,10 +315,10 @@ async function telaJogos() {
     ${jogos.map((g) => { const a = porId(g.jogador_a), b = porId(g.jogador_b), v = vencedor(g); return `
       <div class="card" ${dn(a && a.nome, b && b.nome)} style="padding:12px;display:flex;flex-direction:column;gap:10px">
         ${b ? `<div class="confronto">
-          <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 48)}<span class="nm"><span>${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span><small>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small>${v === g.jogador_a ? VENCEU : ''}</span></div>
-          <b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
-          <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 48)}</div>
-        </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 48)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
+          <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 44)}<span class="nm"><span>${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span><small>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small>${v === g.jogador_a ? VENCEU : ''}</span></div>
+          <span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
+          <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 44)}</div>
+        </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 44)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
           <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
@@ -524,7 +524,7 @@ function linhaFinals(g, fz) {
   const a = porId(g.jogador_a), b = porId(g.jogador_b), v = g.sets ? (M.resultado(g.sets).aVenceu ? g.jogador_a : g.jogador_b) : null;
   const pode = S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && fz.fase === g.fase);
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
-    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
+    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
     <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${placarHTML(g.sets)}</a>` : placarHTML(g.sets)) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
   </div>`;
