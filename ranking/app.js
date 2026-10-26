@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026192203';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026192203';
-import { REGULAMENTO } from './regulamento.js?v=20261026192203';
-import { PRIVACIDADE } from './privacidade.js?v=20261026192203';
+import * as M from './motor.js?v=20261026202611';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026202611';
+import { REGULAMENTO } from './regulamento.js?v=20261026202611';
+import { PRIVACIDADE } from './privacidade.js?v=20261026202611';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18,7 +18,7 @@ const ehNoite = () => { const h = new Date().getHours(); return h >= 18 || h < 6
 
 let sb = null;
 const S = {
-  busca: {},
+  busca: {}, curtidas: {},
   eu: null, jogadores: [], meses: [], mesAtual: null, jogos: [], avisos: [], patros: [], config: {},
   jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
   finals: [], fvagas: [], fjogos: [], emails: {}, niver: []
@@ -29,7 +29,7 @@ function toast(t) {
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
-const avatar = (j, tam) => `<span class="avatar" style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
+const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 const voltar = (titulo, sub) => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="#/" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 
@@ -71,7 +71,41 @@ async function jogosDoMes(id, forcar) {
   if (!forcar && S.jogosPorMes[id]) return S.jogosPorMes[id];
   const { data, error } = await sb.from('jogos').select('*').eq('mes', id).order('criado_em');
   if (error) throw error;
-  S.jogosPorMes[id] = data; return data;
+  S.jogosPorMes[id] = data;
+  await carregarCurtidas(data.map((g) => g.id));
+  return data;
+}
+// curtidas dos jogos; se a tabela ainda não existir no banco, segue sem curtidas
+async function carregarCurtidas(ids) {
+  if (!ids.length) return;
+  const { data, error } = await sb.from('curtidas').select('jogo,jogador').in('jogo', ids);
+  if (error) return;
+  ids.forEach((id) => { S.curtidas[id] = []; });
+  data.forEach((c) => S.curtidas[c.jogo].push(c.jogador));
+}
+const CORACAO = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.1 0 3.6 1.1 5.4 3 1.8-1.9 3.3-3 5.4-3 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z" fill="currentColor"/></svg>';
+function curtir(g) {
+  const v = vencedor(g); if (!v) return '';
+  const lista = S.curtidas[g.id] || [], eu = lista.includes(S.eu.id), meu = g.jogador_a === S.eu.id || g.jogador_b === S.eu.id;
+  const nomes = lista.map((id) => (porId(id) || {}).nome).filter(Boolean);
+  const quem = nomes.length ? nomes.slice(0, 2).join(', ') + (nomes.length > 2 ? ' e mais ' + (nomes.length - 2) : '') + (nomes.length > 1 ? ' curtiram' : ' curtiu') : '';
+  const botao = meu ? (lista.length ? `<span class="curtir-b on">${CORACAO} ${lista.length}</span>` : '')
+    : `<button class="curtir-b${eu ? ' on' : ''}" data-acao="curtir" data-id="${g.id}" aria-pressed="${eu}" aria-label="Curtir a vitória de ${esc((porId(v) || {}).nome)}">${CORACAO} ${eu ? 'Curtiu' : 'Curtir'}${lista.length ? ' · ' + lista.length : ''}</button>`;
+  return botao || quem ? `<div class="curtir">${botao}${quem ? `<small>${esc(quem)}</small>` : ''}</div>` : '';
+}
+// foto grande ao tocar no avatar
+function abrirFoto(id) {
+  const j = porId(id); if (!j) return;
+  const { geral } = posicoes();
+  const d = document.createElement('div');
+  d.className = 'zoom'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Foto de ' + j.nome);
+  d.innerHTML = `<div class="zoom-c">${j.foto_url ? `<img src="${esc(j.foto_url)}" alt="${esc(j.nome)}" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.ini))" data-ini="${esc(avatar({ nome: j.nome }, 220))}">` : avatar({ nome: j.nome }, 220)}
+    <b class="cond">${esc(j.nome)}</b><small>${geral[j.id] ? geral[j.id] + 'º lugar · ' : ''}${j.grupo ? 'Grupo ' + esc(j.grupo) : ''}</small></div>
+    <button class="zoom-x" aria-label="Fechar">×</button>`;
+  const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); };
+  const esc1 = (e) => { if (e.key === 'Escape') fechar(); };
+  d.addEventListener('click', fechar); document.addEventListener('keydown', esc1);
+  document.body.appendChild(d); d.querySelector('.zoom-x').focus();
 }
 // e-mail e nascimento não vêm na lista (privacidade): só pelas funções meus_dados / admin_emails
 const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,avisos_visto_em,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
@@ -200,7 +234,7 @@ function telaInicio() {
       const venci = v === eu.id, k = new Date().getMonth() % 3;
       corpo = `<div class="resultado">
         <div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:20px;color:${venci ? 'var(--verde)' : 'var(--verm)'}">${venci ? 'Parabéns, ' + esc(eu.nome) + '!' : 'Você perdeu este mês'}</b>
-        <div class="dica">${esc(venci ? FRASES_V[k] : FRASES_D[k])}</div></div>
+        <div class="dica">${esc(venci ? FRASES_V[k] : FRASES_D[k])}</div>${venci && (S.curtidas[meu.id] || []).length ? `<div class="curtir" style="margin-top:6px"><span class="curtir-b on">${CORACAO} ${S.curtidas[meu.id].length}</span><small>curtiram sua vitória</small></div>` : ''}</div>
         <a class="btn btn-linha" href="#/placar/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Corrigir</a></div>`;
     }
   }
@@ -323,6 +357,7 @@ async function telaJogos() {
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
           <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
         </div>
+        ${curtir(g)}
       </div>`; }).join('') || '<p class="dica">Nenhum jogo neste mês.</p>'}
   </div>`;
 }
@@ -800,6 +835,13 @@ const ACOES = {
   abaRk: (el) => { S.abaRk = el.dataset.v; render(); },
   vistaFin: (el) => { S.vistaFin = el.dataset.v; render(); },
   abaFin: (el) => { S.abaFin = el.dataset.v; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
+  curtir: async (el) => {
+    const id = el.dataset.id, lista = S.curtidas[id] = S.curtidas[id] || [], tinha = lista.includes(S.eu.id);
+    if (tinha) lista.splice(lista.indexOf(S.eu.id), 1); else lista.push(S.eu.id);
+    render();
+    const r = tinha ? await sb.from('curtidas').delete().eq('jogo', id).eq('jogador', S.eu.id) : await sb.from('curtidas').insert({ jogo: id, jogador: S.eu.id });
+    if (r.error) { if (tinha) lista.push(S.eu.id); else lista.splice(lista.indexOf(S.eu.id), 1); render(); toast('Não deu pra curtir agora.'); }
+  },
   reabrirPedir: (el) => { S.admin.reabrir = el.dataset.v; render(); },
   reabrirCancelar: () => { S.admin.reabrir = null; render(); },
   reabrir: (el) => comTrava('Reabrindo…', async () => { S.admin.reabrir = null; await reabrirMes(el.dataset.v); }, 'Mês reaberto: corrija o placar e encerre de novo.'),
@@ -922,6 +964,10 @@ document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-acao]');
   if (!el || el.tagName === 'SELECT' || !ACOES[el.dataset.acao]) return;
   ev.preventDefault(); ACOES[el.dataset.acao](el);
+});
+document.addEventListener('click', (ev) => {
+  const av = ev.target.closest && ev.target.closest('.avatar[data-ver]');
+  if (av && !av.closest('label, a, button, .zoom')) abrirFoto(av.dataset.ver);
 });
 document.addEventListener('change', (ev) => {
   const el = ev.target;
@@ -1159,6 +1205,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'jogos' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_jogos' }, recarregarDepois)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
     .subscribe();
   render();
 }
