@@ -1,8 +1,13 @@
 // Motor do ranking — regras do regulamento 01-2025
-// 7.1: 2x0 = 25 / 5 · 2x1 = 20 / 10 · 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois
+// Pontos como o Ranking Online calcula na prática (conferido com 3 jogos reais em 26/10/2026):
+//   vencedor = 23 + saldo de games dele · perdedor = 17 + saldo de games dele (os dois somam 40)
+//   ex.: 6/0 6/0 → 35 e 5 · 6/2 6/2 → 31 e 9 · 5/7 7/5 6/10 → 23 e 17
+//   o tie-break conta como set, mas os pontos dele não entram nos games
+// 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois · 2.6: WO = 25 e 0
 // 7.1.4 desempate: pontos, vitórias, saldo de sets, saldo de games, average (games pró ÷ contra)
 // set normal: 6×0 a 6×4, 7×5 ou 7×6 · tie-break (só no 1×1): até 10, vencendo por 2 (10×8, 11×9, 12×10…)
 export const TB = 10;
+export const PONTOS = { vitoria: 23, derrota: 17 };
 export function setValido(x, y, tieBreak) {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x === y) return false;
   const mx = Math.max(x, y), mn = Math.min(x, y);
@@ -15,13 +20,12 @@ export function resultado(sets) {
   sets.forEach(([x, y], i) => { if (!setValido(x, y, i === 2)) throw new Error('placar inválido: ' + JSON.stringify(sets)); });
   // 3º set = tie-break: no saldo de games conta só 1 game pra quem venceu (shortcut: confirmar com a coordenação)
   sets.forEach(([x, y], i) => {
-    if (i === 2) { ga += x > y ? 1 : 0; gb += y > x ? 1 : 0; } else { ga += x; gb += y; }
+    if (i < 2) { ga += x; gb += y; }        // tie-break (3º) não soma games
     if (x > y) a++; else if (y > x) b++;
   });
   if (!((a === 2 && b <= 1) || (b === 2 && a <= 1))) throw new Error('placar inválido: ' + JSON.stringify(sets));
-  const tres = a + b === 3;
-  const venc = tres ? 20 : 25, perd = tres ? 10 : 5;
-  return { aVenceu: a > b, ptsA: a > b ? venc : perd, ptsB: b > a ? venc : perd, setsA: a, setsB: b, gamesA: ga, gamesB: gb };
+  const aV = a > b;
+  return { aVenceu: aV, ptsA: (aV ? PONTOS.vitoria : PONTOS.derrota) + (ga - gb), ptsB: (aV ? PONTOS.derrota : PONTOS.vitoria) + (gb - ga), setsA: a, setsB: b, gamesA: ga, gamesB: gb };
 }
 export function jogador(id, nome, grupo, tp) {
   return { id, nome, grupo, tp: tp || 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 };

@@ -313,7 +313,7 @@ async function telaPlacar(id, fin) {
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
         <input class="campo" name="a${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[0] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(a.nome)}" ${fechado ? 'disabled' : ''}>
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
-      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9). Pontos: 2×0 = 25/5 · 2×1 = 20/10.</span>
+      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9). Pontos: vencedor 23 + saldo de games · perdedor 17 + saldo (tie-break não conta games).</span>
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
@@ -347,7 +347,7 @@ function previaPlacar(form) {
   if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
   const ven = porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
-  el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${Math.max(r.ptsA, r.ptsB)} / +${Math.min(r.ptsA, r.ptsB)} pts${pneu ? ' · PNEU 6×0' : ''}</div>`;
+  el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0' : ''}</div>`;
 }
 
 async function telaWo(id) {
