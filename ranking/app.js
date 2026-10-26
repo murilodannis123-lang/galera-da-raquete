@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026203756';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026203756';
-import { REGULAMENTO } from './regulamento.js?v=20261026203756';
-import { PRIVACIDADE } from './privacidade.js?v=20261026203756';
+import * as M from './motor.js?v=20261026203957';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026203957';
+import { REGULAMENTO } from './regulamento.js?v=20261026203957';
+import { PRIVACIDADE } from './privacidade.js?v=20261026203957';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,7 +20,7 @@ let sb = null;
 const S = {
   busca: {}, curtidas: {},
   eu: null, jogadores: [], meses: [], mesAtual: null, jogos: [], avisos: [], patros: [], config: {},
-  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
+  jogosPorMes: {}, slide: 0, abaRk: 'D', abaFin: null, vistaFin: null, torneio: 'finals', mesVer: null, msg: '', erro: '', admin: { confirmar: false, fin: {}, finConf: null, sorteio: {} },
   finals: [], fvagas: [], fjogos: [], emails: {}, niver: []
 };
 
@@ -87,11 +87,9 @@ const CORACAO = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="tr
 function curtir(g) {
   const v = vencedor(g); if (!v) return '';
   const lista = S.curtidas[g.id] || [], eu = lista.includes(S.eu.id), meu = g.jogador_a === S.eu.id || g.jogador_b === S.eu.id;
-  const nomes = lista.map((id) => (porId(id) || {}).nome).filter(Boolean);
-  const quem = nomes.length ? nomes.slice(0, 2).join(', ') + (nomes.length > 2 ? ' e mais ' + (nomes.length - 2) : '') + (nomes.length > 1 ? ' curtiram' : ' curtiu') : '';
   const botao = meu ? (lista.length ? `<span class="curtir-b on">${CORACAO} ${lista.length}</span>` : '')
     : `<button class="curtir-b${eu ? ' on' : ''}" data-acao="curtir" data-id="${g.id}" aria-pressed="${eu}" aria-label="Curtir a vitória de ${esc((porId(v) || {}).nome)}">${CORACAO} ${eu ? 'Curtiu' : 'Curtir'}${lista.length ? ' · ' + lista.length : ''}</button>`;
-  return botao || quem ? `<div class="curtir">${botao}${quem ? `<small>${esc(quem)}</small>` : ''}</div>` : '';
+  return botao ? `<div class="curtir">${botao}</div>` : '';
 }
 // foto grande ao tocar no avatar
 function abrirFoto(id) {
@@ -602,14 +600,28 @@ function chaveSVG({ sf, fin, campeao, titulo }) {
   return `<div class="chave-svg" role="img" aria-label="Chaveamento: ${esc(sf.map((x) => (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}"><svg viewBox="0 0 ${W} 214" width="100%" font-family="Inter,system-ui,sans-serif">${o}</svg></div>`;
 }
 
+const ABA_TORNEIO = (t) => `<div style="background:#2A1650;padding:0 16px 8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1.4fr">${[['finals', 'FINALS'], ['duplas', '10º DUPLAS']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${t === v}" data-acao="torneio" data-v="${v}">${r}</button>`).join('')}</div></div>`;
+function telaDuplas() {
+  return voltar('Torneios', '10º Torneio de Duplas Portal do Lago') + ABA_TORNEIO('duplas') + `<div class="conteudo">
+    <section class="card" style="background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
+      ${TROFEU(56)}
+      <small style="color:var(--bola);font-weight:700;letter-spacing:2px">TORNEIO DE DUPLAS</small>
+      <b class="cond" style="font-size:30px;line-height:1.1">10ª edição</b>
+      <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis</span>
+      <span class="tag" style="background:var(--bola);color:var(--noite);margin-top:6px">EM BREVE MAIS INFORMAÇÕES</span>
+    </section>
+    <p class="dica">Datas, inscrição e regulamento aparecem aqui e no sino de avisos assim que a coordenação divulgar.</p>
+  </div>`;
+}
 function telaFinals() {
+  if (S.torneio === 'duplas') return telaDuplas();
   const ano = anoFinals(), aba = S.abaFin || (S.eu.grupo || 'A'), vista = S.vistaFin || 'chave';
   const { fz, vg, js, t, semis, final } = dadosFinals(ano, aba);
   const abas = `<div style="background:#2A1650;padding:0 16px 14px;display:flex;flex-direction:column;gap:8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1fr 1fr">
     ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div>
     <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[['chave', 'CHAVEAMENTO'], ['class', 'CLASSIFICAÇÃO']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${vista === v}" data-acao="vistaFin" data-v="${v}">${r}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
-  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio')) + abas;
+  const cab = voltar('Torneios', 'Finals ' + ano + ' · Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio')) + ABA_TORNEIO('finals') + abas;
   const grupo = rankingVivo().filter((j) => j.grupo === aba);
 
   if (vista === 'class') {
@@ -870,8 +882,9 @@ const ACOES = {
   abertura: () => abertura(true),
   embreve: () => toast('Em breve no app.'),
   abaRk: (el) => { S.abaRk = el.dataset.v; render(); },
+  torneio: (el) => { S.torneio = el.dataset.v; render(); },
   vistaFin: (el) => { S.vistaFin = el.dataset.v; render(); },
-  abaFin: (el) => { S.abaFin = el.dataset.v; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
+  abaFin: (el) => { S.abaFin = el.dataset.v; S.torneio = 'finals'; if (location.hash !== '#/finals') location.hash = '#/finals'; else render(); },
   curtir: async (el) => {
     const id = el.dataset.id, lista = S.curtidas[id] = S.curtidas[id] || [], tinha = lista.includes(S.eu.id);
     if (tinha) lista.splice(lista.indexOf(S.eu.id), 1); else lista.push(S.eu.id);
