@@ -1,4 +1,6 @@
-// Service worker mínimo: permite "instalar na tela inicial". Sempre busca da rede (dados ao vivo).
+// Service worker: abre sempre a versão mais nova do app (a página vem da rede, sem cache)
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', () => {});
+self.addEventListener('fetch', (e) => {
+  if (e.request.mode === 'navigate') e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => fetch(e.request)));
+});
