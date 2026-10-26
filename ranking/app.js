@@ -623,7 +623,11 @@ async function rodarMes() {
   const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
   // WO confirmado ou sem resposta do adversário entra pela regra 2.6; contestado fica 0 pros dois (2.7)
   const validos = jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de }));
-  const nova = M.rodarMes(lista, validos, standby).map((j, i) => ({ ...j, posicao: i + 1 }));
+  // 7.4: último confronto direto entre os empatados, olhando todos os meses
+  const { data: hist, error: eh } = await sb.from('jogos').select('mes,jogador_a,jogador_b,sets,wo_de,wo_status,criado_em').order('mes').order('criado_em');
+  if (eh) throw eh;
+  const h2h = M.confrontoDireto(hist.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })));
+  const nova = M.rodarMes(lista, validos, standby, h2h).map((j, i) => ({ ...j, posicao: i + 1 }));
   await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
   const r = await sb.from('meses').update({ status: 'fechado', fechado_em: new Date().toISOString() }).eq('id', mes.id);
   if (r.error) throw r.error;

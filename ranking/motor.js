@@ -31,13 +31,27 @@ export function resultado(sets) {
 export function jogador(id, nome, grupo, tp) {
   return { id, nome, grupo, tp: tp || 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 };
 }
-export function comparar(p, q) {
-  const avg = (j) => (j.gc ? j.gp / j.gc : j.gp);
-  return (q.tp - p.tp) || (q.vi - p.vi) || ((q.sp - q.sc) - (p.sp - p.sc)) || ((q.gp - q.gc) - (p.gp - p.gc)) || (avg(q) - avg(p)) || (p.ordem - q.ordem);
+// 7.4: pontos → saldo de vitórias e derrotas → saldo de sets → saldo de games → último confronto direto
+// → sorteio (feito pela coordenação; o app mantém a ordem anterior até lá)
+// h2h(a, b): -1 se a venceu o último jogo entre os dois, 1 se b venceu, 0 se nunca se enfrentaram
+export function comparar(p, q, h2h) {
+  return (q.tp - p.tp) || ((q.vi - q.de) - (p.vi - p.de)) || ((q.sp - q.sc) - (p.sp - p.sc)) || ((q.gp - q.gc) - (p.gp - p.gc))
+    || (h2h ? h2h(p.id, q.id) : 0) || (p.ordem - q.ordem);
 }
-export function ordenar(lista) {
+export function ordenar(lista, h2h) {
   lista.forEach((j, i) => { j.ordem = i; });
-  return lista.slice().sort(comparar);
+  return lista.slice().sort((p, q) => comparar(p, q, h2h));
+}
+// último confronto direto a partir do histórico de jogos [{a, b, sets, woDe}] em ordem cronológica
+export function confrontoDireto(historico) {
+  const ultimo = {};
+  for (const g of historico) {
+    let v = null;
+    if (g.woDe) v = g.woDe === g.a ? g.b : g.a;
+    else if (g.sets) { try { v = resultado(g.sets).aVenceu ? g.a : g.b; } catch (e) { v = null; } }
+    if (v) ultimo[[g.a, g.b].sort().join('|')] = v;
+  }
+  return (a, b) => { const v = ultimo[[a, b].sort().join('|')]; return v === a ? -1 : v === b ? 1 : 0; };
 }
 // barragem: 1º x 2º, 3º x 4º... sobra o último (standby) se for ímpar
 export function confrontos(lista) {
@@ -47,7 +61,7 @@ export function confrontos(lista) {
   return { pares, standby };
 }
 // fecha o mês: soma o que tem placar; sem placar = 0 pros dois; standby +25
-export function rodarMes(lista, jogos, standbyIds) {
+export function rodarMes(lista, jogos, standbyIds, h2h) {
   const porId = Object.fromEntries(lista.map((j) => [j.id, { ...j }]));
   for (const g of jogos) {
     // WO (regra 2.6): vencedor 25 pts, 2 sets e 12 games a favor; quem deu WO não soma pontos, derrota com 2 sets e 12 games contra
@@ -66,7 +80,7 @@ export function rodarMes(lista, jogos, standbyIds) {
     if (r.aVenceu) { A.vi++; B.de++; } else { B.vi++; A.de++; }
   }
   for (const id of standbyIds) if (id) porId[id].tp += 25;
-  return ordenar(lista.map((j) => porId[j.id]));
+  return ordenar(lista.map((j) => porId[j.id]), h2h);
 }
 // admin coloca jogador novo numa posição: ele herda os pontos de quem estava ali
 // e fica logo acima no desempate (shortcut: regra de pontos do novo ainda não definida pela coordenação)
