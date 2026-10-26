@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026103040';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026103040';
-import { REGULAMENTO } from './regulamento.js?v=20261026103040';
-import { PRIVACIDADE } from './privacidade.js?v=20261026103040';
+import * as M from './motor.js?v=20261026104354';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026104354';
+import { REGULAMENTO } from './regulamento.js?v=20261026104354';
+import { PRIVACIDADE } from './privacidade.js?v=20261026104354';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -60,7 +60,7 @@ async function jogosDoMes(id, forcar) {
   S.jogosPorMes[id] = data; return data;
 }
 // e-mail e nascimento não vêm na lista (privacidade): só pelas funções meus_dados / admin_emails
-const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
+const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,avisos_visto_em,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
@@ -190,13 +190,13 @@ function telaInicio() {
         <a class="btn btn-linha" href="#/placar/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Corrigir</a></div>`;
     }
   }
-  const avisoNovo = S.avisos[0] && (Date.now() - new Date(S.avisos[0].criado_em)) < 7 * 864e5;
+  const naoLidos = avisosNaoLidos();
   return `
   <header class="topo">
     <div class="topo-linha">
       ${eu.admin ? `<a class="ic-btn" href="#/admin" aria-label="Admin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>` : '<span style="width:44px"></span>'}
       <button class="logo-btn" data-acao="abertura" aria-label="Ver a abertura de novo"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></button>
-      <a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${avisoNovo ? '<span class="ponto"></span>' : ''}</a>
+      <a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>
     </div>
     <h1 class="titulo">Portal do Lago Open de Tênis</h1>
     <p class="sub-ranking">RANKING</p>
@@ -230,6 +230,7 @@ const MENU = [
 
 function faixa() {
   const itens = [];
+  S.avisos.filter((a) => a.na_faixa && Date.now() - new Date(a.criado_em) < 30 * 864e5).forEach((a) => itens.push([a.tipo === 'AVISO' ? 'AVISO' : a.tipo, a.titulo]));
   (S.niver || []).forEach((j) => itens.push(['ANIVERSARIANTE DO DIA', 'Parabéns, ' + j.nome + '!']));
   const { geral } = posicoes();
   const lider = rankingVivo()[0];
@@ -432,14 +433,25 @@ function telaPerfil() {
   </form>`;
 }
 
+const avisosNaoLidos = () => { const visto = new Date((S.eu && S.eu.avisos_visto_em) || 0); return S.avisos.filter((a) => new Date(a.criado_em) > visto).length; };
+async function marcarAvisosVistos() {
+  if (!avisosNaoLidos()) return;
+  const agora = new Date().toISOString();
+  S.eu.avisos_visto_em = agora;
+  const r = await sb.from('jogadores').update({ avisos_visto_em: agora }).eq('id', S.eu.id);
+  if (r.error) console.error(r.error);
+}
 function telaAvisos() {
+  const visto = new Date((S.eu && S.eu.avisos_visto_em) || 0);
   return voltar('Avisos', 'Publicados pela coordenação') + `<div class="conteudo">${S.avisos.map((v) => `
     <article class="card" style="padding:0;overflow:hidden">
       ${v.cartaz_url ? `<img src="${esc(v.cartaz_url)}" alt="Cartaz: ${esc(v.titulo)}" style="width:100%;display:block">` : ''}
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between"><b style="font-size:11px;letter-spacing:1px;color:var(--roxo)">${esc(v.tipo)}</b><span class="dica">${new Date(v.criado_em).toLocaleDateString('pt-BR')}</span></div>
+        <div style="display:flex;justify-content:space-between"><b style="font-size:11px;letter-spacing:1px;color:var(--roxo)">${esc(v.tipo)}${new Date(v.criado_em) > visto ? ' <span class="tag" style="background:var(--bola);color:var(--noite)">NOVO</span>' : ''}</b><span class="dica">${new Date(v.criado_em).toLocaleDateString('pt-BR')}</span></div>
         <h2 class="cond" style="font-size:20px;line-height:1.15">${esc(v.titulo)}</h2>
         ${v.texto ? `<p style="font-size:14px;line-height:1.45;color:#3D3550;white-space:pre-line">${esc(v.texto)}</p>` : ''}
+        ${v.arquivo_url ? `<a class="btn btn-linha" style="height:44px;font-size:14px" href="${esc(v.arquivo_url)}" target="_blank" rel="noopener">📎 Abrir ${esc(v.arquivo_nome || 'arquivo')}</a>` : ''}
+        ${S.eu.admin ? `<button class="btn btn-linha" style="height:36px;font-size:12px;color:var(--verm)" data-acao="apagarAviso" data-id="${v.id}">Apagar aviso</button>` : ''}
       </div>
     </article>`).join('') || '<p class="dica">Nenhum aviso ainda.</p>'}</div>`;
 }
@@ -575,7 +587,9 @@ function telaAdmin() {
       <label class="rot">Tipo<select class="campo" name="tipo"><option>AVISO</option><option>RANKING</option><option>TORNEIO</option><option>CARTAZ</option></select></label>
       <label class="rot">Título<input class="campo" name="titulo" required maxlength="80"></label>
       <label class="rot">Texto<textarea class="campo" name="texto" rows="3"></textarea></label>
-      <label class="rot">Link da imagem do cartaz (opcional)<input class="campo" name="cartaz" type="url" placeholder="https://…"></label>
+      <label class="rot">Cartaz, foto ou arquivo (opcional)<input class="campo" name="arquivo" type="file" accept="image/*,application/pdf" style="padding:10px"></label>
+      <span class="dica" style="margin-top:-4px">Foto/cartaz aparece no aviso. PDF vira um botão "Abrir". Até 10 MB.</span>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" name="faixa" style="width:20px;height:20px;accent-color:var(--roxo)">Mostrar também na faixa de notícias</label>
       <button class="btn btn-roxo" type="submit">Publicar</button></form>
     <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>
       ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
@@ -717,6 +731,7 @@ const ACOES = {
   reativar: (el) => comTrava('', async () => {
     const r = await sb.from('jogadores').update({ ativo: true, standby: false, posicao: listaGeral().length + 1 }).eq('id', el.dataset.id); if (r.error) throw r.error;
   }, 'Jogador de volta ao ranking.'),
+  apagarAviso: (el) => comTrava('', async () => { const r = await sb.from('avisos').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Aviso apagado.'),
   recusar: (el) => comTrava('', async () => { const r = await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Inscrição recusada.'),
   atualizar: () => comTrava('', async () => {}, ''),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
@@ -787,9 +802,22 @@ const FORMS = {
   },
   aprovar: (f) => comTrava('Aprovando…', () => aprovar(f), 'Jogador aprovado. Já entra no ranking.'),
   novoJogador: (f) => comTrava('Cadastrando…', () => cadastrarJogador(f), 'Jogador cadastrado. Ele entra com esse e-mail.'),
-  aviso: (f) => comTrava('', async () => {
-    const { error } = await sb.from('avisos').insert({ tipo: f.tipo.value, titulo: f.titulo.value.trim(), texto: f.texto.value.trim() || null, cartaz_url: f.cartaz.value.trim() || null, criado_por: S.uid });
+  aviso: (f) => comTrava('Publicando…', async () => {
+    const arq = f.arquivo.files[0];
+    const aviso = { tipo: f.tipo.value, titulo: f.titulo.value.trim(), texto: f.texto.value.trim() || null, na_faixa: f.faixa.checked, criado_por: S.uid };
+    if (arq) {
+      if (arq.size > 10 * 1024 * 1024) throw new Error('Arquivo maior que 10 MB.');
+      const imagem = /^image\//.test(arq.type);
+      const corpo = imagem ? await prepararImagem(arq, 1600, false) : arq;
+      const caminho = `${Date.now()}-${imagem ? 'cartaz.jpg' : arq.name.replace(/[^\w.-]+/g, '_')}`;
+      const up = await sb.storage.from('avisos').upload(caminho, corpo, { contentType: imagem ? 'image/jpeg' : arq.type || 'application/octet-stream' });
+      if (up.error) throw up.error;
+      const url = sb.storage.from('avisos').getPublicUrl(caminho).data.publicUrl;
+      if (imagem) aviso.cartaz_url = url; else { aviso.arquivo_url = url; aviso.arquivo_nome = arq.name; }
+    }
+    const { error } = await sb.from('avisos').insert(aviso);
     if (error) throw error;
+    f.reset();
   }, 'Aviso publicado.')
 };
 
@@ -804,16 +832,20 @@ document.addEventListener('change', (ev) => {
   if (el.dataset && el.dataset.acao === 'grupo') comTrava('', async () => { const r = await sb.from('jogadores').update({ grupo: el.value }).eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Grupo atualizado.');
 });
 // foto do perfil: corta quadrada, reduz pra 480px e envia pro Storage (pasta do próprio usuário)
-async function prepararFoto(file) {
+async function prepararImagem(file, max, quadrada) {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error('Não consegui abrir essa imagem.')); i.src = url; });
-    const lado = Math.min(img.naturalWidth, img.naturalHeight), t = Math.min(480, lado);
-    const c = document.createElement('canvas'); c.width = c.height = t;
-    c.getContext('2d').drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const sw = quadrada ? Math.min(W, H) : W, sh = quadrada ? Math.min(W, H) : H;
+    const k = Math.min(1, max / Math.max(sw, sh));
+    const c = document.createElement('canvas'); c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh, 0, 0, c.width, c.height);
     return await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.85));
   } finally { URL.revokeObjectURL(url); }
 }
+const prepararFoto = (file) => prepararImagem(file, 480, true);
 async function trocarFoto(file) {
   if (!file) return;
   toast('Enviando foto…');
@@ -925,6 +957,7 @@ async function render() {
       : telaInicio();
   } catch (e) { console.error(e); html = voltar('Ops') + `<div class="conteudo"><p class="erro">Não consegui carregar: ${esc(e.message || e)}</p></div>`; }
   $app.innerHTML = html;
+  if (rota === 'avisos') marcarAvisosVistos();
   if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   window.scrollTo(0, 0);
