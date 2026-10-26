@@ -82,6 +82,11 @@ export function rodarMes(lista, jogos, standbyIds, h2h) {
   for (const id of standbyIds) if (id) porId[id].tp += 25;
   return ordenar(lista.map((j) => porId[j.id]), h2h);
 }
+// nova temporada: zera tudo e mantém as colocações; pontos de partida = N pro 1º, N-1 pro 2º ... 1 pro último
+export function iniciarTemporada(lista) {
+  const n = lista.length;
+  return lista.map((j, i) => ({ ...j, tp: n - i, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0, posicao: i + 1 }));
+}
 // reabrir mês encerrado: tira exatamente o que aquele mês somou (os pontos são só somas) e reordena
 export function desfazerMes(lista, jogos, standbyIds) {
   const zero = lista.map((j) => ({ ...j, tp: 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 }));

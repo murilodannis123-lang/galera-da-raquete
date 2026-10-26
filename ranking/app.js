@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026205007';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026205007';
-import { REGULAMENTO } from './regulamento.js?v=20261026205007';
-import { PRIVACIDADE } from './privacidade.js?v=20261026205007';
+import * as M from './motor.js?v=20261026205846';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026205846';
+import { REGULAMENTO } from './regulamento.js?v=20261026205846';
+import { PRIVACIDADE } from './privacidade.js?v=20261026205846';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -734,6 +734,7 @@ function telaAdmin() {
       : `<label class="rot">Mês<input class="campo" id="novoMes" type="month" value="${sugestao}"></label><button class="btn btn-roxo" data-acao="abrirMes">Abrir mês e gerar confrontos</button>`}
     </section>
     ${cardReabrir()}
+    ${cardTemporada()}
     ${pend.length ? `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Ainda sem placar</b>${pend.map((g) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:14px">${esc((porId(g.jogador_a) || {}).nome)} x ${esc((porId(g.jogador_b) || {}).nome)}</span><a class="btn btn-linha" style="height:40px;font-size:12px" href="#/placar/${g.id}">Gravar placar</a></div>`).join('')}</section>` : ''}
     ${mes ? `<form class="card" data-form="addJogo" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Adicionar jogo ao mês</b><span class="dica">Pra quem entrou de última hora ou ficou fora da rodada.</span>
       <label class="rot">Jogador 1<select class="campo" name="a" required><option value="">Escolher…</option>${opcoes}</select></label>
@@ -766,10 +767,36 @@ function telaAdmin() {
   </div>`;
 }
 
+// nova temporada (ex.: janeiro): pontos zerados, colocações mantidas, 1º começa com N pontos e o último com 1
+const proxTemporada = () => { const anos = S.meses.map((m) => Number(m.id.slice(0, 4))); return anos.length ? Math.max(...anos) + 1 : ANO(); };
+function cardTemporada() {
+  if (S.mesAtual) return '';
+  const T = proxTemporada(), feita = Number(S.config.temporada) >= T, ult = S.meses.map((m) => m.id).sort().pop();
+  if (feita || (ult && Number(ult.slice(5)) < 10)) return '';
+  const lista = listaGeral(), n = lista.length, conf = S.admin.temporada;
+  const finAbertos = S.finals.filter((fz) => fz.ano === T - 1 && fz.fase !== 'encerrado').map((fz) => fz.grupo);
+  return `<section class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Temporada ${T}</b>
+    ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas):</span>
+      <div style="font-size:13px;line-height:1.6">${lista.slice(0, 3).map((j, i) => `${i + 1}º ${esc(j.nome)} → <b>${n - i} pts</b>`).join('<br>')}${n > 4 ? '<br>…' : ''}${n > 3 ? `<br>${n}º ${esc(lista[n - 1].nome)} → <b>1 pt</b>` : ''}</div>
+      ${finAbertos.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${finAbertos.join(', ')}: o bônus não entraria.</span>` : !S.finals.some((fz) => fz.ano === T - 1) ? `<span class="erro" style="font-size:13px">O Finals ${T - 1} ainda não foi montado. Só confirme se não vai ter Finals.</span>` : ''}
+      <span class="dica">Uma cópia dos pontos de agora fica guardada no banco.</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="temporadaCancelar">Voltar</button><button class="btn btn-roxo" data-acao="temporada" data-v="${T}">Confirmar</button></div>`
+      : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Faça depois de encerrar o Finals. Depois é só abrir janeiro e gerar os confrontos.</span>`}
+  </section>`;
+}
+async function iniciarTemporada(T) {
+  const lista = listaGeral();
+  const copia = lista.map(({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }) => ({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }));
+  let r = await sb.from('config').delete().eq('chave', 'backup_temporada_' + (T - 1)); if (r.error) throw r.error;
+  r = await sb.from('config').insert({ chave: 'backup_temporada_' + (T - 1), valor: copia }); if (r.error) throw r.error;
+  await salvarJogadores(M.iniciarTemporada(lista), ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
+  r = await sb.from('config').delete().eq('chave', 'temporada'); if (r.error) throw r.error;
+  r = await sb.from('config').insert({ chave: 'temporada', valor: T }); if (r.error) throw r.error;
+}
 // último mês encerrado pode ser reaberto pra corrigir placar esquecido; depois é só encerrar de novo
 function cardReabrir() {
   const fech = S.meses.filter((m) => m.status === 'fechado').sort((a, b) => (a.id < b.id ? 1 : -1))[0];
-  if (!fech) return '';
+  if (!fech || Number(S.config.temporada) > Number(fech.id.slice(0, 4))) return '';
   const depois = S.meses.filter((m) => m.id > fech.id);
   const travado = depois.some((m) => m.status === 'fechado') || (depois.length && S.jogos.some((g) => depois.some((m) => m.id === g.mes) && (g.sets || g.wo_de)));
   const conf = S.admin.reabrir === fech.id;
@@ -923,6 +950,9 @@ const ACOES = {
     const r = tinha ? await sb.from('curtidas').delete().eq('jogo', id).eq('jogador', S.eu.id) : await sb.from('curtidas').insert({ jogo: id, jogador: S.eu.id });
     if (r.error) { if (tinha) lista.push(S.eu.id); else lista.splice(lista.indexOf(S.eu.id), 1); render(); toast('Não deu pra curtir agora.'); }
   },
+  temporadaPedir: () => { S.admin.temporada = true; render(); },
+  temporadaCancelar: () => { S.admin.temporada = false; render(); },
+  temporada: (el) => comTrava('Iniciando a temporada…', async () => { S.admin.temporada = false; await iniciarTemporada(Number(el.dataset.v)); }, 'Temporada ' + el.dataset.v + ' iniciada: pontos de partida lançados.'),
   reabrirPedir: (el) => { S.admin.reabrir = el.dataset.v; render(); },
   reabrirCancelar: () => { S.admin.reabrir = null; render(); },
   reabrir: (el) => comTrava('Reabrindo…', async () => { S.admin.reabrir = null; await reabrirMes(el.dataset.v); }, 'Mês reaberto: corrija o placar e encerre de novo.'),
