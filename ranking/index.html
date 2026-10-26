@@ -57,7 +57,7 @@ textarea.campo{height:auto;padding:10px 12px}
 .aba{height:40px;border-radius:11px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:15px;color:rgba(255,255,255,.85)}
 .aba[aria-selected=true]{background:#fff;color:var(--roxo2)}
 .avatar{border-radius:50%;background:linear-gradient(160deg,#EFEAF8 0%,#C9BDE4 100%);display:flex;align-items:center;justify-content:center;font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;color:var(--roxo2);overflow:hidden;flex-shrink:0}
-.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar{position:relative;overflow:hidden;flex-shrink:0}.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 /* jogo do mês */
 .jogo{position:relative;z-index:1;margin:-32px 16px 0;background:var(--noite);border-radius:20px;box-shadow:0 14px 32px rgba(42,22,80,.35);overflow:hidden;color:#fff}
 .jogo-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 0}

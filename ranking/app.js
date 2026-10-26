@@ -28,7 +28,7 @@ function toast(t) {
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
-const avatar = (j, tam) => `<span class="avatar" style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="">` : esc(iniciais(j && j.nome))}</span>`;
+const avatar = (j, tam) => `<span class="avatar" style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 const voltar = (titulo, sub) => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="#/" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 
@@ -112,6 +112,11 @@ function trazBola(g) {
 }
 const BOLINHA = (quem, g) => (trazBola(g) === quem ? ` <span title="Traz as bolinhas (regra 8.1)" aria-label="traz as bolinhas" style="display:inline-flex;vertical-align:-2px;margin:0 4px">${BOLA(15)}</span>` : '');
 function placarTxt(sets) { return (sets || []).map(([a, b]) => a + '/' + b).join(' '); }
+// pneu = set 6×0: sempre mostra o pneu depois do placar
+const temPneu = (sets) => (sets || []).some(([a, b]) => (a === 6 && b === 0) || (a === 0 && b === 6));
+const PNEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1E1E22"/>${Array.from({ length: 12 }, (_, i) => `<rect x="15" y="1.2" width="2" height="4.2" rx=".6" fill="#55555C" transform="rotate(${i * 30} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="9.6" fill="#2C2C31"/><circle cx="16" cy="16" r="7.2" fill="#C9CCD3"/><circle cx="16" cy="16" r="5.6" fill="#9DA1AA"/>${Array.from({ length: 5 }, (_, i) => `<rect x="15.3" y="10.6" width="1.4" height="4.4" rx=".7" fill="#E7E9EE" transform="rotate(${i * 72} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="1.8" fill="#55555C"/></svg>`;
+const pneuTag = (sets, t = 16) => (temPneu(sets) ? ` <span title="Pneu (6×0)" style="display:inline-flex;vertical-align:-3px">${PNEU(t)}</span>` : '');
+const placarHTML = (sets) => esc(placarTxt(sets)) + pneuTag(sets);
 function prazo() {
   if (!S.mesAtual) return null;
   const [a, m] = S.mesAtual.id.split('-').map(Number);
@@ -151,7 +156,7 @@ function telaInicio() {
     const sub = meu.wo_de ? 'WO · ' + (meu.wo_status === 'aguardando' ? 'AGUARDANDO' : meu.wo_status === 'anulado' ? 'CONTESTADO' : v === eu.id ? 'VITÓRIA' : 'DERROTA') : meu.sets ? (v === eu.id ? 'VITÓRIA' : 'DERROTA') + ' · ' + placarTxt(meu.sets) : (trazBola(meu) === eu.id ? 'VOCÊ TRAZ AS BOLAS' : 'ELE TRAZ AS BOLAS');
     vs = `<div class="vs">
       <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}${BOLINHA(eu.id, meu)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
-      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${esc(sub)}</small></div>
+      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${esc(sub)}${meu.sets ? pneuTag(meu.sets, 14) : ''}</small></div>
       <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}${BOLINHA(adv && adv.id, meu)}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
     </div>`;
     if (meu.wo_de && meu.wo_status === 'aguardando' && meu.wo_de === eu.id) {
@@ -221,9 +226,9 @@ function faixa() {
   const jl = lider && S.jogos.find((g) => g.sets && (g.jogador_a === lider.id || g.jogador_b === lider.id));
   if (jl && vencedor(jl) === lider.id) itens.push(['LÍDER VENCEU', lider.nome + ' venceu o jogo do mês']);
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
-    .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : '')]));
+    .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : ''), g.sets]));
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
-  return itens.map(([t, x]) => `<span><b>${esc(t)}</b>${esc(x)}</span>`).join('');
+  return itens.map(([t, x, sets]) => `<span><b>${esc(t)}</b>${esc(x)}${sets ? pneuTag(sets, 14) : ''}</span>`).join('');
 }
 
 function slides() {
@@ -287,7 +292,7 @@ async function telaJogos() {
         </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 34)}<span>${esc(a && a.nome)}</span></div>`}
         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
-          <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? esc(placarTxt(g.sets)) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
+          <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
         </div>
       </div>`; }).join('') || '<p class="dica">Nenhum jogo neste mês.</p>'}
   </div>`;
@@ -346,7 +351,7 @@ function previaPlacar(form) {
   if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
   const ven = porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
-  el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0' : ''}</div>`;
+  el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0 <span style="display:inline-flex;vertical-align:-4px">' + PNEU(18) + '</span>' : ''}</div>`;
 }
 
 async function telaWo(id) {
@@ -466,7 +471,7 @@ function telaResumo() {
       ${card('WO por lesão', wos.filter((g) => g.wo_motivo === 'lesao').length)}${card('WO por ausência', wos.filter((g) => g.wo_motivo === 'ausencia').length)}
     </div>
     <h2 class="cond" style="font-size:20px;margin-top:8px">Quem tomou pneu</h2>
-    ${pneus.map(([v, p, sets]) => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc((porId(v) || {}).nome)}</b> <span class="dica">aplicou em</span> <b>${esc((porId(p) || {}).nome)}</b><br><small class="dica">${esc(placarTxt(sets))}</small></span><span class="tag" style="background:var(--bola);color:var(--noite);font-size:14px">6×0</span></div>`).join('') || '<p class="dica">Nenhum pneu ainda neste mês.</p>'}
+    ${pneus.map(([v, p, sets]) => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc((porId(v) || {}).nome)}</b> <span class="dica">aplicou em</span> <b>${esc((porId(p) || {}).nome)}</b><br><small class="dica">${esc(placarTxt(sets))}</small></span><span style="display:flex;align-items:center;gap:6px">${PNEU(30)}<span class="tag" style="background:var(--bola);color:var(--noite);font-size:14px">6×0</span></span></div>`).join('') || '<p class="dica">Nenhum pneu ainda neste mês.</p>'}
   </div>`;
 }
 
@@ -480,7 +485,7 @@ function linhaFinals(g, fz) {
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
     <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span>${esc(a && a.nome)}</span></div><b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span>${esc(b && b.nome)}</span>${avatar(b, 30)}</div></div>
-    <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${esc(placarTxt(g.sets))}</a>` : esc(placarTxt(g.sets))) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
+    <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${placarHTML(g.sets)}</a>` : placarHTML(g.sets)) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
   </div>`;
 }
 function telaFinals() {
