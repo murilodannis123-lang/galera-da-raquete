@@ -67,6 +67,8 @@ textarea.campo{height:auto;padding:10px 12px}
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4px;padding:8px 10px 6px}
 .lado{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .lado b{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.6) 35%,#D8F145 45%,#fff 50%,#D8F145 55%,rgba(255,255,255,.6) 65%,rgba(255,255,255,.6) 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:brilho 2.6s linear infinite}
+@keyframes brilho{from{background-position:100% 0}to{background-position:-150% 0}}
 .vs-txt{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-style:italic;font-size:36px;line-height:1;color:var(--bola);text-shadow:0 0 20px rgba(216,241,69,.55)}
 .barra{position:relative;height:5px;margin:6px 0;border-radius:999px;background:rgba(255,255,255,.15)}
 .barra i{display:block;height:5px;border-radius:999px;background:var(--bola)}
@@ -139,11 +141,11 @@ body.noite .confronto .p .venc{color:#E8B923}.confronto .p .venc svg{flex-shrink
 .vitoria{position:fixed;left:0;right:0;top:40%;display:flex;justify-content:center;z-index:86;pointer-events:none}
 .vitoria span{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-size:44px;color:var(--bola);background:var(--noite);border-radius:18px;padding:8px 22px;animation:pop .5s ease-out both}
 @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
-@media (prefers-reduced-motion:reduce){.intro-logo,.intro-bola,.intro-txt,.faixa .tk,.fogos .p,.vitoria span{animation:none!important;opacity:1}}
+@media (prefers-reduced-motion:reduce){small.brilho,.intro-logo,.intro-bola,.intro-txt,.faixa .tk,.fogos .p,.vitoria span{animation:none!important;opacity:1}}
 </style>
 </head>
 <body>
 <div id="app" class="app" aria-live="polite"><p style="padding:40px 16px;text-align:center;color:#5B5470">Carregando…</p></div>
-<script type="module" src="app.js?v=20261026132932"></script>
+<script type="module" src="app.js?v=20261026133648"></script>
 </body>
 </html>
