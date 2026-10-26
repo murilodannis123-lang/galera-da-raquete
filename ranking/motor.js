@@ -84,3 +84,45 @@ export function sortearSets(rnd, favoritoA) {
   const sets = tres ? [setVencido(), setVencido().reverse(), tb()] : [setVencido(), setVencido()];
   return aVence ? sets : sets.map(([x, y]) => [y, x]);
 }
+
+// ---------- FINALS ----------
+// bônus da regra 7.2.2 somado ao ranking (7.2.5): campeão 30, vice 25, semifinal 20, fase de grupos 15
+export const BONUS = { campeao: 30, vice: 25, semi: 20, grupos: 15 };
+// ids na ordem do ranking do grupo (1º ao 8º) → chave 1 = 1º, 3º, 6º, 8º · chave 2 = 2º, 4º, 5º, 7º
+export function chavesFinals(ids) {
+  if (ids.length !== 8) throw new Error('O Finals precisa de 8 jogadores por grupo.');
+  return ids.map((id, i) => ({ id, seed: i + 1, chave: [1, 2, 1, 2, 2, 1, 2, 1][i] }));
+}
+// todos contra todos dentro da chave (melhor seed primeiro)
+export function todosContraTodos(ids) {
+  const pares = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) pares.push([ids[i], ids[j]]);
+  return pares;
+}
+// classificação da chave: mesma pontuação e desempate do ranking; sem placar = 0 pros dois; empate total = melhor seed
+export function tabelaChave(ids, jogos) {
+  const t = ids.map((id) => ({ ...jogador(id, '', '', 0), j: 0 }));
+  const por = Object.fromEntries(t.map((x) => [x.id, x]));
+  jogos.forEach((g) => {
+    const A = por[g.a], B = por[g.b];
+    if (!A || !B || !g.sets) return;
+    const r = resultado(g.sets);
+    A.j++; B.j++;
+    A.tp += r.ptsA; B.tp += r.ptsB;
+    if (r.aVenceu) { A.vi++; B.de++; } else { B.vi++; A.de++; }
+    A.sp += r.setsA; A.sc += r.setsB; B.sp += r.setsB; B.sc += r.setsA;
+    A.gp += r.gamesA; A.gc += r.gamesB; B.gp += r.gamesB; B.gc += r.gamesA;
+  });
+  return ordenar(t);
+}
+// semifinal cruzada: 1º C1 x 2º C2 e 1º C2 x 2º C1
+export function semifinais(t1, t2) { return [[t1[0].id, t2[1].id], [t2[0].id, t1[1].id]]; }
+export function vencedorDe(g) { return resultado(g.sets).aVenceu ? g.a : g.b; }
+// bônus por jogador depois da final
+export function bonusFinals(ids8, semis, final) {
+  const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
+  semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });
+  const camp = vencedorDe(final);
+  b[final.a] = BONUS.vice; b[final.b] = BONUS.vice; b[camp] = BONUS.campeao;
+  return b;
+}
