@@ -3,7 +3,7 @@ export const PRIVACIDADE = [
   ['Quem cuida dos seus dados',
     'A coordenação do ranking Galera da Raquete – Portal do Lago Open de Tênis é a controladora dos dados (art. 5º, VI, da LGPD).\nContato: botão Fale conosco do app ou galeradoraquete@gmail.com.'],
   ['Quais dados usamos',
-    '• Nome, e-mail (é o seu login), senha, grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever).\n\nNão pedimos endereço nem documentos.'],
+    '• Nome, e-mail (é o seu login), senha, grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Foto de perfil, se você colocar.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever).\n\nNão pedimos endereço nem documentos.'],
   ['Para que usamos',
     'Organizar o ranking: montar os confrontos do mês, registrar placares e WOs, calcular a pontuação e a classificação, permitir que você combine o jogo com o adversário pelo WhatsApp, publicar avisos da coordenação e dar os parabéns no seu aniversário.'],
   ['Base legal',

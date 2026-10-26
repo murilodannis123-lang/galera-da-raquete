@@ -313,7 +313,6 @@ async function telaPlacar(id, fin) {
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
         <input class="campo" name="a${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[0] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(a.nome)}" ${fechado ? 'disabled' : ''}>
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
-      <span class="dica">Set: 6×0 a 6×4, 7×5 ou 7×6. <b style="color:var(--verm)">Tie-break</b> abre só no 1×1: até ${M.TB}, com 2 de diferença (ex.: ${M.TB}×8, 11×9).</span>
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
@@ -392,7 +391,11 @@ function telaPerfil() {
   const e = S.eu;
   return voltar('Meu perfil', e.email) + `
   <form class="conteudo" data-form="perfil">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">${avatar(e, 96)}<span class="dica">Grupo ${esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <label style="position:relative;cursor:pointer" aria-label="Trocar minha foto">${avatar(e, 96)}
+        <span style="position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+        <input type="file" accept="image/*" data-foto style="position:absolute;width:1px;height:1px;opacity:0"></label>
+      <span class="dica">Toque na foto pra trocar · Grupo ${esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <label class="rot">Nome no ranking<input class="campo" name="nome" value="${esc(e.nome)}" autocomplete="name" required maxlength="40"></label>
       <label class="rot">Celular (WhatsApp)<input class="campo" name="celular" type="tel" inputmode="tel" value="${esc(e.celular || '')}" placeholder="(19) 9____-____" autocomplete="tel"></label>
@@ -783,6 +786,32 @@ document.addEventListener('change', (ev) => {
   if (el.dataset && el.dataset.fin) { S.admin.fin[el.dataset.fin] = [...document.querySelectorAll(`[data-fin="${el.dataset.fin}"]:checked`)].map((x) => x.value); render(); return; }
   if (el.dataset && el.dataset.acao === 'grupo') comTrava('', async () => { const r = await sb.from('jogadores').update({ grupo: el.value }).eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Grupo atualizado.');
 });
+// foto do perfil: corta quadrada, reduz pra 480px e envia pro Storage (pasta do próprio usuário)
+async function prepararFoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error('Não consegui abrir essa imagem.')); i.src = url; });
+    const lado = Math.min(img.naturalWidth, img.naturalHeight), t = Math.min(480, lado);
+    const c = document.createElement('canvas'); c.width = c.height = t;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+    return await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.85));
+  } finally { URL.revokeObjectURL(url); }
+}
+async function trocarFoto(file) {
+  if (!file) return;
+  toast('Enviando foto…');
+  try {
+    const blob = await prepararFoto(file);
+    const caminho = `${S.uid}/foto-${Date.now()}.jpg`;
+    const up = await sb.storage.from('fotos').upload(caminho, blob, { contentType: 'image/jpeg' });
+    if (up.error) throw up.error;
+    const foto = sb.storage.from('fotos').getPublicUrl(caminho).data.publicUrl;
+    const r = await sb.from('jogadores').update({ foto_url: foto }).eq('id', S.eu.id);
+    if (r.error) throw r.error;
+    await carregar(); render(); toast('Foto atualizada.');
+  } catch (e) { console.error(e); toast('Erro na foto: ' + (e.message || e)); }
+}
+document.addEventListener('change', (ev) => { if (ev.target.matches && ev.target.matches('input[data-foto]')) trocarFoto(ev.target.files[0]); });
 document.addEventListener('input', (ev) => { const f = ev.target.closest('form[data-form="placar"]'); if (f) previaPlacar(f); });
 document.addEventListener('submit', async (ev) => {
   const f = ev.target.closest('form[data-form]'); if (!f) return;
