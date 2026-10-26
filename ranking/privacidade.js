@@ -3,7 +3,7 @@ export const PRIVACIDADE = [
   ['Quem cuida dos seus dados',
     'A coordenação do ranking Galera da Raquete – Portal do Lago Open de Tênis é a controladora dos dados (art. 5º, VI, da LGPD).\nContato: botão Fale conosco do app ou galeradoraquete@gmail.com.'],
   ['Quais dados usamos',
-    '• Nome, e-mail (é o seu login), grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever).\n\nNão pedimos senha, endereço nem documentos.'],
+    '• Nome, e-mail (é o seu login), senha, grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever).\n\nNão pedimos endereço nem documentos.'],
   ['Para que usamos',
     'Organizar o ranking: montar os confrontos do mês, registrar placares e WOs, calcular a pontuação e a classificação, permitir que você combine o jogo com o adversário pelo WhatsApp, publicar avisos da coordenação e dar os parabéns no seu aniversário.'],
   ['Base legal',
@@ -11,7 +11,7 @@ export const PRIVACIDADE = [
   ['Quem vê o quê',
     '• Jogadores logados veem: nome, grupo, foto, posição, pontos, resultados, WOs e celular (para combinar os jogos).\n• Só você e a coordenação veem: seu e-mail e sua data de nascimento.\n• No aniversário aparece só o seu nome, sem data nem idade.\n• Na justificativa do WO não é preciso dizer qual é a lesão.'],
   ['Com quem compartilhamos',
-    'Não vendemos nem cedemos seus dados. Para o app funcionar usamos operadores (art. 5º, VII): Supabase (banco de dados e envio do código de login por e-mail), GitHub Pages (hospedagem do site) e Google Fonts (letras do app). O WhatsApp só é aberto quando você toca no botão.'],
+    'Não vendemos nem cedemos seus dados. Para o app funcionar usamos operadores (art. 5º, VII): Supabase (banco de dados e login), GitHub Pages (hospedagem do site) e Google Fonts (letras do app). O WhatsApp só é aberto quando você toca no botão.'],
   ['Por quanto tempo',
     'Enquanto você participar do ranking. Se sair, a coordenação pode manter o histórico de resultados da temporada para a classificação e apaga os demais dados a pedido.'],
   ['Seus direitos (art. 18 da LGPD)',
@@ -19,7 +19,7 @@ export const PRIVACIDADE = [
   ['Contato sobre dados pessoais',
     'A coordenação responde pelos pedidos sobre dados pessoais (art. 41 da LGPD), pelo Fale conosco ou em galeradoraquete@gmail.com.'],
   ['Segurança',
-    'Entrada só com código enviado ao seu e-mail, sem senha guardada. Regras no banco de dados impedem que um jogador altere dados de outro ou leia e-mail e nascimento alheios.'],
+    'Entrada com e-mail e senha. A senha fica guardada criptografada pelo Supabase: nem a coordenação consegue ver. A senha inicial é a mesma para todos, então troque a sua em Meu perfil. Regras no banco de dados impedem que um jogador altere dados de outro ou leia e-mail e nascimento alheios.'],
   ['Mudanças',
     'Se esta política mudar, avisamos no sino de avisos do app.']
 ];

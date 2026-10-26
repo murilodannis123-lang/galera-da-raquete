@@ -53,7 +53,7 @@ async function jogosDoMes(id, forcar) {
   S.jogosPorMes[id] = data; return data;
 }
 // e-mail e nascimento não vêm na lista (privacidade): só pelas funções meus_dados / admin_emails
-const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
+const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
@@ -407,6 +407,7 @@ function telaPerfil() {
     </div>
     <button class="btn btn-bola" type="submit">Salvar</button>
     <p id="perfil-msg" role="status"></p>
+    <a class="btn btn-linha" href="#/senha">Trocar senha</a>
     <button class="btn btn-linha" type="button" data-acao="sair">Sair da conta</button>
   </form>`;
 }
@@ -560,9 +561,10 @@ function telaAdmin() {
       ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
         <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ' <span class="tag" style="background:#FDECEC;color:var(--verm)">INATIVO</span>'}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
         <select class="campo" style="width:64px;height:40px;padding:0 6px" data-acao="grupo" data-id="${j.id}" aria-label="Grupo de ${esc(j.nome)}">${['A', 'B', 'C'].map((g) => `<option ${g === j.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select>
+        <button class="btn btn-linha" style="height:40px;padding:0 8px;font-size:11px" data-acao="resetSenha" data-id="${j.id}" title="Volta a senha para ${SENHA_INICIAL}">Senha</button>
         <button class="switch" role="switch" aria-checked="${j.admin}" data-acao="admin" data-id="${j.id}" aria-label="Admin: ${esc(j.nome)}" ${j.dono ? 'disabled' : ''}><i></i></button>
       </div>`).join('')}
-      <span class="dica">Chave = admin.</span>
+      <span class="dica">Chave = admin · "Senha" volta a senha da pessoa para ${SENHA_INICIAL}.</span>
     </section>
   </div>`;
 }
@@ -686,6 +688,7 @@ const ACOES = {
   finCancelar: () => { S.admin.finConf = null; render(); },
   finEncerrar: (el) => comTrava('Lançando bônus…', async () => { S.admin.finConf = null; await finEncerrar(el.dataset.v); }, 'Finals encerrado e bônus no ranking.'),
   finApagar: (el) => comTrava('', () => finApagar(el.dataset.v), 'Finals apagado.'),
+  resetSenha: (el) => comTrava('', async () => { const r = await sb.rpc('admin_resetar_senha', { p_jogador: el.dataset.id }); if (r.error) throw r.error; }, 'Senha voltou para ' + SENHA_INICIAL + '.'),
   recusar: (el) => comTrava('', async () => { const r = await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Inscrição recusada.'),
   atualizar: () => comTrava('', async () => {}, ''),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
@@ -744,6 +747,15 @@ const FORMS = {
     const { error } = await sb.from('jogos').update({ wo_de: de, wo_motivo: motivo, wo_obs: obs || null, wo_status: status, wo_por: S.eu.id, sets: null }).eq('id', g.id);
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
     await carregar(); toast(status === 'aguardando' ? 'WO enviado. Seu adversário vai aceitar ou contestar.' : 'WO registrado.'); location.hash = '#/';
+  },
+  senha: async (f) => {
+    const msg = document.getElementById('senha-msg');
+    if (f.senha.value !== f.senha2.value) { msg.className = 'erro'; msg.textContent = 'As duas senhas não são iguais.'; return; }
+    if (f.senha.value === SENHA_INICIAL) { msg.className = 'erro'; msg.textContent = 'Escolha uma senha diferente de ' + SENHA_INICIAL + '.'; return; }
+    const { error } = await sb.auth.updateUser({ password: f.senha.value });
+    if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
+    await sb.from('jogadores').update({ senha_trocada: true }).eq('id', S.eu.id);
+    await carregar(); toast('Senha trocada.'); location.hash = '#/'; render();
   },
   aprovar: (f) => comTrava('Aprovando…', () => aprovar(f), 'Jogador aprovado. Já entra no ranking.'),
   novoJogador: (f) => comTrava('Cadastrando…', () => cadastrarJogador(f), 'Jogador cadastrado. Ele entra com esse e-mail.'),
@@ -835,6 +847,7 @@ let timerCarrossel = null;
 async function render() {
   if (!S.eu) return;
   if (S.eu.pendente) { document.body.classList.remove('noite'); $app.innerHTML = telaEspera(); return; }
+  if (S.eu.admin && !S.eu.senha_trocada) { document.body.classList.remove('noite'); $app.innerHTML = telaSenha(true); return; }
   document.body.classList.toggle('noite', ehNoite());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
@@ -848,6 +861,7 @@ async function render() {
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
       : rota === 'privacidade' ? telaPrivacidade()
+      : rota === 'senha' ? telaSenha(false)
       : rota === 'perfil' ? telaPerfil()
       : rota === 'avisos' ? telaAvisos()
       : rota === 'programacao' ? telaProgramacao()
@@ -875,17 +889,17 @@ function telaEspera() {
 function telaInscricao(email, erro) {
   $app.innerHTML = `<header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">INSCRIÇÃO</p></header>
   <form class="conteudo" style="max-width:420px;width:100%;margin:0 auto">
-    <p class="dica">Primeira vez com <b>${esc(email)}</b>. Preencha pra entrar no ranking. A coordenação define seu grupo e posição.</p>
+    <p class="dica">Acesso criado para <b>${esc(email)}</b>. Agora seus dados pra entrar no ranking. A coordenação define seu grupo e posição.</p>
     <label class="rot">Nome no ranking<input class="campo" name="nome" required maxlength="40" autocomplete="name"></label>
     <label class="rot">Celular (WhatsApp)<input class="campo" name="celular" type="tel" inputmode="tel" placeholder="(19) 9____-____" autocomplete="tel"></label>
     <label class="rot">Nascimento (opcional)<input class="campo" name="nascimento" type="date"></label>
     <button class="btn btn-roxo" type="submit">Enviar inscrição</button>
-    <button class="btn btn-linha" type="button" data-outro>Usar outro e-mail</button>
+    <button class="btn btn-linha" type="button" data-outro>Sair</button>
     <button class="btn btn-linha" type="button" data-priv style="height:40px;font-size:13px">Política de privacidade</button>
     ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}
   </form>`;
   const f = $app.querySelector('form');
-  f.querySelector('[data-outro]').onclick = async () => { await sb.auth.signOut(); telaLogin('email'); };
+  f.querySelector('[data-outro]').onclick = async () => { await sb.auth.signOut(); telaLogin('entrar'); };
   f.querySelector('[data-priv]').onclick = () => { $app.innerHTML = telaPrivacidade().replace('href="#/"', 'href="#/" data-sai-priv'); $app.querySelector('[data-sai-priv]').onclick = (e) => { e.preventDefault(); telaInscricao(email); }; window.scrollTo(0, 0); };
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
@@ -895,43 +909,55 @@ function telaInscricao(email, erro) {
   };
 }
 
-// ---------- login por código no e-mail ----------
+// ---------- login por e-mail e senha ----------
+const SENHA_INICIAL = '123456';
 function telaLogin(etapa, email, erro) {
   document.body.classList.remove('noite');
+  const novo = etapa === 'inscrever';
   $app.innerHTML = `
-  <header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">RANKING</p></header>
-  <form class="conteudo" data-login="${etapa}" style="max-width:420px;width:100%;margin:0 auto">
-    ${etapa === 'email' ? `
-      <label class="rot">Seu e-mail<input class="campo" name="email" type="email" autocomplete="email" required value="${esc(email || '')}"></label>
-      <button class="btn btn-roxo" type="submit">Receber código</button>
-      <p class="dica">Você recebe um código de 6 dígitos no e-mail. Sem senha. Primeira vez? Entre com seu e-mail e faça a inscrição. Depois você fica conectado.</p>
-      <button class="btn btn-linha" type="button" data-priv style="height:40px;font-size:13px">Política de privacidade</button>`
-    : `
-      <p class="dica">Mandamos um código para <b>${esc(email)}</b>. Olhe também o spam.</p>
-      <label class="rot">Código<input class="campo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required style="letter-spacing:6px;text-align:center;font-size:22px"></label>
-      <button class="btn btn-roxo" type="submit">Entrar</button>
-      <button class="btn btn-linha" type="button" data-volta>Trocar e-mail</button>`}
+  <header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">${novo ? 'INSCRIÇÃO' : 'RANKING'}</p></header>
+  <form class="conteudo" style="max-width:420px;width:100%;margin:0 auto">
+    ${novo ? '<p class="dica">Ainda não está no ranking? Crie seu acesso. Depois a coordenação define seu grupo e posição.</p>' : ''}
+    <label class="rot">E-mail<input class="campo" name="email" type="email" autocomplete="email" required value="${esc(email || '')}"></label>
+    <label class="rot">${novo ? 'Crie uma senha (mínimo 6)' : 'Senha'}<input class="campo" name="senha" type="password" autocomplete="${novo ? 'new-password' : 'current-password'}" minlength="6" required></label>
+    ${novo ? '<label class="rot">Repita a senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>' : ''}
+    <button class="btn btn-roxo" type="submit">${novo ? 'Criar acesso' : 'Entrar'}</button>
+    ${novo ? '<button class="btn btn-linha" type="button" data-ir="entrar">Já tenho acesso</button>'
+      : `<p class="dica">Já está no ranking? A senha inicial é <b>${SENHA_INICIAL}</b>; troque em Meu perfil quando quiser. Você fica conectado.</p>
+      <button class="btn btn-linha" type="button" data-ir="inscrever">Primeira vez? Fazer inscrição</button>
+      <a class="btn btn-linha" style="height:40px;font-size:13px" href="${esc(zap('5519997781210', 'Olá! Esqueci minha senha do app do ranking.'))}" target="_blank" rel="noopener">Esqueci a senha</a>`}
+    <button class="btn btn-linha" type="button" data-priv style="height:40px;font-size:13px">Política de privacidade</button>
     ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}
   </form>`;
   const f = $app.querySelector('form');
-  const v = f.querySelector('[data-volta]'); if (v) v.onclick = () => telaLogin('email', email);
-  const pv = f.querySelector('[data-priv]');
-  if (pv) pv.onclick = () => { $app.innerHTML = telaPrivacidade().replace('href="#/"', 'href="#/" data-sai-priv'); $app.querySelector('[data-sai-priv]').onclick = (e) => { e.preventDefault(); telaLogin('email'); }; window.scrollTo(0, 0); };
+  f.querySelector('[data-ir]').onclick = (e) => telaLogin(e.currentTarget.dataset.ir, f.email.value);
+  f.querySelector('[data-priv]').onclick = () => { $app.innerHTML = telaPrivacidade().replace('href="#/"', 'href="#/" data-sai-priv'); $app.querySelector('[data-sai-priv]').onclick = (e) => { e.preventDefault(); telaLogin(etapa, email); }; window.scrollTo(0, 0); };
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
+    const em = f.email.value.trim().toLowerCase(), senha = f.senha.value;
     try {
-      if (etapa === 'email') {
-        const em = f.email.value.trim().toLowerCase();
-        const { error } = await sb.auth.signInWithOtp({ email: em, options: { shouldCreateUser: true } });
-        if (error) throw error;
-        telaLogin('codigo', em);
+      if (novo) {
+        if (senha !== f.senha2.value) throw new Error('As duas senhas não são iguais.');
+        const { error } = await sb.auth.signUp({ email: em, password: senha });
+        if (error) throw new Error(/registered|already/i.test(error.message) ? 'Esse e-mail já tem acesso. Entre com ele (senha inicial ' + SENHA_INICIAL + ').' : error.message);
       } else {
-        const { error } = await sb.auth.verifyOtp({ email, token: f.codigo.value.trim(), type: 'email' });
-        if (error) throw new Error('Código inválido ou vencido. Peça outro.');
-        await entrar();
+        const { error } = await sb.auth.signInWithPassword({ email: em, password: senha });
+        if (error) throw new Error(/invalid/i.test(error.message) ? 'E-mail ou senha errados. Se você ainda não está no ranking, faça a inscrição.' : error.message);
       }
-    } catch (e) { telaLogin(etapa, email || (f.email && f.email.value), e.message || String(e)); }
+      await entrar();
+    } catch (e) { telaLogin(etapa, em, e.message || String(e)); }
   };
+}
+function telaSenha(obrigatorio) {
+  return (obrigatorio ? `<header class="topo" style="padding-bottom:20px"><h1 class="titulo" style="margin-top:20px">Troque sua senha</h1><p class="sub-ranking">ADMIN</p></header>` : voltar('Trocar senha')) + `
+  <form class="conteudo" data-form="senha" style="max-width:420px;width:100%;margin:0 auto">
+    ${obrigatorio ? '<p class="dica">Você é da coordenação. Com a senha inicial, qualquer um que souber seu e-mail entraria como admin. Escolha uma senha sua.</p>' : ''}
+    <label class="rot">Nova senha (mínimo 6)<input class="campo" name="senha" type="password" autocomplete="new-password" minlength="6" required></label>
+    <label class="rot">Repita a nova senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>
+    <button class="btn btn-roxo" type="submit">Salvar senha</button>
+    <p id="senha-msg" role="status"></p>
+    ${obrigatorio ? '<button class="btn btn-linha" type="button" data-acao="sair">Sair da conta</button>' : ''}
+  </form>`;
 }
 
 async function entrar() {
@@ -939,7 +965,7 @@ async function entrar() {
   S.uid = user && user.id;
   const { data: jid, error } = await sb.rpc('vincular_conta');
   if (error) throw error;
-  if (!jid) return telaInscricao(user && user.email);
+  if (!jid) return telaInscricao(user && user.email);  // tem acesso mas ainda não preencheu a inscrição
   await carregar();
   if (!S.mesVer && S.meses[0]) S.mesVer = S.meses[0].id;
   window.onhashchange = render;
@@ -961,7 +987,7 @@ async function iniciar() {
   // window.__SB__ = cliente falso usado só nos testes automáticos
   sb = window.__SB__ || (await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm')).createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) return telaLogin('email');
-  try { await entrar(); } catch (e) { console.error(e); telaLogin('email', '', 'Erro ao entrar: ' + (e.message || e)); }
+  if (!session) return telaLogin('entrar');
+  try { await entrar(); } catch (e) { console.error(e); telaLogin('entrar', '', 'Erro ao entrar: ' + (e.message || e)); }
 }
 iniciar();
