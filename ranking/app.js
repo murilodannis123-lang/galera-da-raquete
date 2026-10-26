@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026104635';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026104635';
-import { REGULAMENTO } from './regulamento.js?v=20261026104635';
-import { PRIVACIDADE } from './privacidade.js?v=20261026104635';
+import * as M from './motor.js?v=20261026110111';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026110111';
+import { REGULAMENTO } from './regulamento.js?v=20261026110111';
+import { PRIVACIDADE } from './privacidade.js?v=20261026110111';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -125,7 +125,7 @@ const PNEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 32 32" aria-hi
 const pneuTag = (sets, t = 16) => (temPneu(sets) ? ` <span title="Pneu (6×0)" style="display:inline-flex;vertical-align:-3px">${PNEU(t)}</span>` : '');
 // troféu dourado + "VENCEDOR" embaixo do nome de quem ganhou
 const TROFEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ouroV" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1A6"/><stop offset=".45" stop-color="#E8B923"/><stop offset="1" stop-color="#A8740E"/></linearGradient></defs><path d="M14 10c-6 0-7 9 1 11M34 10c6 0 7 9-1 11" fill="none" stroke="url(#ouroV)" stroke-width="3" stroke-linecap="round"/><path d="M14 6h20v4c0 9-4 15-10 16-6-1-10-7-10-16z" fill="url(#ouroV)"/><path d="M22 26h4l1 6h-6z" fill="url(#ouroV)"/><rect x="15" y="33" width="18" height="9" rx="2" fill="#5A3E0A"/><rect x="13" y="41" width="22" height="4" rx="2" fill="#3A2806"/></svg>`;
-const VENCEU = '<span class="venc">' + TROFEU(13) + 'VENCEDOR</span>';
+const VENCEU = '<span class="venc">' + TROFEU(18) + 'VENCEDOR</span>';
 const placarHTML = (sets) => esc(placarTxt(sets)) + pneuTag(sets);
 function prazo() {
   if (!S.mesAtual) return null;
@@ -237,9 +237,9 @@ function faixa() {
   const jl = lider && S.jogos.find((g) => g.sets && (g.jogador_a === lider.id || g.jogador_b === lider.id));
   if (jl && vencedor(jl) === lider.id) itens.push(['LÍDER VENCEU', lider.nome + ' venceu o jogo do mês']);
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
-    .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : ''), g.sets]));
+    .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : '')]));
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
-  return itens.map(([t, x, sets]) => `<span><b>${esc(t)}</b>${esc(x)}${sets ? pneuTag(sets, 14) : ''}</span>`).join('');
+  return itens.map(([t, x]) => `<span><b>${esc(t)}</b>${esc(x)}</span>`).join('');
 }
 
 function slides() {
