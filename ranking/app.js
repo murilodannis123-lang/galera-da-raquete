@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026104354';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026104354';
-import { REGULAMENTO } from './regulamento.js?v=20261026104354';
-import { PRIVACIDADE } from './privacidade.js?v=20261026104354';
+import * as M from './motor.js?v=20261026104635';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026104635';
+import { REGULAMENTO } from './regulamento.js?v=20261026104635';
+import { PRIVACIDADE } from './privacidade.js?v=20261026104635';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -334,6 +334,7 @@ async function telaPlacar(id, fin) {
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
+    ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">Cancelar placar</button>` : ''}
     <p id="placar-msg" role="status"></p>
   </form>`;
 }
@@ -731,6 +732,15 @@ const ACOES = {
   reativar: (el) => comTrava('', async () => {
     const r = await sb.from('jogadores').update({ ativo: true, standby: false, posicao: listaGeral().length + 1 }).eq('id', el.dataset.id); if (r.error) throw r.error;
   }, 'Jogador de volta ao ranking.'),
+  // apaga o placar (o jogo volta a ficar pendente); pede um segundo toque pra confirmar
+  cancelarPlacar: (el) => {
+    if (el.dataset.ok !== '1') { el.dataset.ok = '1'; el.textContent = 'Toque de novo para apagar o placar'; el.style.background = '#FDECEC'; return; }
+    const fin = el.dataset.tabela === 'finals_jogos';
+    comTrava('', async () => {
+      const r = await sb.from(el.dataset.tabela).update(fin ? { sets: null } : { sets: null, wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error;
+      location.hash = fin ? '#/finals' : '#/';
+    }, 'Placar cancelado. O jogo voltou a ficar pendente.');
+  },
   apagarAviso: (el) => comTrava('', async () => { const r = await sb.from('avisos').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Aviso apagado.'),
   recusar: (el) => comTrava('', async () => { const r = await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Inscrição recusada.'),
   atualizar: () => comTrava('', async () => {}, ''),
