@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026102805';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026102805';
-import { REGULAMENTO } from './regulamento.js?v=20261026102805';
-import { PRIVACIDADE } from './privacidade.js?v=20261026102805';
+import * as M from './motor.js?v=20261026103040';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026103040';
+import { REGULAMENTO } from './regulamento.js?v=20261026103040';
+import { PRIVACIDADE } from './privacidade.js?v=20261026103040';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
