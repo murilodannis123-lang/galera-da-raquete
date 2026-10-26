@@ -116,6 +116,9 @@ function placarTxt(sets) { return (sets || []).map(([a, b]) => a + '/' + b).join
 const temPneu = (sets) => (sets || []).some(([a, b]) => (a === 6 && b === 0) || (a === 0 && b === 6));
 const PNEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1E1E22"/>${Array.from({ length: 12 }, (_, i) => `<rect x="15" y="1.2" width="2" height="4.2" rx=".6" fill="#55555C" transform="rotate(${i * 30} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="9.6" fill="#2C2C31"/><circle cx="16" cy="16" r="7.2" fill="#C9CCD3"/><circle cx="16" cy="16" r="5.6" fill="#9DA1AA"/>${Array.from({ length: 5 }, (_, i) => `<rect x="15.3" y="10.6" width="1.4" height="4.4" rx=".7" fill="#E7E9EE" transform="rotate(${i * 72} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="1.8" fill="#55555C"/></svg>`;
 const pneuTag = (sets, t = 16) => (temPneu(sets) ? ` <span title="Pneu (6×0)" style="display:inline-flex;vertical-align:-3px">${PNEU(t)}</span>` : '');
+// troféu dourado + "VENCEDOR" embaixo do nome de quem ganhou
+const TROFEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ouroV" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1A6"/><stop offset=".45" stop-color="#E8B923"/><stop offset="1" stop-color="#A8740E"/></linearGradient></defs><path d="M14 10c-6 0-7 9 1 11M34 10c6 0 7 9-1 11" fill="none" stroke="url(#ouroV)" stroke-width="3" stroke-linecap="round"/><path d="M14 6h20v4c0 9-4 15-10 16-6-1-10-7-10-16z" fill="url(#ouroV)"/><path d="M22 26h4l1 6h-6z" fill="url(#ouroV)"/><rect x="15" y="33" width="18" height="9" rx="2" fill="#5A3E0A"/><rect x="13" y="41" width="22" height="4" rx="2" fill="#3A2806"/></svg>`;
+const VENCEU = '<span class="venc">' + TROFEU(13) + 'VENCEDOR</span>';
 const placarHTML = (sets) => esc(placarTxt(sets)) + pneuTag(sets);
 function prazo() {
   if (!S.mesAtual) return null;
@@ -286,10 +289,10 @@ async function telaJogos() {
     ${jogos.map((g) => { const a = porId(g.jogador_a), b = porId(g.jogador_b), v = vencedor(g); return `
       <div class="card" style="padding:12px;display:flex;flex-direction:column;gap:10px">
         ${b ? `<div class="confronto">
-          <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 34)}<span>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º ' : ''}${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span></div>
+          <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 34)}<span class="nm"><span>${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span><small>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small>${v === g.jogador_a ? VENCEU : ''}</span></div>
           <b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
-          <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}${geral[g.jogador_b] ? ' ' + geral[g.jogador_b] + 'º' : ''}</span>${avatar(b, 34)}</div>
-        </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 34)}<span>${esc(a && a.nome)}</span></div>`}
+          <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 34)}</div>
+        </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 34)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
           <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
@@ -483,8 +486,8 @@ function linhaFinals(g, fz) {
   const a = porId(g.jogador_a), b = porId(g.jogador_b), v = g.sets ? (M.resultado(g.sets).aVenceu ? g.jogador_a : g.jogador_b) : null;
   const pode = S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && fz.fase === g.fase);
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
-    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span>${esc(a && a.nome)}</span></div><b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
-      <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span>${esc(b && b.nome)}</span>${avatar(b, 30)}</div></div>
+    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><b class="cond" style="font-style:italic;color:var(--roxo)">VS</b>
+      <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
     <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${placarHTML(g.sets)}</a>` : placarHTML(g.sets)) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
   </div>`;
 }
