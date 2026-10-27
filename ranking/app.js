@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026212825';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026212825';
-import { REGULAMENTO } from './regulamento.js?v=20261026212825';
-import { PRIVACIDADE } from './privacidade.js?v=20261026212825';
+import * as M from './motor.js?v=20261027075746';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027075746';
+import { REGULAMENTO } from './regulamento.js?v=20261027075746';
+import { PRIVACIDADE } from './privacidade.js?v=20261027075746';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -29,7 +29,7 @@ function toast(t) {
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
-const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
+const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" decoding="async" onerror="this.remove()">` : ''}</span>`;
 const voltar = (titulo, sub, para = '#/') => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="${para}" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 
@@ -133,13 +133,23 @@ async function carregar() {
   S.mesAtual = S.meses.find((m) => m.status === 'aberto') || null;
   S.jogosPorMes = {};
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
-  const [jogos, meus, niver, emails] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : []]);
+  const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
+  S.backups = backups;
+  aquecerFotos();
   S.jogos = jogos;
   if (!S.eu) return;
   Object.assign(S.eu, meus[0] || {});
   S.niver = niver;
   S.emails = Object.fromEntries(emails.map((e) => [e.id, e.email]));
   salvarCache();
+}
+// baixa as fotos de todo mundo em segundo plano: quando abrir Jogos ou Pontuação, já estão no celular
+let fotosAquecidas = false;
+function aquecerFotos() {
+  if (fotosAquecidas) return; fotosAquecidas = true;
+  const urls = [...new Set(S.jogadores.map((j) => j.foto_url).filter(Boolean))];
+  const vai = () => urls.forEach((u, i) => setTimeout(() => { const im = new Image(); im.decoding = 'async'; im.src = u; }, i * 40));
+  'requestIdleCallback' in window ? requestIdleCallback(vai, { timeout: 3000 }) : setTimeout(vai, 1500);
 }
 // cópia local do último carregamento: o app abre na hora e atualiza em seguida
 const CACHE = 'galera-cache-v1', CAMPOS = ['uid', 'jogadores', 'meses', 'avisos', 'patros', 'config', 'finals', 'fvagas', 'fjogos', 'mesAtual', 'jogos', 'jogosPorMes', 'curtidas', 'eu', 'niver'];
@@ -728,7 +738,8 @@ function telaAdmin() {
   const pend = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de);
   const ativos = S.jogadores.filter((j) => j.ativo && j.joga).sort((a, b) => a.nome.localeCompare(b.nome));
   const opcoes = ativos.map((j) => `<option value="${j.id}">${esc(j.nome)}</option>`).join('');
-  const ult = S.meses.map((m) => m.id).sort().pop(), sugestao = mes ? proxMes(mes.id) : ult ? proxMes(ult) : mesId(new Date());
+  const ult = S.meses.map((m) => m.id).sort().pop(), temp = Number(S.config.temporada) || 0;
+  const sugestao = mes ? proxMes(mes.id) : ult && temp > Number(ult.slice(0, 4)) ? temp + '-01' : ult ? proxMes(ult) : mesId(new Date());
   const pends = S.jogadores.filter((j) => j.pendente);
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
     ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição. Ele entra com os pontos de quem estava na posição (regra 5.1).</span>
@@ -750,6 +761,7 @@ function telaAdmin() {
     </section>
     ${cardReabrir()}
     ${cardTemporada()}
+    ${cardBackup()}
     ${pend.length ? `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Ainda sem placar</b>${pend.map((g) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:14px">${esc((porId(g.jogador_a) || {}).nome)} x ${esc((porId(g.jogador_b) || {}).nome)}</span><a class="btn btn-linha" style="height:40px;font-size:12px" href="#/placar/${g.id}">Gravar placar</a></div>`).join('')}</section>` : ''}
     ${mes ? `<form class="card" data-form="addJogo" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Adicionar jogo ao mês</b><span class="dica">Pra quem entrou de última hora ou ficou fora da rodada.</span>
       <label class="rot">Jogador 1<select class="campo" name="a" required><option value="">Escolher…</option>${opcoes}</select></label>
@@ -782,6 +794,26 @@ function telaAdmin() {
   </div>`;
 }
 
+// backup: cópia de tudo dentro do banco (automática todo dia e antes das ações grandes) + arquivo pro celular
+async function backup(motivo) { const r = await sb.rpc('fazer_backup', { p_motivo: motivo }); if (r.error) throw new Error('Não consegui fazer o backup antes: ' + r.error.message); }
+const dataHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+function cardBackup() {
+  const bs = S.backups || [], auto = bs.find((b) => b.motivo === 'automático');
+  return `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Backup</b>
+    <span class="dica">O banco guarda sozinho uma cópia de tudo (jogadores, pontos, placares, Finals) todo dia às 3h, e também antes de encerrar mês, reabrir, Finals e temporada nova. Ficam 90 dias de cópias diárias.</span>
+    <div style="font-size:13px;line-height:1.6">${auto ? `Último automático: <b>${dataHora(auto.criado_em)}</b><br>` : ''}${bs.length ? `Último de todos: <b>${dataHora(bs[0].criado_em)}</b> (${esc(bs[0].motivo)}) · ${bs.length} guardados` : 'Nenhum backup ainda.'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="backupAgora">Fazer backup agora</button><button class="btn btn-roxo" data-acao="backupBaixar" ${bs.length ? '' : 'disabled'}>Baixar arquivo</button></div>
+    <span class="dica">O arquivo tem e-mails e datas de nascimento: guarde só com a coordenação (Drive, e-mail próprio).</span>
+  </section>`;
+}
+async function baixarBackup() {
+  const { data, error } = await sb.from('backups').select('criado_em,motivo,dados').order('id', { ascending: false }).limit(1).single();
+  if (error) throw error;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  a.download = 'backup-galera-da-raquete-' + data.criado_em.slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
 // nova temporada (ex.: janeiro): pontos zerados, colocações mantidas, 1º começa com N pontos e o último com 1
 const proxTemporada = () => { const anos = S.meses.map((m) => Number(m.id.slice(0, 4))); return anos.length ? Math.max(...anos) + 1 : ANO(); };
 function cardTemporada() {
@@ -802,6 +834,7 @@ function cardTemporada() {
   </section>`;
 }
 async function iniciarTemporada(T) {
+  await backup('antes da temporada ' + T);
   const lista = listaGeral();
   const copia = lista.map(({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }) => ({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }));
   let r = await sb.from('config').delete().eq('chave', 'backup_temporada_' + (T - 1)); if (r.error) throw r.error;
@@ -825,6 +858,7 @@ function cardReabrir() {
   </section>`;
 }
 async function reabrirMes(id) {
+  await backup('antes de reabrir ' + nomeMes(id));
   const jogos = await jogosDoMes(id, true);
   const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
   const validos = jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de }));
@@ -888,6 +922,7 @@ async function abrirMes(id) {
 }
 async function rodarMes(abrirProx = true) {
   const mes = S.mesAtual;
+  await backup('antes de encerrar ' + nomeMes(mes.id));
   const jogos = await jogosDoMes(mes.id, true);
   const lista = listaGeral();
   const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
@@ -927,6 +962,7 @@ async function finAvancar(gr, fase) {
   r = await sb.from('finals').update({ fase }).eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error;
 }
 async function finEncerrar(gr) {
+  await backup('antes de encerrar o Finals ' + gr);
   const ano = ANO(), { vg, semis, final } = dadosFinals(ano, gr);
   const bonus = M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));
   // regra 7.2.5: bônus somado ao ranking; 7.2.4: classificação final só depois do Finals
@@ -935,6 +971,7 @@ async function finEncerrar(gr) {
   const r = await sb.from('finals').update({ fase: 'encerrado' }).eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error;
 }
 async function finApagar(gr) {
+  await backup('antes de apagar o Finals ' + gr);
   const ano = ANO();
   for (const t of ['finals_jogos', 'finals_vagas', 'finals']) { const r = await sb.from(t).delete().eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error; }
 }
@@ -967,6 +1004,8 @@ const ACOES = {
     const r = tinha ? await sb.from('curtidas').delete().eq('jogo', id).eq('jogador', S.eu.id) : await sb.from('curtidas').insert({ jogo: id, jogador: S.eu.id });
     if (r.error) { if (tinha) lista.push(S.eu.id); else lista.splice(lista.indexOf(S.eu.id), 1); render(); toast('Não deu pra curtir agora.'); }
   },
+  backupAgora: () => comTrava('Fazendo backup…', () => backup('manual'), 'Backup feito.'),
+  backupBaixar: () => comTrava('Preparando o arquivo…', baixarBackup, 'Arquivo baixado.'),
   temporadaPedir: () => { S.admin.temporada = true; render(); },
   temporadaCancelar: () => { S.admin.temporada = false; render(); },
   temporada: (el) => comTrava('Iniciando a temporada…', async () => { S.admin.temporada = false; await iniciarTemporada(Number(el.dataset.v)); }, 'Temporada ' + el.dataset.v + ' iniciada: pontos de partida lançados.'),
