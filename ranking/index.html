@@ -72,15 +72,15 @@ a{color:var(--roxo)}
 .tor-logo{position:absolute;right:-30px;top:50%;width:170px;height:170px;transform:translateY(-50%);opacity:.16;z-index:-1;pointer-events:none}
 .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1A0D33 0%,#2A1650 60%,#4E308A 100%);color:rgba(255,255,255,.75);font:600 13px Inter,system-ui,sans-serif;letter-spacing:1px}
 .splash img{border-radius:50%;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.ptv{display:flex;align-items:center;gap:10px;background:linear-gradient(110deg,#1A0D33 0%,#2A1650 100%);border-radius:14px;padding:8px 12px;color:#fff;text-decoration:none;box-shadow:inset 0 0 0 1px rgba(216,241,69,.18)}
-.ptv-l{font:800 10px/1 'Barlow Semi Condensed',sans-serif;letter-spacing:2px;color:rgba(255,255,255,.55);writing-mode:vertical-rl;transform:rotate(180deg)}
+.ptv{display:flex;align-items:center;gap:10px;background:#EFEAF8;border-radius:14px;padding:8px 12px;color:var(--tinta);text-decoration:none;border:1px solid #E1DAEE}
+.ptv-l{font:800 10px/1 'Barlow Semi Condensed',sans-serif;letter-spacing:2px;color:var(--roxo);opacity:.6;writing-mode:vertical-rl;transform:rotate(180deg)}
 .ptv-sets{flex-grow:1;display:flex;justify-content:center;gap:8px}
-.ptv-set{display:flex;flex-direction:column;align-items:center;gap:1px;background:rgba(255,255,255,.07);border-radius:10px;padding:5px 10px 4px;min-width:58px}
-.ptv-set small{font:700 8.5px Inter,sans-serif;letter-spacing:1px;color:rgba(255,255,255,.5)}
+.ptv-set{display:flex;flex-direction:column;align-items:center;gap:1px;background:#fff;border-radius:10px;padding:5px 10px 4px;min-width:58px;box-shadow:0 1px 3px rgba(42,22,80,.08)}
+.ptv-set small{font:700 8.5px Inter,sans-serif;letter-spacing:1px;color:var(--tinta2)}
 .ptv-set>span{display:flex;align-items:center;gap:5px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-size:24px;line-height:1.05}
-.ptv-set b{color:rgba(255,255,255,.5)}.ptv-set b.w{color:var(--bola);text-shadow:0 0 10px rgba(216,241,69,.45)}
-.ptv-set i{font-style:normal;font-size:16px;color:rgba(255,255,255,.3)}
-.ptv-pneu{display:flex;flex-direction:column;align-items:center;gap:2px}.ptv-pneu svg{background:#fff;border-radius:50%;padding:2px}.ptv-pneu small{font:800 7.5px Inter,sans-serif;letter-spacing:1px;color:rgba(255,255,255,.6)}
+.ptv-set b{color:#B4AAC6}.ptv-set b.w{color:var(--roxo)}
+.ptv-set i{font-style:normal;font-size:16px;color:#C9BFDD}
+.ptv-pneu{display:flex;flex-direction:column;align-items:center;gap:2px}.ptv-pneu small{font:800 7.5px Inter,sans-serif;letter-spacing:1px;color:var(--tinta2)}
 .cab-logo{width:46px;height:46px;flex-shrink:0;border-radius:50%;background:#fff;padding:2px;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .cab h1{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px}
 .cab small{display:block;font-size:12px;color:rgba(255,255,255,.75)}
@@ -198,6 +198,6 @@ body.noite .confronto .p .venc{color:#E8B923}.confronto .p .venc svg{flex-shrink
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm" crossorigin>
-<script type="module" src="app.js?v=20261027133608"></script>
+<script type="module" src="app.js?v=20261027133936"></script>
 </body>
 </html>
