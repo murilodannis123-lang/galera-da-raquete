@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026205846';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026205846';
-import { REGULAMENTO } from './regulamento.js?v=20261026205846';
-import { PRIVACIDADE } from './privacidade.js?v=20261026205846';
+import * as M from './motor.js?v=20261026211149';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026211149';
+import { REGULAMENTO } from './regulamento.js?v=20261026211149';
+import { PRIVACIDADE } from './privacidade.js?v=20261026211149';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -48,6 +48,7 @@ const NADA = '<p class="dica" id="busca-nada" hidden>Ninguém com esse nome.</p>
 
 // ---------- dados ----------
 const porId = (id) => S.jogadores.find((j) => j.id === id);
+const voltando = (j) => !!(j && (j.posicao != null || j.tp || j.vi || j.de));
 // ranking geral (Dynamics): quem joga e está ativo, pela posição definida na última rodada
 function listaGeral() {
   return S.jogadores.filter((j) => j.ativo && j.joga)
@@ -196,11 +197,14 @@ const FRASES_D = ['Perdeu, bracinho de dinossauro!', 'Não foi dessa vez. Mês q
 function telaInicio() {
   const { geral } = posicoes();
   const eu = S.eu;
-  const meu = eu && S.jogos.find((g) => g.jogador_a === eu.id || g.jogador_b === eu.id);
+  const meu = eu && eu.ativo && S.jogos.find((g) => g.jogador_a === eu.id || g.jogador_b === eu.id);
   const p = prazo();
   let corpo;
   if (!eu.joga) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Conta da coordenação</b><div class="dica">Você não entra no ranking. Use o Admin pelo botão ☰.</div></div></div>`;
+  } else if (!eu.ativo) {
+    corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:10px"><div><b class="cond" style="font-size:18px">Você está fora do ranking</b><div class="dica">Quer voltar? A coordenação define seu grupo e sua posição.</div></div>
+      <button class="btn btn-bola" data-acao="pedirVolta">Quero voltar ao ranking</button></div>`;
   } else if (!S.mesAtual && minhaVaga() && (S.finals.find((x) => x.ano === anoFinals() && x.grupo === minhaVaga().grupo) || {}).fase !== 'encerrado') {
     const v = minhaVaga(), fz = S.finals.find((x) => x.ano === v.ano && x.grupo === v.grupo);
     corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">Você está no Finals!</b><div class="dica">Grupo ${esc(v.grupo)} · Chave ${v.chave} · ${esc(FASES[fz.fase])}</div></div><a class="btn btn-bola" href="#/finals" style="height:44px;padding:0 14px;font-size:13px">Ver jogos</a></div>`;
@@ -718,7 +722,7 @@ function telaAdmin() {
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
     ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição. Ele entra com os pontos de quem estava na posição (regra 5.1).</span>
       ${pends.map((j) => `<form data-form="aprovar" data-id="${j.id}" style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px">
-        <span><b>${esc(j.nome)}</b><br><small class="dica">${esc(S.emails[j.id] || '')}${j.celular ? ' · ' + esc(j.celular) : ''}</small></span>
+        <span><b>${esc(j.nome)}</b>${voltando(j) ? ' <span class="tag" style="background:#E3F0E8;color:var(--verde)">QUER VOLTAR</span>' : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.celular ? ' · ' + esc(j.celular) : ''}</small></span>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Grupo<select class="campo" name="grupo" required><option value="">Escolher…</option><option>A</option><option>B</option><option>C</option></select></label>
         <label class="rot">Posição no geral<input class="campo" name="pos" type="number" min="1" value="${listaGeral().length + 1}"></label></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="recusar" data-id="${j.id}">Recusar</button><button class="btn btn-roxo" type="submit">Aprovar</button></div>
@@ -774,14 +778,16 @@ function cardTemporada() {
   const T = proxTemporada(), feita = Number(S.config.temporada) >= T, ult = S.meses.map((m) => m.id).sort().pop();
   if (feita || (ult && Number(ult.slice(5)) < 10)) return '';
   const lista = listaGeral(), n = lista.length, conf = S.admin.temporada;
-  const finAbertos = S.finals.filter((fz) => fz.ano === T - 1 && fz.fase !== 'encerrado').map((fz) => fz.grupo);
+  const falta = ['A', 'B', 'C'].filter((g) => (S.finals.find((fz) => fz.ano === T - 1 && fz.grupo === g) || {}).fase !== 'encerrado');
+  // só libera depois da final do Finals (5/12)
+  if (new Date() < new Date(T - 1, 11, 6)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">O botão de iniciar a temporada ${T} libera depois da final do Finals, a partir de 06/12/${T - 1}.</span></section>`;
   return `<section class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Temporada ${T}</b>
     ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas):</span>
       <div style="font-size:13px;line-height:1.6">${lista.slice(0, 3).map((j, i) => `${i + 1}º ${esc(j.nome)} → <b>${n - i} pts</b>`).join('<br>')}${n > 4 ? '<br>…' : ''}${n > 3 ? `<br>${n}º ${esc(lista[n - 1].nome)} → <b>1 pt</b>` : ''}</div>
-      ${finAbertos.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${finAbertos.join(', ')}: o bônus não entraria.</span>` : !S.finals.some((fz) => fz.ano === T - 1) ? `<span class="erro" style="font-size:13px">O Finals ${T - 1} ainda não foi montado. Só confirme se não vai ter Finals.</span>` : ''}
+      ${falta.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${falta.join(', ')}: encerre antes, senão o bônus não entra.</span>` : ''}
       <span class="dica">Uma cópia dos pontos de agora fica guardada no banco.</span>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="temporadaCancelar">Voltar</button><button class="btn btn-roxo" data-acao="temporada" data-v="${T}">Confirmar</button></div>`
-      : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Faça depois de encerrar o Finals. Depois é só abrir janeiro e gerar os confrontos.</span>`}
+      : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Depois é só abrir janeiro e gerar os confrontos.</span>`}
   </section>`;
 }
 async function iniciarTemporada(T) {
@@ -982,7 +988,9 @@ const ACOES = {
     }, 'Placar cancelado. O jogo voltou a ficar pendente.');
   },
   apagarAviso: (el) => comTrava('', async () => { const r = await sb.from('avisos').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Aviso apagado.'),
-  recusar: (el) => comTrava('', async () => { const r = await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Inscrição recusada.'),
+  // quem já jogou e pediu pra voltar não é apagado: só volta a ficar fora
+  recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
+  pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => { el.setAttribute('aria-checked', el.getAttribute('aria-checked') !== 'true'); },
@@ -1225,7 +1233,7 @@ async function render() {
 function telaEspera() {
   return `<header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">RANKING</p></header>
   <div class="conteudo" style="max-width:420px;width:100%;margin:0 auto;text-align:center">
-    <b class="cond" style="font-size:26px">Inscrição enviada!</b>
+    <b class="cond" style="font-size:26px">${voltando(S.eu) ? 'Pedido de volta enviado!' : 'Inscrição enviada!'}</b>
     <p style="line-height:1.5">Oi, <b>${esc(S.eu.nome)}</b>! A coordenação vai definir seu grupo (A, B ou C) e sua posição no ranking. Quando liberar, o app abre normal. Você continua conectado.</p>
     <button class="btn btn-roxo" data-acao="atualizar">Atualizar</button>
     <a class="btn btn-linha" href="${esc(zap(S.config.fale_conosco || '5519997781210', 'Olá! Fiz minha inscrição no app do ranking: ' + S.eu.nome))}" target="_blank" rel="noopener">Falar com a coordenação</a>
