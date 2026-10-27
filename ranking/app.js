@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027102605';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027102605';
-import { REGULAMENTO } from './regulamento.js?v=20261027102605';
-import { PRIVACIDADE } from './privacidade.js?v=20261027102605';
+import * as M from './motor.js?v=20261027105832';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027105832';
+import { REGULAMENTO } from './regulamento.js?v=20261027105832';
+import { PRIVACIDADE } from './privacidade.js?v=20261027105832';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -201,6 +201,12 @@ const pneuTag = (sets, t = 16) => (temPneu(sets) ? ` <span title="Pneu (6×0)" s
 const TROFEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ouroV" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1A6"/><stop offset=".45" stop-color="#E8B923"/><stop offset="1" stop-color="#A8740E"/></linearGradient></defs><path d="M14 10c-6 0-7 9 1 11M34 10c6 0 7 9-1 11" fill="none" stroke="url(#ouroV)" stroke-width="3" stroke-linecap="round"/><path d="M14 6h20v4c0 9-4 15-10 16-6-1-10-7-10-16z" fill="url(#ouroV)"/><path d="M22 26h4l1 6h-6z" fill="url(#ouroV)"/><rect x="15" y="33" width="18" height="9" rx="2" fill="#5A3E0A"/><rect x="13" y="41" width="22" height="4" rx="2" fill="#3A2806"/></svg>`;
 const VENCEU = '<span class="venc">' + TROFEU(17) + 'VENCEDOR</span>';
 const placarHTML = (sets) => esc(placarTxt(sets)) + pneuTag(sets);
+// placar estilo TV: cada set num quadrinho (número da esquerda = jogador da esquerda), quem venceu o set em verde-limão
+const placarTV = (sets, href) => {
+  const cols = sets.map(([a, b], i) => `<span class="ptv-set"><small>${i === 2 ? 'TIE-BREAK' : i + 1 + 'º SET'}</small><span><b class="${a > b ? 'w' : ''}">${a}</b><i>–</i><b class="${b > a ? 'w' : ''}">${b}</b></span></span>`).join('');
+  const tag = href ? 'a' : 'div';
+  return `<${tag} class="ptv"${href ? ` href="${href}" aria-label="Placar ${esc(placarTxt(sets))}, tocar pra corrigir"` : ` aria-label="Placar ${esc(placarTxt(sets))}"`}><span class="ptv-l">PLACAR</span><span class="ptv-sets">${cols}</span>${temPneu(sets) ? `<span class="ptv-pneu" title="Pneu (6×0)">${PNEU(20)}<small>PNEU</small></span>` : ''}</${tag}>`;
+};
 function prazo() {
   if (!S.mesAtual) return null;
   const [a, m] = S.mesAtual.id.split('-').map(Number);
@@ -386,10 +392,10 @@ async function telaJogos() {
           <span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
           <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 44)}</div>
         </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 44)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
-        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
+        ${b && g.sets && !g.wo_de ? placarTV(g.sets, pode(g) ? '#/placar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
           <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
-        </div>
+        </div>`}
         ${curtir(g)}
       </div>`; }).join('') || '<p class="dica">Nenhum jogo neste mês.</p>'}
   </div>`;
@@ -595,7 +601,7 @@ function linhaFinals(g, fz) {
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
     <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
-    <div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${g.sets ? (pode ? `<a href="#/fplacar/${g.id}">${placarHTML(g.sets)}</a>` : placarHTML(g.sets)) : pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>
+    ${g.sets ? placarTV(g.sets, pode ? '#/fplacar/' + g.id : '') : `<div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>`}
   </div>`;
 }
 // colunas lado a lado das duas chaves do Finals
