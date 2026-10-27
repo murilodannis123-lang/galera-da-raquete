@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027135725';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027135725';
-import { REGULAMENTO } from './regulamento.js?v=20261027135725';
-import { PRIVACIDADE } from './privacidade.js?v=20261027135725';
+import * as M from './motor.js?v=20261027140828';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027140828';
+import { REGULAMENTO } from './regulamento.js?v=20261027140828';
+import { PRIVACIDADE } from './privacidade.js?v=20261027140828';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1262,14 +1262,32 @@ function somQuique(intro) {
   ctx.resume().catch(() => {});
   setTimeout(() => { document.removeEventListener('pointerdown', libera, true); if (!foi && ctx.state !== 'closed') ctx.close(); }, 2800);
 }
-function fogos() {
+function fogos(texto) {
   const cores = ['#D8F145', '#FF6B6B', '#4FC3F7', '#FFD54F', '#B388FF'];
   const pos = [[20, 20], [78, 25], [50, 35], [28, 60], [72, 68]];
   const el = document.createElement('div'); el.className = 'fogos'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = pos.map(([x, y], i) => `<div class="b" style="left:${x}%;top:${y}%">${Array.from({ length: 12 }, (_, k) => `<span class="r" style="transform:rotate(${k * 30}deg)"><span class="p" style="background:${cores[i]};animation-delay:${i * 0.25}s"></span></span>`).join('')}</div>`).join('');
   const v = document.createElement('div'); v.className = 'vitoria'; v.setAttribute('role', 'status'); v.innerHTML = '<span>VITÓRIA!</span>';
-  document.body.append(el, v);
+  document.body.append(el); if (texto !== '') document.body.append(v);
   setTimeout(() => { el.remove(); v.remove(); }, 3500);
+}
+
+// aniversário: quem faz aniversário hoje ganha os parabéns ao abrir o app (uma vez por dia)
+function parabens() {
+  const n = S.eu && S.eu.nascimento; if (!n || S.eu.pendente) return;
+  const hoje = new Date(), mmdd = String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
+  if (n.slice(5, 10) !== mmdd) return;
+  const chave = 'parabens-' + hoje.getFullYear();
+  try { if (localStorage.getItem(chave) === S.eu.id) return; localStorage.setItem(chave, S.eu.id); } catch (e) { /* mostra mesmo */ }
+  setTimeout(() => {
+    fogos('');
+    const d = document.createElement('div'); d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Feliz aniversário');
+    d.innerHTML = `<div class="niver-c"><div class="niver-bolo" aria-hidden="true">🎂</div><small>HOJE É O SEU DIA</small><b class="cond">Feliz aniversário,<br>${esc(S.eu.nome.split(' ')[0])}!</b>
+      <p>A Galera da Raquete deseja muitas felicidades, saúde e muitas vitórias dentro e fora da quadra!</p><button class="btn btn-bola" type="button">Valeu, galera! 🎾</button></div>`;
+    const fechar = () => d.remove();
+    d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('button')) fechar(); });
+    document.body.appendChild(d); d.querySelector('button').focus();
+  }, 900);
 }
 
 // ---------- roteamento ----------
@@ -1415,6 +1433,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
     .subscribe();
   render();
+  parabens();
 }
 
 async function iniciar() {
