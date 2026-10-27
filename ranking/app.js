@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027080807';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027080807';
-import { REGULAMENTO } from './regulamento.js?v=20261027080807';
-import { PRIVACIDADE } from './privacidade.js?v=20261027080807';
+import * as M from './motor.js?v=20261027101259';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027101259';
+import { REGULAMENTO } from './regulamento.js?v=20261027101259';
+import { PRIVACIDADE } from './privacidade.js?v=20261027101259';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -415,6 +415,7 @@ async function telaPlacar(id, fin) {
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
     ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">Cancelar placar</button>` : ''}
+    ${!fin && !fechado ? `<a class="btn btn-linha" href="#/wo/${g.id}" style="color:var(--verm);gap:6px">${IC_WO} Não teve jogo? Lançar WO</a>` : ''}
     <p id="placar-msg" role="status"></p>
   </form>`;
 }
@@ -1204,11 +1205,11 @@ function abertura(forcar) {
   const el = document.createElement('div'); el.className = 'intro'; el.setAttribute('aria-hidden', 'true');
   const bolas = Array.from({ length: 26 }, (_, i) => ({ x: Math.round(rnd() * 92), y: Math.round(10 + rnd() * 80), dur: 1.1 + rnd() * 0.6, ini: i * 0.06 + rnd() * 0.3, t: Math.round(14 + rnd() * 18) }));
   el.innerHTML = bolas.map((b) => `<span class="intro-bola" style="left:${b.x}%;top:${b.y}%;animation-duration:${b.dur.toFixed(2)}s;animation-delay:${b.ini.toFixed(2)}s">${BOLA(b.t)}</span>`).join('')
-    + `<div class="intro-logo"><img src="icones/logo.png" alt=""></div><div class="intro-txt"><div class="cond" style="font-size:22px;font-weight:700;color:#fff;margin-bottom:10px">Bem-vindo ao novo app<br>do ranking!</div><b class="cond" style="font-size:13px;letter-spacing:4px;color:var(--bola)">PORTAL DO LAGO</b><div class="cond" style="font-size:30px;font-weight:800">Open de Tênis</div></div>`;
+    + `<div class="intro-logo"><img src="icones/logo.png" alt=""></div><div class="intro-txt"><b class="cond" style="font-size:13px;letter-spacing:4px;color:var(--bola)">PORTAL DO LAGO</b><div class="cond" style="font-size:30px;font-weight:800">Open de Tênis</div></div>`;
   document.body.appendChild(el);
   somQuique(el);
-  setTimeout(() => el.classList.add('sai'), 3400);
-  setTimeout(() => el.remove(), 4200);
+  setTimeout(() => el.classList.add('sai'), 2800);
+  setTimeout(() => el.remove(), 3600);
 }
 // som de uma bolinha quicando, feito na hora (sem arquivo). O navegador só libera som depois de um toque:
 // se ainda estiver bloqueado, toca no primeiro toque durante a abertura (ou ao tocar no logo pra rever).
