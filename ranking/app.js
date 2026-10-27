@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026211149';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026211149';
-import { REGULAMENTO } from './regulamento.js?v=20261026211149';
-import { PRIVACIDADE } from './privacidade.js?v=20261026211149';
+import * as M from './motor.js?v=20261026211722';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026211722';
+import { REGULAMENTO } from './regulamento.js?v=20261026211722';
+import { PRIVACIDADE } from './privacidade.js?v=20261026211722';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1193,6 +1193,7 @@ function fogos() {
 
 // ---------- roteamento ----------
 let timerCarrossel = null;
+let hashAnterior = null;
 async function render() {
   if (!S.eu) return;
   if (S.eu.pendente) { document.body.classList.remove('noite'); $app.innerHTML = telaEspera(); return; }
@@ -1227,7 +1228,9 @@ async function render() {
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   aplicarBusca();
   document.querySelectorAll('.chave-scroll').forEach((el) => { el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2; });
-  window.scrollTo(0, 0);
+  // só volta pro topo quando muda de tela (curtir, placar ao vivo etc. mantêm onde a pessoa está)
+  if (location.hash !== hashAnterior) window.scrollTo(0, 0);
+  hashAnterior = location.hash;
 }
 
 function telaEspera() {
