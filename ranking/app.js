@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027135328';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027135328';
-import { REGULAMENTO } from './regulamento.js?v=20261027135328';
-import { PRIVACIDADE } from './privacidade.js?v=20261027135328';
+import * as M from './motor.js?v=20261027135725';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027135725';
+import { REGULAMENTO } from './regulamento.js?v=20261027135725';
+import { PRIVACIDADE } from './privacidade.js?v=20261027135725';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -348,7 +348,7 @@ function renderCarrossel() {
     : s.tipo === 'anuncie-velho'
     ? `<a class="patro anuncie" href="${esc(linkAnuncio)}" target="_blank" rel="noopener"><span class="anuncie-ic" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="currentColor" fill-opacity=".25"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span class="anuncie-tx"><b class="cond">ANUNCIE AQUI</b><small>Sua marca pra toda a Galera</small></span></a>`
     : s.tipo === 'p'
-    ? `<${s.link ? `a href="${esc(s.link)}" target="_blank" rel="noopener"` : 'div'} class="patro" style="background:${esc(s.fundo || '#fff')}"><img src="${esc(s.logo_url)}" alt="${esc(s.nome)}"></${s.link ? 'a' : 'div'}>`
+    ? `<${s.link ? `a href="${esc(s.link)}" target="_blank" rel="noopener"` : 'div'} class="patro${/-slide\./.test(s.logo_url || '') ? ' cheia' : ''}" style="background:${esc(s.fundo || '#fff')}"><img src="${esc(s.logo_url)}" alt="${esc(s.nome)}"></${s.link ? 'a' : 'div'}>`
     : `<div class="top4"><b class="cond" style="font-size:12px;letter-spacing:1.5px;color:var(--bola)">TOP 4 · ${s.g === 'D' ? 'DYNAMICS (GERAL)' : 'GRUPO ' + s.g}</b><div class="g">${s.js.map((j, k) => `<div><b class="cond" style="color:var(--bola)">${k + 1}º</b><span>${esc(j.nome)}</span><small>${j.tp}</small></div>`).join('')}</div></div>`;
   el.innerHTML = corpo + `<div class="pontos" aria-hidden="true">${sl.map((_, k) => `<i style="width:${k === i ? 22 : 6}px;${k === i ? 'background:var(--roxo)' : ''}"></i>`).join('')}</div>`;
 }
