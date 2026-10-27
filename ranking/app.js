@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261026211722';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026211722';
-import { REGULAMENTO } from './regulamento.js?v=20261026211722';
-import { PRIVACIDADE } from './privacidade.js?v=20261026211722';
+import * as M from './motor.js?v=20261026212825';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261026212825';
+import { REGULAMENTO } from './regulamento.js?v=20261026212825';
+import { PRIVACIDADE } from './privacidade.js?v=20261026212825';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -75,7 +75,7 @@ function posicoes() {
 }
 async function jogosDoMes(id, forcar) {
   if (!id) return [];
-  if (!forcar && S.jogosPorMes[id]) return S.jogosPorMes[id];
+  if (!sb || (!forcar && S.jogosPorMes[id])) return S.jogosPorMes[id] || [];
   const { data, error } = await sb.from('jogos').select('*').eq('mes', id).order('criado_em');
   if (error) throw error;
   S.jogosPorMes[id] = data;
@@ -132,13 +132,24 @@ async function carregar() {
   S.config = Object.fromEntries(cf.data.map((c) => [c.chave, c.valor]));
   S.mesAtual = S.meses.find((m) => m.status === 'aberto') || null;
   S.jogosPorMes = {};
-  S.jogos = S.mesAtual ? await jogosDoMes(S.mesAtual.id) : [];
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
+  const [jogos, meus, niver, emails] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : []]);
+  S.jogos = jogos;
   if (!S.eu) return;
-  const [meus, niver, emails] = await Promise.all([rpcLista('meus_dados'), rpcLista('aniversariantes_hoje'), S.eu.admin ? rpcLista('admin_emails') : []]);
   Object.assign(S.eu, meus[0] || {});
   S.niver = niver;
   S.emails = Object.fromEntries(emails.map((e) => [e.id, e.email]));
+  salvarCache();
+}
+// cópia local do último carregamento: o app abre na hora e atualiza em seguida
+const CACHE = 'galera-cache-v1', CAMPOS = ['uid', 'jogadores', 'meses', 'avisos', 'patros', 'config', 'finals', 'fvagas', 'fjogos', 'mesAtual', 'jogos', 'jogosPorMes', 'curtidas', 'eu', 'niver'];
+function salvarCache() { try { localStorage.setItem(CACHE, JSON.stringify(Object.fromEntries(CAMPOS.map((k) => [k, S[k]])))); } catch (e) { /* sem espaço ou sem storage: segue */ } }
+function lerCache() {
+  try {
+    const sess = JSON.parse(localStorage.getItem('sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token') || 'null');
+    const c = JSON.parse(localStorage.getItem(CACHE) || 'null');
+    return c && sess && sess.user && c.uid === sess.user.id && c.eu ? c : null;
+  } catch (e) { return null; }
 }
 // ---------- Finals ----------
 const ANO = () => new Date().getFullYear();
@@ -332,7 +343,7 @@ function telaRanking() {
       <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
-          <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
+          <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
         </div>
         <div class="stats"><span><b style="color:var(--roxo)">${j.tp}</b><small>TP</small></span><span><b>${j.vi}</b><small>VI</small></span><span><b>${j.sp}</b><small>SP</small></span><span><b>${j.de}</b><small>DE</small></span><span><b style="color:${sg < 0 ? 'var(--verm)' : 'inherit'}">${sg > 0 ? '+' : ''}${sg}</b><small>SG</small></span></div>
       </div>${!geral && i === 7 && lista.length > 8 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador ainda.</p>'}
@@ -994,7 +1005,7 @@ const ACOES = {
   atualizar: () => comTrava('', async () => {}, ''),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => { el.setAttribute('aria-checked', el.getAttribute('aria-checked') !== 'true'); },
-  sair: async () => { await sb.auth.signOut(); location.hash = ''; location.reload(); },
+  sair: async () => { try { localStorage.removeItem(CACHE); } catch (e) { /* ok */ } await sb.auth.signOut(); location.hash = ''; location.reload(); },
   pedirRodar: () => { S.admin.confirmar = true; render(); },
   cancelarRodar: () => { S.admin.confirmar = false; render(); },
   rodar: () => { const abrir = !!(document.getElementById('abrirProx') || {}).checked; comTrava('Encerrando o mês…', async () => { S.admin.confirmar = false; await rodarMes(abrir); }, abrir ? 'Mês encerrado e próximo aberto.' : 'Mês encerrado.'); },
@@ -1082,7 +1093,9 @@ const FORMS = {
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-acao]');
   if (!el || el.tagName === 'SELECT' || !ACOES[el.dataset.acao]) return;
-  ev.preventDefault(); ACOES[el.dataset.acao](el);
+  ev.preventDefault();
+  if (!sb && el.dataset.acao !== 'abertura') { toast('Só um instante, carregando…'); return; }
+  ACOES[el.dataset.acao](el);
 });
 document.addEventListener('click', (ev) => {
   const av = ev.target.closest && ev.target.closest('.avatar[data-ver]');
@@ -1318,7 +1331,8 @@ function telaSenha(obrigatorio) {
 }
 
 async function entrar() {
-  const { data: { user } } = await sb.auth.getUser();
+  const { data: { session } } = await sb.auth.getSession();
+  const user = session && session.user;
   S.uid = user && user.id;
   const { data: jid, error } = await sb.rpc('vincular_conta');
   if (error) throw error;
@@ -1337,6 +1351,9 @@ async function entrar() {
 
 async function iniciar() {
   abertura(false);
+  // abre na hora com a cópia do último acesso (se for o mesmo usuário); os dados novos chegam logo depois
+  const c = lerCache();
+  if (c) { Object.assign(S, c); if (!S.mesVer && S.meses[0]) S.mesVer = S.meses[0].id; window.onhashchange = render; render(); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   if (!window.__SB__ && SUPABASE_URL.startsWith('COLE')) {
     $app.innerHTML = '<div class="conteudo" style="padding-top:60px"><b class="cond" style="font-size:22px">Falta configurar o banco</b><p class="dica">Preencha o config.js com a URL e a chave anon do Supabase.</p></div>';

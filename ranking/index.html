@@ -70,6 +70,8 @@ a{color:var(--roxo)}
 .tor-tx{flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:3px}.tor-tx b{font-size:22px;line-height:1.1}.tor-tx small{font-size:13px;color:rgba(255,255,255,.75)}
 .tor-seta{font-size:30px;color:var(--bola);line-height:1}
 .tor-logo{position:absolute;right:-30px;top:50%;width:170px;height:170px;transform:translateY(-50%);opacity:.16;z-index:-1;pointer-events:none}
+.splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1A0D33 0%,#2A1650 60%,#4E308A 100%);color:rgba(255,255,255,.75);font:600 13px Inter,system-ui,sans-serif;letter-spacing:1px}
+.splash img{border-radius:50%;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .cab-logo{width:46px;height:46px;flex-shrink:0;border-radius:50%;background:#fff;padding:2px;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .cab h1{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px}
 .cab small{display:block;font-size:12px;color:rgba(255,255,255,.75)}
@@ -180,7 +182,8 @@ body.noite .confronto .p .venc{color:#E8B923}.confronto .p .venc svg{flex-shrink
 </style>
 </head>
 <body>
-<div id="app" class="app" aria-live="polite"><p style="padding:40px 16px;text-align:center;color:#5B5470">Carregando…</p></div>
-<script type="module" src="app.js?v=20261026211722"></script>
+<div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm" crossorigin>
+<script type="module" src="app.js?v=20261026212825"></script>
 </body>
 </html>
