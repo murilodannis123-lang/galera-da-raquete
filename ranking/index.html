@@ -122,6 +122,10 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .noite .tile .ic{background:rgba(216,241,69,.06);color:var(--bola);box-shadow:0 0 0 1px rgba(216,241,69,.4),0 0 14px rgba(216,241,69,.3)}
 /* patrocínio + faixa */
 .patro{margin:12px 16px 0;height:86px;border:1px solid var(--linha);border-radius:16px;display:flex;align-items:center;justify-content:center;padding:8px 14px;overflow:hidden;text-decoration:none}
+.patro.anuncie{background:linear-gradient(110deg,#1A0D33 0%,#4E308A 100%);border:0;color:#fff;justify-content:flex-start;gap:12px}
+.anuncie-ic{flex-shrink:0;width:48px;height:48px;border-radius:14px;background:rgba(216,241,69,.15);color:var(--bola);display:flex;align-items:center;justify-content:center}
+.anuncie-tx{flex-grow:1;min-width:0;display:flex;flex-direction:column}.anuncie-tx b{font-size:20px;letter-spacing:1px;white-space:nowrap;color:var(--bola);line-height:1.1}.anuncie-tx small{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.8)}
+.anuncie-zap{flex-shrink:0;background:#25D366;color:#fff;font:800 12px Inter,sans-serif;padding:8px 10px;border-radius:999px}
 .patro img{max-width:100%;max-height:70px;object-fit:contain}
 .top4{margin:12px 16px 0;height:86px;background:var(--noite);border-radius:16px;padding:8px 10px;color:#fff;display:flex;flex-direction:column;gap:5px}
 .top4 .g{display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -184,6 +188,6 @@ body.noite .confronto .p .venc{color:#E8B923}.confronto .p .venc svg{flex-shrink
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm" crossorigin>
-<script type="module" src="app.js?v=20261027101259"></script>
+<script type="module" src="app.js?v=20261027101833"></script>
 </body>
 </html>
