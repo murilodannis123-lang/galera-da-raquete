@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027140828';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027140828';
-import { REGULAMENTO } from './regulamento.js?v=20261027140828';
-import { PRIVACIDADE } from './privacidade.js?v=20261027140828';
+import * as M from './motor.js?v=20261027140904';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027140904';
+import { REGULAMENTO } from './regulamento.js?v=20261027140904';
+import { PRIVACIDADE } from './privacidade.js?v=20261027140904';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -314,7 +314,7 @@ const MENU = [
 function faixa() {
   const itens = [];
   S.avisos.filter((a) => a.na_faixa && Date.now() - new Date(a.criado_em) < 30 * 864e5).forEach((a) => itens.push([a.tipo === 'AVISO' ? 'AVISO' : a.tipo, a.titulo]));
-  (S.niver || []).forEach((j) => itens.push(['ANIVERSARIANTE DO DIA', 'Parabéns, ' + j.nome + '!']));
+  (S.niver || []).forEach((j) => itens.push(['🎈🎈 ANIVERSARIANTE DO DIA', '🎂 Parabéns, ' + j.nome + '!']));
   const { geral } = posicoes();
   const lider = rankingVivo()[0];
   const jl = lider && S.jogos.find((g) => g.sets && (g.jogador_a === lider.id || g.jogador_b === lider.id));
