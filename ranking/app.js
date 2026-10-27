@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027141643';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027141643';
-import { REGULAMENTO } from './regulamento.js?v=20261027141643';
-import { PRIVACIDADE } from './privacidade.js?v=20261027141643';
+import * as M from './motor.js?v=20261027141901';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027141901';
+import { REGULAMENTO } from './regulamento.js?v=20261027141901';
+import { PRIVACIDADE } from './privacidade.js?v=20261027141901';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -573,9 +573,10 @@ function telaProgramacao() {
   return voltar('Programação 2026', 'Tênis Portal do Lago') + `<ol class="conteudo" style="list-style:none">${PROGRAMACAO.map(([ini, fim, data, tit]) => {
     const feito = new Date(fim + 'T23:59:59') < hoje, agora = !feito && new Date(ini + 'T00:00:00') <= hoje, prox = !feito && !agora && !achou;
     if (agora || prox) achou = true;
-    return `<li class="card" style="display:flex;justify-content:space-between;gap:10px;align-items:center;${agora || prox ? 'border-color:var(--roxo)' : ''}${feito ? ';opacity:.7' : ''}">
-      <span><b style="font-size:12px;color:${feito ? 'var(--verde)' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${data}</b><br><span style="font-weight:600">${esc(tit)}</span></span>
-      ${agora || prox ? `<span class="tag" style="background:var(--bola);color:var(--noite)">${agora ? 'AGORA' : 'PRÓXIMO'}</span>` : ''}</li>`;
+    // o que já passou fica cinza e apagado, com "JÁ FOI"; o que vem pela frente continua em destaque
+    return `<li class="card${feito ? ' prog-feito' : ''}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;${agora || prox ? 'border:2px solid var(--roxo)' : ''}">
+      <span><b style="font-size:12px;color:${feito ? '#9A93A8' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${data}</b><br><span style="font-weight:600;${feito ? 'text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)' : ''}">${esc(tit)}</span></span>
+      ${agora || prox ? `<span class="tag" style="background:var(--bola);color:var(--noite)">${agora ? 'AGORA' : 'PRÓXIMO'}</span>` : feito ? '<span class="tag" style="background:#ECEAF0;color:#8A8496;white-space:nowrap">JÁ FOI</span>' : ''}</li>`;
   }).join('')}</ol>`;
 }
 
@@ -800,7 +801,7 @@ function telaAdmin() {
       <label class="rot">Título<input class="campo" name="titulo" required maxlength="80"></label>
       <label class="rot">Texto<textarea class="campo" name="texto" rows="3"></textarea></label>
       <label class="rot">Cartaz, foto ou arquivo (opcional)<input class="campo" name="arquivo" type="file" accept="image/*,application/pdf" style="padding:10px"></label>
-      <span class="dica" style="margin-top:-4px">Foto/cartaz aparece no aviso. PDF vira um botão "Abrir". Até 10 MB.</span>
+      <span class="dica" style="margin-top:-4px">Foto/cartaz aparece no aviso. PDF vira um botão "Abrir". Até 10 MB. Os avisos saem do sino sozinhos depois de 7 dias.</span>
       <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" name="faixa" style="width:20px;height:20px;accent-color:var(--roxo)">Mostrar também na faixa de notícias</label>
       <button class="btn btn-roxo" type="submit">Publicar</button></form>
     <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>${BUSCA('Buscar jogador…')}${NADA}
