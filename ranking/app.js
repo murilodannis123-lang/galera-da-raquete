@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027140904';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027140904';
-import { REGULAMENTO } from './regulamento.js?v=20261027140904';
-import { PRIVACIDADE } from './privacidade.js?v=20261027140904';
+import * as M from './motor.js?v=20261027141643';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027141643';
+import { REGULAMENTO } from './regulamento.js?v=20261027141643';
+import { PRIVACIDADE } from './privacidade.js?v=20261027141643';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -317,8 +317,13 @@ function faixa() {
   (S.niver || []).forEach((j) => itens.push(['🎈🎈 ANIVERSARIANTE DO DIA', '🎂 Parabéns, ' + j.nome + '!']));
   const { geral } = posicoes();
   const lider = rankingVivo()[0];
-  const jl = lider && S.jogos.find((g) => g.sets && (g.jogador_a === lider.id || g.jogador_b === lider.id));
-  if (jl && vencedor(jl) === lider.id) itens.push(['LÍDER VENCEU', lider.nome + ' venceu o jogo do mês']);
+  // líder da Dynamics venceu o jogo do mês (placar ou WO): fica na faixa o mês todo, logo no começo
+  const jl = lider && S.jogos.find((g) => g.jogador_b && (g.sets || g.wo_de) && (g.jogador_a === lider.id || g.jogador_b === lider.id));
+  if (jl && vencedor(jl) === lider.id) {
+    const adv = porId(jl.jogador_a === lider.id ? jl.jogador_b : jl.jogador_a) || {};
+    const placar = jl.sets ? ' ' + placarTxt(jl.jogador_a === lider.id ? jl.sets : jl.sets.map(([x, y]) => [y, x])) : ' (WO)';
+    itens.unshift(['🏆 LÍDER DO RANKING', lider.nome + ' venceu ' + (adv.nome || '') + placar + ' e segue em 1º na Dynamics']);
+  }
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
     .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : '')]));
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
