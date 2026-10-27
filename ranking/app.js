@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027133936';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027133936';
-import { REGULAMENTO } from './regulamento.js?v=20261027133936';
-import { PRIVACIDADE } from './privacidade.js?v=20261027133936';
+import * as M from './motor.js?v=20261027135328';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027135328';
+import { REGULAMENTO } from './regulamento.js?v=20261027135328';
+import { PRIVACIDADE } from './privacidade.js?v=20261027135328';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -344,7 +344,7 @@ function renderCarrossel() {
   const linkAnuncio = zap(S.config.anuncie || S.config.fale_conosco || '5519997781210', 'Olá! Quero anunciar no app da Galera da Raquete.');
   // de dia uma arte, de noite a outra
   const corpo = s.tipo === 'anuncie'
-    ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/${ehNoite() ? 'anuncie-noite-2.jpg' : 'anuncie-dia-2.jpg'}" alt="Anuncie aqui" width="900" height="478"></a>`
+    ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/${ehNoite() ? 'anuncie-noite-3.jpg' : 'anuncie-dia-3.jpg'}" alt="Anuncie aqui" width="900" height="402"></a>`
     : s.tipo === 'anuncie-velho'
     ? `<a class="patro anuncie" href="${esc(linkAnuncio)}" target="_blank" rel="noopener"><span class="anuncie-ic" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="currentColor" fill-opacity=".25"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span class="anuncie-tx"><b class="cond">ANUNCIE AQUI</b><small>Sua marca pra toda a Galera</small></span></a>`
     : s.tipo === 'p'
