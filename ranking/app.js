@@ -1,8 +1,8 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027142719';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027142719';
-import { REGULAMENTO } from './regulamento.js?v=20261027142719';
-import { PRIVACIDADE } from './privacidade.js?v=20261027142719';
+import * as M from './motor.js?v=20261027144647';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027144647';
+import { REGULAMENTO } from './regulamento.js?v=20261027144647';
+import { PRIVACIDADE } from './privacidade.js?v=20261027144647';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1307,9 +1307,7 @@ function parabensOutros(hoje) {
     const nomes = outros.map((j) => j.nome);
     const d = document.createElement('div'); d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Aniversariante do dia');
     d.innerHTML = `<div class="niver-c"><div class="niver-bolo" aria-hidden="true">🎈🎂🎈</div><small>ANIVERSARIANTE DO DIA</small><span style="font-size:17px;font-weight:600">Hoje é aniversário ${nomes.length > 1 ? 'de' : 'do'}</span><b class="cond">${esc(nomes.length > 1 ? nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1] : nomes[0])}!</b>
-      <p>Que tal mandar os parabéns? A Galera da Raquete deseja muitas felicidades!</p>
-      ${outros.map((j) => { const p = porId(j.id) || {}; const link = zap(p.celular, 'Parabéns, ' + j.nome.split(' ')[0] + '! Muitas felicidades, saúde e muitas vitórias! 🎾🎂'); return link ? `<a class="btn btn-zap" href="${esc(link)}" target="_blank" rel="noopener">🎉 Parabéns pro ${esc(j.nome.split(' ')[0])} no WhatsApp</a>` : ''; }).join('')}
-      <button class="btn btn-linha" type="button" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">Fechar</button></div>`;
+      <button class="btn btn-bola" type="button" style="margin-top:8px">Fechar</button></div>`;
     d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('button') || e.target.closest('a')) d.remove(); });
     document.body.appendChild(d);
   }, 900);
