@@ -1,8 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261027144647';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261027144647';
-import { REGULAMENTO } from './regulamento.js?v=20261027144647';
-import { PRIVACIDADE } from './privacidade.js?v=20261027144647';
+import * as M from './motor.js?v=20261029180450';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029180450';
+import { REGULAMENTO } from './regulamento.js?v=20261029180450';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029180450';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029180450';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -29,7 +30,7 @@ function toast(t) {
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
-const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img src="${esc(j.foto_url)}" alt="" decoding="async" onerror="this.remove()">` : ''}</span>`;
+const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img class="foto-av" src="${esc(j.foto_url)}" alt="" decoding="async">` : ''}</span>`;
 const voltar = (titulo, sub, para = '#/') => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="${para}" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 
@@ -104,10 +105,11 @@ function abrirFoto(id) {
   const { geral } = posicoes();
   const d = document.createElement('div');
   d.className = 'zoom'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Foto de ' + j.nome);
-  d.innerHTML = `<div class="zoom-c">${j.foto_url ? `<img src="${esc(j.foto_url)}" alt="${esc(j.nome)}" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.ini))" data-ini="${esc(avatar({ nome: j.nome }, 220))}">` : avatar({ nome: j.nome }, 220)}
+  d.innerHTML = `<div class="zoom-c">${j.foto_url ? `<img class="foto-zoom" src="${esc(j.foto_url)}" alt="Foto de ${esc(j.nome)}">` : avatar({ nome: j.nome }, 220)}
     <b class="cond">${esc(j.nome)}</b><small>${geral[j.id] ? geral[j.id] + 'º lugar · ' : ''}${j.grupo ? 'Grupo ' + esc(j.grupo) : ''}</small></div>
     <button class="zoom-x" aria-label="Fechar">×</button>`;
-  const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); };
+  const volta = document.activeElement;
+  const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); if (volta && volta.isConnected && volta.focus) volta.focus(); };
   const esc1 = (e) => { if (e.key === 'Escape') fechar(); };
   d.addEventListener('click', fechar); document.addEventListener('keydown', esc1);
   document.body.appendChild(d); d.querySelector('.zoom-x').focus();
@@ -191,7 +193,7 @@ function trazBola(g) {
   const a = porId(g.jogador_a), b = porId(g.jogador_b);
   return ((a && a.posicao) || 9999) > ((b && b.posicao) || 9999) ? g.jogador_a : g.jogador_b;
 }
-const BOLINHA = (quem, g) => (trazBola(g) === quem ? ` <span title="Traz as bolinhas (regra 8.1)" aria-label="traz as bolinhas" style="display:inline-flex;vertical-align:-2px;margin:0 4px">${BOLA(15)}</span>` : '');
+const BOLINHA = (quem, g) => (trazBola(g) === quem ? ` <span role="img" title="Traz as bolinhas (regra 8.1)" aria-label="traz as bolinhas" style="display:inline-flex;vertical-align:-2px;margin:0 4px">${BOLA(15)}</span>` : '');
 function placarTxt(sets) { return (sets || []).map(([a, b]) => a + '/' + b).join(' '); }
 // pneu = set 6×0: sempre mostra o pneu depois do placar
 const temPneu = (sets) => (sets || []).some(([a, b]) => (a === 6 && b === 0) || (a === 0 && b === 6));
@@ -291,9 +293,15 @@ function telaInicio() {
       <div class="barra" aria-hidden="true"><i style="width:${p.pct}%"></i><svg style="left:${p.pct}%" width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#D8F145" stroke="#1A0D33" stroke-width="1.5"/><path d="M3 4.5c4 1.5 6 3.5 6 5.5s-2 4-6 5.5M17 4.5c-4 1.5-6 3.5-6 5.5s2 4 6 5.5" fill="none" stroke="#1A0D33" stroke-width="1.5" stroke-linecap="round"/></svg></div></div>` : '<div style="height:8px"></div>'}
     ${corpo || ''}
   </section>
+  ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
   <nav class="menu" aria-label="Menu">${MENU.map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   <div id="carrossel"></div>
-  <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}${faixa()}</div></div>`;
+  <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
+}
+
+// Lembrete da senha inicial: some por 7 dias ao fechar; nunca obriga a trocar.
+function lembreteFechado() {
+  try { return Date.now() - Number(localStorage.getItem('lembrete-senha') || 0) < 7 * 864e5; } catch (e) { return true; }
 }
 
 const IC_WO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".12"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
@@ -399,7 +407,7 @@ async function telaJogos() {
       <div class="card" ${dn(a && a.nome, b && b.nome)} style="padding:12px;display:flex;flex-direction:column;gap:10px">
         ${b ? `<div class="confronto">
           <div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 44)}<span class="nm"><span>${esc(a && a.nome)}${BOLINHA(g.jogador_a, g)}</span><small>${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small>${v === g.jogador_a ? VENCEU : ''}</span></div>
-          <span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
+          <span class="vs-mini" role="img" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
           <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 44)}</div>
         </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 44)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
         ${b && g.sets && !g.wo_de ? placarTV(g.sets, pode(g) ? '#/placar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
@@ -425,7 +433,7 @@ async function telaPlacar(id, fin) {
   const sets = (g.sets || []).concat([[], [], []]).slice(0, 3);
   return voltar('Gravar placar', fin ? 'Finals · Grupo ' + g.grupo + ' · ' + FASES[g.fase] : nomeMes(g.mes)) + `
   <form class="conteudo" data-form="placar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">
-    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? (mes && mes.status !== 'aberto' ? 'Mês encerrado. Pra corrigir, a coordenação reabre o mês no Admin.' : 'Prazo encerrado. Agora só a coordenação pode alterar este placar.') : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Cada correção fica registrada.'}</div>
+    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? (mes && mes.status !== 'aberto' ? 'Mês encerrado. Pra corrigir, a coordenação reabre o mês no Admin.' : 'Prazo encerrado. Agora só a coordenação pode alterar este placar.') : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Fica registrado quem gravou por último.'}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="set"><span></span><b style="text-align:center;font-size:13px">${esc(a.nome)}</b><b style="text-align:center;font-size:13px">${esc(b.nome)}</b></div>
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
@@ -515,7 +523,8 @@ function telaPerfil() {
       <label style="position:relative;cursor:pointer" aria-label="Trocar minha foto">${avatar(e, 96)}
         <span style="position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
         <input type="file" accept="image/*" data-foto style="position:absolute;width:1px;height:1px;opacity:0"></label>
-      <span class="dica">Toque na foto pra trocar · Grupo ${esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span></div>
+      <span class="dica">Toque na foto pra trocar · Grupo ${esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span>
+      ${e.foto_url ? '<button type="button" class="link" data-acao="removerFoto">Remover minha foto</button>' : ''}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <label class="rot">Nome no ranking<input class="campo" name="nome" value="${esc(e.nome)}" autocomplete="name" required maxlength="40"></label>
       <label class="rot">Celular (WhatsApp)<input class="campo" name="celular" type="tel" inputmode="tel" value="${esc(e.celular || '')}" placeholder="(19) 9____-____" autocomplete="tel"></label>
@@ -526,7 +535,7 @@ function telaPerfil() {
         <span><b style="font-size:15px">Standby</b><br><span class="dica">${e.standby ? 'Ligado: fora dos jogos até desligar' : 'Desligado: você joga normalmente'}</span></span>
         <button type="button" class="switch" role="switch" aria-checked="${e.standby}" data-acao="alterna" data-v="standby" aria-label="Standby"><i></i></button>
       </div>
-      <span class="dica" style="font-size:11px">Seu e-mail e sua data de nascimento só você e a coordenação veem. <a href="#/privacidade">Política de privacidade</a><br>Standby vale a partir da próxima rodada. Sem pontos no mês e conta pro limite de 60 dias sem jogar (regra 8.2), salvo afastamento médico avisado à coordenação.</span>
+      <span class="dica" style="font-size:11px">Seu e-mail e sua data de nascimento só você e a coordenação veem. <a href="#/privacidade">Política de privacidade</a> · <a href="#/termos">Termos de uso</a><br>Standby vale a partir da próxima rodada. Sem pontos no mês e conta pro limite de 60 dias sem jogar (regra 8.2), salvo afastamento médico avisado à coordenação.</span>
     </div>
     <button class="btn btn-bola" type="submit">Salvar</button>
     <p id="perfil-msg" role="status"></p>
@@ -575,8 +584,8 @@ function telaProgramacao() {
     if (agora || prox) achou = true;
     // o que já passou fica cinza e apagado, com "JÁ FOI"; o que vem pela frente continua em destaque
     return `<li class="card${feito ? ' prog-feito' : ''}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;${agora || prox ? 'border:2px solid var(--roxo)' : ''}">
-      <span><b style="font-size:12px;color:${feito ? '#9A93A8' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${data}</b><br><span style="font-weight:600;${feito ? 'text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)' : ''}">${esc(tit)}</span></span>
-      ${agora || prox ? `<span class="tag" style="background:var(--bola);color:var(--noite)">${agora ? 'AGORA' : 'PRÓXIMO'}</span>` : feito ? '<span class="tag" style="background:#ECEAF0;color:#8A8496;white-space:nowrap">JÁ FOI</span>' : ''}</li>`;
+      <span><b style="font-size:12px;color:${feito ? 'inherit' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${data}</b><br><span style="font-weight:600;${feito ? 'text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)' : ''}">${esc(tit)}</span></span>
+      ${agora || prox ? `<span class="tag" style="background:var(--bola);color:var(--noite)">${agora ? 'AGORA' : 'PRÓXIMO'}</span>` : feito ? '<span class="tag" style="background:#ECEAF0;color:#5E586B;white-space:nowrap">JÁ FOI</span>' : ''}</li>`;
   }).join('')}</ol>`;
 }
 
@@ -602,15 +611,31 @@ function telaResumo() {
   </div>`;
 }
 
+const secoesTexto = (secoes) => secoes.map(([t, x]) => `<section class="card"><h2 class="cond" style="font-size:18px;margin-bottom:6px">${esc(t)}</h2><p style="font-size:14px;line-height:1.5;white-space:pre-line">${esc(x)}</p></section>`).join('');
 function telaPrivacidade() {
-  return voltar('Política de privacidade', 'Atualizada em 25/10/2026') + `<div class="conteudo">${PRIVACIDADE.map(([t, x]) => `<section class="card"><h2 class="cond" style="font-size:18px;margin-bottom:6px">${esc(t)}</h2><p style="font-size:14px;line-height:1.5;white-space:pre-line">${esc(x)}</p></section>`).join('')}</div>`;
+  return voltar('Política de privacidade', 'Atualizada em ' + PRIVACIDADE_DATA) + `<div class="conteudo">${secoesTexto(PRIVACIDADE)}<p class="dica"><a href="#/termos">Termos de uso</a></p></div>`;
 }
+function telaTermos() {
+  return voltar('Termos de uso', 'Atualizados em ' + TERMOS_DATA) + `<div class="conteudo">${secoesTexto(TERMOS)}<p class="dica"><a href="#/privacidade">Política de privacidade</a></p></div>`;
+}
+// política e termos também abrem antes do login (tela de entrar/inscrição), numa janela por cima
+function abrirTexto(qual) {
+  const priv = qual === 'privacidade', d = document.createElement('div');
+  d.className = 'zoom texto-legal'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', priv ? 'Política de privacidade' : 'Termos de uso');
+  d.innerHTML = `<div class="texto-legal-c"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h1 class="cond" style="font-size:22px">${priv ? 'Política de privacidade' : 'Termos de uso'}</h1><button class="btn btn-linha" type="button" data-fechar style="height:40px;padding:0 14px">Fechar</button></div><small class="dica">Atualizada em ${priv ? PRIVACIDADE_DATA : TERMOS_DATA}</small>${secoesTexto(priv ? PRIVACIDADE : TERMOS)}</div>`;
+  const volta = document.activeElement;
+  const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); if (volta && volta.isConnected && volta.focus) volta.focus(); };
+  const esc1 = (e) => { if (e.key === 'Escape') fechar(); };
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-fechar]')) fechar(); });
+  document.addEventListener('keydown', esc1); document.body.appendChild(d); d.querySelector('[data-fechar]').focus();
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('[data-texto]'); if (b) { ev.preventDefault(); abrirTexto(b.dataset.texto); } });
 
 function linhaFinals(g, fz) {
   const a = porId(g.jogador_a), b = porId(g.jogador_b), v = g.sets ? (M.resultado(g.sets).aVenceu ? g.jogador_a : g.jogador_b) : null;
   const pode = S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && fz.fase === g.fase);
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
-    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
+    <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" role="img" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
     ${g.sets ? placarTV(g.sets, pode ? '#/fplacar/' + g.id : '') : `<div style="display:flex;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--tinta2)">${pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : 'Pendente'}</div>`}
   </div>`;
@@ -667,7 +692,7 @@ function chaveSVG({ chaves, sf, fin, campeao, titulo }) {
   o += `<rect x="${C}" y="${YF - 12}" width="52" height="64" rx="8" fill="rgba(232,185,35,.08)" stroke="${OURO}" stroke-width="1.6"/>
     <g transform="translate(${C + 6} ${YF - 6}) scale(.84)">${TROFEU(48).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</g>`;
   o += campeao ? `<text x="${W / 2}" y="${YF + 72}" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.5" fill="${OURO}">CAMPEÃO</text><text x="${W / 2}" y="${YF + 88}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">${esc(nomeCurto(campeao))}</text>` : placar(W / 2, YF + 70, fin[2]);
-  return `<div class="chave-svg"><div class="chave-scroll"><svg viewBox="0 0 ${W} 250" width="${W}" height="250" font-family="Inter,system-ui,sans-serif" role="img" aria-label="Chaveamento: ${esc(sf.map((x, k) => 'semifinal ' + (k + 1) + ', ' + (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}">${o}</svg></div><small class="chave-dica">← arraste pro lado pra ver as chaves →</small></div>`;
+  return `<div class="chave-svg"><div class="chave-scroll" tabindex="0" role="region" aria-label="Chaveamento (arraste pro lado)"><svg viewBox="0 0 ${W} 250" width="${W}" height="250" font-family="Inter,system-ui,sans-serif" role="img" aria-label="Chaveamento: ${esc(sf.map((x, k) => 'semifinal ' + (k + 1) + ', ' + (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}">${o}</svg></div><small class="chave-dica">← arraste pro lado pra ver as chaves →</small></div>`;
 }
 
 // lista de torneios: cada um abre a sua tela
@@ -1077,6 +1102,8 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  fecharLembrete: () => { try { localStorage.setItem('lembrete-senha', String(Date.now())); } catch (e) { /* ok */ } render(); },
+  removerFoto: () => comTrava('', async () => { const r = await sb.from('jogadores').update({ foto_url: null }).eq('id', S.eu.id); if (r.error) throw r.error; }, 'Foto removida.'),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => { el.setAttribute('aria-checked', el.getAttribute('aria-checked') !== 'true'); },
   sair: async () => { try { localStorage.removeItem(CACHE); } catch (e) { /* ok */ } await sb.auth.signOut(); location.hash = ''; location.reload(); },
@@ -1171,9 +1198,21 @@ document.addEventListener('click', (ev) => {
   if (!sb && el.dataset.acao !== 'abertura') { toast('Só um instante, carregando…'); return; }
   ACOES[el.dataset.acao](el);
 });
+// foto que não carrega: no avatar some (fica a inicial); na foto grande vira a inicial grande
+document.addEventListener('error', (ev) => {
+  const im = ev.target;
+  if (!im || im.tagName !== 'IMG') return;
+  if (im.classList.contains('foto-av')) im.remove();
+  else if (im.classList.contains('foto-zoom')) { const box = document.createElement('span'); box.innerHTML = avatar({ nome: (im.alt || '').replace(/^Foto de /, '') }, 220); im.replaceWith(box.firstElementChild); }
+}, true);
 document.addEventListener('click', (ev) => {
   const av = ev.target.closest && ev.target.closest('.avatar[data-ver]');
   if (av && !av.closest('label, a, button, .zoom')) abrirFoto(av.dataset.ver);
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const av = ev.target.closest && ev.target.closest('.avatar[data-ver][role="button"]');
+  if (av) { ev.preventDefault(); abrirFoto(av.dataset.ver); }
 });
 document.addEventListener('change', (ev) => {
   const el = ev.target;
@@ -1335,6 +1374,7 @@ async function render() {
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
       : rota === 'privacidade' ? telaPrivacidade()
+      : rota === 'termos' ? telaTermos()
       : rota === 'senha' ? telaSenha(false)
       : rota === 'perfil' ? telaPerfil()
       : rota === 'avisos' ? telaAvisos()
@@ -1346,10 +1386,16 @@ async function render() {
   } catch (e) { console.error(e); html = voltar('Ops') + `<div class="conteudo"><p class="erro">Não consegui carregar: ${esc(e.message || e)}</p></div>`; }
   $app.innerHTML = html;
   if (rota === 'avisos') marcarAvisosVistos();
-  if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { S.slide++; renderCarrossel(); }, 5000); }
+  if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { const c = document.getElementById('carrossel'); if (c && c.matches(':hover, :focus-within')) return; S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   aplicarBusca();
   document.querySelectorAll('.chave-scroll').forEach((el) => { el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2; });
+  // teclado e leitor de tela: a foto que amplia vira um botão (fora de links e botões)
+  document.querySelectorAll('.avatar[data-ver]').forEach((av) => {
+    if (av.closest('label, a, button, .zoom')) return;
+    const j = porId(av.dataset.ver);
+    av.setAttribute('role', 'button'); av.tabIndex = 0; av.setAttribute('aria-label', 'Ver a foto de ' + ((j && j.nome) || 'jogador'));
+  });
   // só volta pro topo quando muda de tela (curtir, placar ao vivo etc. mantêm onde a pessoa está)
   if (location.hash !== hashAnterior) window.scrollTo(0, 0);
   hashAnterior = location.hash;
@@ -1374,12 +1420,12 @@ function telaInscricao(email, erro) {
     <label class="rot">Nascimento (opcional)<input class="campo" name="nascimento" type="date"></label>
     <button class="btn btn-roxo" type="submit">Enviar inscrição</button>
     <button class="btn btn-linha" type="button" data-outro>Sair</button>
-    <button class="btn btn-linha" type="button" data-priv style="height:40px;font-size:13px">Política de privacidade</button>
+    ${typeof novo !== 'undefined' && novo ? '<p class="dica" style="font-size:12px">Ao criar o acesso, você concorda com os Termos de uso e declara ter lido a Política de privacidade.</p>' : ''}
+    <p class="dica" style="text-align:center;font-size:13px"><button class="link" type="button" data-texto="privacidade">Política de privacidade</button> · <button class="link" type="button" data-texto="termos">Termos de uso</button></p>
     ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}
   </form>`;
   const f = $app.querySelector('form');
   f.querySelector('[data-outro]').onclick = async () => { await sb.auth.signOut(); telaLogin('entrar'); };
-  f.querySelector('[data-priv]').onclick = () => { $app.innerHTML = telaPrivacidade().replace('href="#/"', 'href="#/" data-sai-priv'); $app.querySelector('[data-sai-priv]').onclick = (e) => { e.preventDefault(); telaInscricao(email); }; window.scrollTo(0, 0); };
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
     const { error } = await sb.rpc('cadastrar_me', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim(), p_nascimento: f.nascimento.value || null });
@@ -1402,15 +1448,15 @@ function telaLogin(etapa, email, erro) {
     ${novo ? '<label class="rot">Repita a senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>' : ''}
     <button class="btn btn-roxo" type="submit">${novo ? 'Criar acesso' : 'Entrar'}</button>
     ${novo ? '<button class="btn btn-linha" type="button" data-ir="entrar">Já tenho acesso</button>'
-      : `<p class="dica">Já está no ranking? A senha inicial é <b>${SENHA_INICIAL}</b>; troque em Meu perfil quando quiser. Você fica conectado.</p>
+      : `<p class="dica">Já está no ranking? Entre com o seu e-mail e a senha inicial que a coordenação passou no grupo; depois troque em Meu perfil. Você fica conectado.</p>
       <button class="btn btn-linha" type="button" data-ir="inscrever">Primeira vez? Fazer inscrição</button>
       <a class="btn btn-linha" style="height:40px;font-size:13px" href="${esc(zap('5519997781210', 'Olá! Esqueci minha senha do app do ranking.'))}" target="_blank" rel="noopener">Esqueci a senha</a>`}
-    <button class="btn btn-linha" type="button" data-priv style="height:40px;font-size:13px">Política de privacidade</button>
+    ${typeof novo !== 'undefined' && novo ? '<p class="dica" style="font-size:12px">Ao criar o acesso, você concorda com os Termos de uso e declara ter lido a Política de privacidade.</p>' : ''}
+    <p class="dica" style="text-align:center;font-size:13px"><button class="link" type="button" data-texto="privacidade">Política de privacidade</button> · <button class="link" type="button" data-texto="termos">Termos de uso</button></p>
     ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}
   </form>`;
   const f = $app.querySelector('form');
   f.querySelector('[data-ir]').onclick = (e) => telaLogin(e.currentTarget.dataset.ir, f.email.value);
-  f.querySelector('[data-priv]').onclick = () => { $app.innerHTML = telaPrivacidade().replace('href="#/"', 'href="#/" data-sai-priv'); $app.querySelector('[data-sai-priv]').onclick = (e) => { e.preventDefault(); telaLogin(etapa, email); }; window.scrollTo(0, 0); };
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
     const em = f.email.value.trim().toLowerCase(), senha = f.senha.value;
@@ -1418,7 +1464,7 @@ function telaLogin(etapa, email, erro) {
       if (novo) {
         if (senha !== f.senha2.value) throw new Error('As duas senhas não são iguais.');
         const { error } = await sb.auth.signUp({ email: em, password: senha });
-        if (error) throw new Error(/registered|already/i.test(error.message) ? 'Esse e-mail já tem acesso. Entre com ele (senha inicial ' + SENHA_INICIAL + ').' : error.message);
+        if (error) throw new Error(/registered|already/i.test(error.message) ? 'Esse e-mail já tem acesso. Entre com ele (com a senha inicial que a coordenação passou ou com a sua).' : error.message);
       } else {
         const { error } = await sb.auth.signInWithPassword({ email: em, password: senha });
         if (error) throw new Error(/invalid/i.test(error.message) ? 'E-mail ou senha errados. Se você ainda não está no ranking, faça a inscrição.' : error.message);
@@ -1470,7 +1516,9 @@ async function iniciar() {
     return;
   }
   // window.__SB__ = cliente falso usado só nos testes automáticos
-  sb = window.__SB__ || (await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm')).createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // biblioteca do Supabase servida pelo próprio site (vendor/), sem CDN de terceiros
+  if (!window.__SB__ && !window.supabase) await new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'vendor/supabase-2.45.4/supabase.js'; s.onload = ok; s.onerror = () => erro(new Error('Não consegui carregar o app. Confira a internet.')); document.head.appendChild(s); });
+  sb = window.__SB__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return telaLogin('entrar');
   try { await entrar(); } catch (e) { console.error(e); telaLogin('entrar', '', 'Erro ao entrar: ' + (e.message || e)); }

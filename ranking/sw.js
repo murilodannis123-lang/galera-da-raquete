@@ -1,13 +1,12 @@
 // Service worker: página sempre da rede (versão nova), com reserva no cache se a rede demorar ou cair.
 // Arquivos com ?v= (mudam de nome a cada versão), a biblioteca do Supabase e as imagens do app vêm do cache: abrem na hora.
-const C = 'galera-v3';
+const C = 'galera-v4';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   for (const k of await caches.keys()) if (k !== C) await caches.delete(k);
   await self.clients.claim();
 })()));
-const estatico = (u) => (u.origin === self.location.origin && (u.search.includes('v=') || /\/icones\/|\/patrocinadores\//.test(u.pathname)))
-  || u.href.startsWith('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@')
+const estatico = (u) => (u.origin === self.location.origin && (u.search.includes('v=') || /\/(icones|patrocinadores|fontes|vendor)\//.test(u.pathname)))
   || (u.hostname.endsWith('.supabase.co') && u.pathname.startsWith('/storage/v1/object/public/'));
 self.addEventListener('fetch', (e) => {
   const req = e.request;

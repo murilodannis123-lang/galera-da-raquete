@@ -1,25 +1,29 @@
 // Política de privacidade (LGPD — Lei 13.709/2018). Artigos conferidos no texto compilado do Planalto em 25/10/2026.
+// Dados técnicos de segurança do Supabase conferidos em supabase.com/security em 29/10/2026.
+export const PRIVACIDADE_DATA = '29/10/2026';
 export const PRIVACIDADE = [
   ['Quem cuida dos seus dados',
     'A coordenação do ranking Galera da Raquete – Portal do Lago Open de Tênis é a controladora dos dados (art. 5º, VI, da LGPD).\nContato: botão Fale conosco do app ou galeradoraquete@gmail.com.'],
   ['Quais dados usamos',
-    '• Nome, e-mail (é o seu login), senha, grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Foto de perfil, se você colocar.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever).\n\nNão pedimos endereço nem documentos.'],
+    '• Nome, e-mail (é o seu login), senha, grupo e posição no ranking.\n• Celular/WhatsApp, se você informar.\n• Data de nascimento, se você informar.\n• Foto de perfil: a que você colocar ou a que você já usava no Ranking Online, de onde o ranking veio. Você troca ou remove em Meu perfil.\n• Pontos, resultados, placares, standby e WOs (com o motivo: lesão ou não comparecimento, e a justificativa que você escrever), e quem gravou por último cada placar.\n• Curtidas que você dá nas vitórias.\n\nNão pedimos endereço nem documentos.'],
   ['Para que usamos',
-    'Organizar o ranking: montar os confrontos do mês, registrar placares e WOs, calcular a pontuação e a classificação, permitir que você combine o jogo com o adversário pelo WhatsApp, publicar avisos da coordenação e dar os parabéns no seu aniversário.'],
+    'Organizar o ranking: montar os confrontos do mês, registrar placares e WOs, calcular a pontuação e a classificação, permitir que você combine o jogo com o adversário pelo WhatsApp, publicar avisos da coordenação, mostrar as curtidas e dar os parabéns no seu aniversário.'],
   ['Base legal',
     '• Funcionamento do ranking do qual você participa: execução de contrato (art. 7º, V, da LGPD).\n• Aviso de aniversário: legítimo interesse (art. 7º, IX), para a confraternização do grupo. A data é opcional: você pode apagá-la no Meu perfil ou pedir à coordenação que desligue o aviso.'],
   ['Quem vê o quê',
-    '• Jogadores logados veem: nome, grupo, foto, posição, pontos, resultados, WOs e celular (para combinar os jogos).\n• Só você e a coordenação veem: seu e-mail e sua data de nascimento.\n• No aniversário aparece só o seu nome, sem data nem idade.\n• Na justificativa do WO não é preciso dizer qual é a lesão.'],
+    '• Jogadores logados veem: nome, grupo, foto, posição, pontos, resultados, WOs, celular (para combinar os jogos) e o número de curtidas de cada vitória.\n• Só você e a coordenação veem: seu e-mail e sua data de nascimento.\n• No aniversário aparece só o seu nome, sem data nem idade.\n• Na justificativa do WO não é preciso dizer qual é a lesão.\n• Quem não tem conta no app não vê nada do ranking.'],
+  ['No seu aparelho (cookies)',
+    'O app não usa cookies nem ferramentas de propaganda ou de estatística (como Google Analytics ou pixels de redes sociais).\nEle guarda no próprio celular só o necessário para funcionar: o acesso à sua conta (para não pedir a senha toda vez), uma cópia dos dados da última visita (para abrir mais rápido) e pequenas marcações (se você já viu a abertura e os parabéns do dia).\nAo tocar em Sair da conta, o acesso e a cópia são apagados do aparelho.'],
   ['Com quem compartilhamos',
-    'Não vendemos nem cedemos seus dados. Para o app funcionar usamos operadores (art. 5º, VII): Supabase (banco de dados e login), GitHub Pages (hospedagem do site) e Google Fonts (letras do app). O WhatsApp só é aberto quando você toca no botão.'],
+    'Não vendemos nem cedemos seus dados. Para o app funcionar usamos operadores (art. 5º, VII): Supabase (banco de dados, login, arquivos e cópias de segurança) e GitHub Pages (hospedagem do site). As letras e o programa do app ficam no próprio site, sem serviços de terceiros.\nAlgumas fotos ainda são carregadas do site do Ranking Online, de onde vieram.\nO WhatsApp só é aberto quando você toca no botão.'],
   ['Por quanto tempo',
-    'Enquanto você participar do ranking. Se sair, a coordenação pode manter o histórico de resultados da temporada para a classificação e apaga os demais dados a pedido.'],
+    '• Enquanto você participar do ranking. Se sair, a coordenação pode manter o histórico de resultados da temporada para a classificação e apaga os demais dados a pedido.\n• Avisos do sino: saem sozinhos depois de 7 dias.\n• Cópias de segurança: o banco faz uma por dia (guardadas por 90 dias) e uma antes de cada ação grande da coordenação (guardadas por 1 ano). Só a coordenação acessa.'],
   ['Seus direitos (art. 18 da LGPD)',
-    'Você pode pedir: confirmação de que tratamos seus dados; acesso; correção; anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos; portabilidade; eliminação dos dados tratados com consentimento; informação sobre com quem compartilhamos; informação sobre a possibilidade de não consentir e suas consequências; e revogação do consentimento.\nNome, celular e nascimento você mesmo altera em Meu perfil. O resto, peça pelo Fale conosco.'],
+    'Você pode pedir: confirmação de que tratamos seus dados; acesso; correção; anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos; portabilidade; eliminação dos dados tratados com consentimento; informação sobre com quem compartilhamos; informação sobre a possibilidade de não consentir e suas consequências; e revogação do consentimento.\nNome, celular, nascimento e foto você mesmo altera em Meu perfil. O resto, peça pelo Fale conosco.'],
   ['Contato sobre dados pessoais',
     'A coordenação responde pelos pedidos sobre dados pessoais (art. 41 da LGPD), pelo Fale conosco ou em galeradoraquete@gmail.com.'],
   ['Segurança',
-    'Entrada com e-mail e senha. A senha fica guardada criptografada pelo Supabase: nem a coordenação consegue ver. A senha inicial é a mesma para todos, então troque a sua em Meu perfil. Regras no banco de dados impedem que um jogador altere dados de outro ou leia e-mail e nascimento alheios.'],
+    '• Entrada com e-mail e senha. A senha é guardada só como um código embaralhado (hash bcrypt), que não dá para desfazer: nem a coordenação consegue ver a sua senha.\n• Os dados ficam no Supabase, que informa guardar tudo com criptografia (AES-256) e transmitir por conexão segura (TLS). O site só funciona por HTTPS.\n• Regras no próprio banco de dados (RLS) impedem que alguém sem conta leia qualquer dado, que um jogador altere dados de outro ou leia e-mail e nascimento alheios.\n• O login tem limite de tentativas por endereço de internet.\n• A senha inicial é a mesma para todos: troque a sua em Meu perfil.'],
   ['Mudanças',
-    'Se esta política mudar, avisamos no sino de avisos do app.']
+    'Se esta política mudar, avisamos no sino de avisos do app. Versão de ' + '29/10/2026' + '.']
 ];
