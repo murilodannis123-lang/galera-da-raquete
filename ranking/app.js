@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029190756';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029190756';
-import { REGULAMENTO } from './regulamento.js?v=20261029190756';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029190756';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029190756';
+import * as M from './motor.js?v=20261029192157';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029192157';
+import { REGULAMENTO } from './regulamento.js?v=20261029192157';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029192157';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029192157';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -384,6 +384,12 @@ function renderCarrossel() {
   el.innerHTML = corpo + `<div class="pontos" aria-hidden="true">${sl.map((_, k) => `<i style="width:${k === i ? 22 : 6}px;${k === i ? 'background:var(--roxo)' : ''}"></i>`).join('')}</div>`;
 }
 
+// bolinha discreta no ranking: 'ok' = jogo do mês já resolvido (placar ou WO), 'falta' = ainda não; standby/sem jogo = nada
+function situacaoMes(id) {
+  if (!S.mesAtual) return '';
+  const g = S.jogos.find((x) => x.jogador_b && (x.jogador_a === id || x.jogador_b === id));
+  return !g ? '' : g.sets || g.wo_de ? 'ok' : 'falta';
+}
 function telaRanking() {
   const aba = S.abaRk, geral = aba === 'D';
   const vivo = rankingVivo();
@@ -394,12 +400,12 @@ function telaRanking() {
   </div></div>
   <div class="conteudo">
     ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
-    <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games</span>
-    ${lista.map((j, i) => { const fin = !geral && i < 8, sg = j.gp - j.gc; return `
+    <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
+    ${lista.map((j, i) => { const fin = !geral && i < 8, sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
       <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
-          <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
+          <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
         </div>
         <div class="stats"><span><b style="color:var(--roxo)">${j.tp}</b><small>TP</small></span><span><b>${j.vi}</b><small>VI</small></span><span><b>${j.sp}</b><small>SP</small></span><span><b>${j.de}</b><small>DE</small></span><span><b style="color:${sg < 0 ? 'var(--verm)' : 'inherit'}">${sg > 0 ? '+' : ''}${sg}</b><small>SG</small></span></div>
       </div>${!geral && i === 7 && lista.length > 8 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador ainda.</p>'}

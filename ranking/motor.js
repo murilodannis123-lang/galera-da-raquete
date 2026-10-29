@@ -31,11 +31,12 @@ export function resultado(sets) {
 export function jogador(id, nome, grupo, tp) {
   return { id, nome, grupo, tp: tp || 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 };
 }
-// 7.4: pontos → saldo de vitórias e derrotas → saldo de sets → saldo de games → último confronto direto
-// → sorteio (feito pela coordenação; o app mantém a ordem anterior até lá)
+// desempate igual ao Ranking Online (decisão da coordenação, 29/10/2026): pontos → mais vitórias → saldo de vitórias
+// e derrotas → saldo de sets → saldo de games → último confronto direto → sorteio (o app mantém a ordem anterior até lá).
+// Obs.: o regulamento (7.1.4) fala em saldo de vitórias e derrotas antes; o Ranking Online usa o número de vitórias.
 // h2h(a, b): -1 se a venceu o último jogo entre os dois, 1 se b venceu, 0 se nunca se enfrentaram
 export function comparar(p, q, h2h) {
-  return (q.tp - p.tp) || ((q.vi - q.de) - (p.vi - p.de)) || ((q.sp - q.sc) - (p.sp - p.sc)) || ((q.gp - q.gc) - (p.gp - p.gc))
+  return (q.tp - p.tp) || (q.vi - p.vi) || ((q.vi - q.de) - (p.vi - p.de)) || ((q.sp - q.sc) - (p.sp - p.sc)) || ((q.gp - q.gc) - (p.gp - p.gc))
     || (h2h ? h2h(p.id, q.id) : 0) || (p.ordem - q.ordem);
 }
 export function ordenar(lista, h2h) {
