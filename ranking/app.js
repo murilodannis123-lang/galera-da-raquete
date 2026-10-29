@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029180450';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029180450';
-import { REGULAMENTO } from './regulamento.js?v=20261029180450';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029180450';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029180450';
+import * as M from './motor.js?v=20261029183712';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029183712';
+import { REGULAMENTO } from './regulamento.js?v=20261029183712';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029183712';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029183712';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -281,7 +281,7 @@ function telaInicio() {
     <div class="topo-linha">
       ${eu.admin ? `<a class="ic-btn" href="#/admin" aria-label="Admin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>` : '<span style="width:44px"></span>'}
       <button class="logo-btn" data-acao="abertura" aria-label="Ver a abertura de novo"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></button>
-      <a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>
+      ${foraDoRanking() ? '<span style="width:44px"></span>' : `<a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>`}
     </div>
     <h1 class="titulo">Portal do Lago Open de Tênis</h1>
     <p class="sub-ranking">RANKING</p>
@@ -294,7 +294,7 @@ function telaInicio() {
     ${corpo || ''}
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
 }
@@ -306,6 +306,14 @@ function lembreteFechado() {
 
 const IC_WO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".12"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
 const woTxt = (g) => 'WO de ' + ((porId(g.wo_de) || {}).nome || '?') + ' · ' + (g.wo_motivo === 'lesao' ? 'lesão' : 'não comparecimento') + (g.wo_status === 'aguardando' ? ' (aguardando resposta)' : g.wo_status === 'anulado' ? ' (contestado)' : '');
+// WO na lista de jogos: etiqueta, quem levou e a justificativa, tudo junto
+const woBloco = (g, editar) => {
+  const quem = esc((porId(g.wo_de) || {}).nome || '?');
+  return `<div class="wo-bloco">
+    <div class="wo-linha"><span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>
+      <span>${editar ? `<a href="#/wo/${g.id}">de ${quem}</a>` : 'de ' + quem}</span></div>
+    ${g.wo_obs ? `<p class="wo-obs">“${esc(g.wo_obs)}”</p>` : ''}</div>`;
+};
 const IC = (d) => `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const MENU = [
   { nome: 'Meu perfil', href: () => '#/perfil', ic: IC('<circle cx="12" cy="12" r="10.5" stroke-opacity=".35"/><circle cx="12" cy="9" r="3.6" fill="currentColor" fill-opacity=".22"/><path d="M5.6 19.2c1-3 3.4-4.7 6.4-4.7s5.4 1.7 6.4 4.7" fill="currentColor" fill-opacity=".22"/>') },
@@ -319,8 +327,17 @@ const MENU = [
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
 ];
 
+// quem saiu do ranking (e não é da coordenação) só vê o próprio perfil e o básico; o banco também não entrega os dados do grupo
+const foraDoRanking = () => !!(S.eu && !S.eu.ativo && !S.eu.admin);
+const LIVRE_FORA = ['Meu perfil', 'Programação 2026', 'Fale conosco', 'Regulamento'];
+const ROTAS_FORA = ['', 'perfil', 'senha', 'privacidade', 'termos', 'regulamento', 'programacao'];
+
 function faixa() {
+  if (foraDoRanking()) return '<span><b>GALERA DA RAQUETE</b>Portal do Lago Open de Tênis</span>';
   const itens = [];
+  // só a coordenação vê quem está com o app aberto agora
+  const nomesOnline = S.eu && S.eu.admin ? (S.online || []).map((id) => (porId(id) || {}).nome).filter(Boolean) : [];
+  const online = nomesOnline.length ? ['🟢 ONLINE AGORA (' + nomesOnline.length + ')', nomesOnline.slice(0, 15).join(' · ') + (nomesOnline.length > 15 ? ' e mais ' + (nomesOnline.length - 15) : '')] : null;
   S.avisos.filter((a) => a.na_faixa && Date.now() - new Date(a.criado_em) < 30 * 864e5).forEach((a) => itens.push([a.tipo === 'AVISO' ? 'AVISO' : a.tipo, a.titulo]));
   (S.niver || []).forEach((j) => itens.push(['🎈🎈 ANIVERSARIANTE DO DIA', '🎂 Parabéns, ' + j.nome + '!']));
   const { geral } = posicoes();
@@ -334,6 +351,7 @@ function faixa() {
   }
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
     .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : '')]));
+  if (online) itens.unshift(online);   // pra coordenação, quem está online vem primeiro
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
   return itens.map(([t, x]) => `<span><b>${esc(t)}</b>${esc(x)}</span>`).join('');
 }
@@ -410,7 +428,7 @@ async function telaJogos() {
           <span class="vs-mini" role="img" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
           <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${BOLINHA(g.jogador_b, g)}${esc(b.nome)}</span><small>${geral[g.jogador_b] ? geral[g.jogador_b] + 'º lugar' : ''}</small>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 44)}</div>
         </div>` : `<div style="display:flex;align-items:center;gap:8px">${avatar(a, 44)}<span style="display:flex;flex-direction:column;line-height:1.2"><span>${esc(a && a.nome)}</span><small class="dica">${geral[g.jogador_a] ? geral[g.jogador_a] + 'º lugar' : ''}</small></span></div>`}
-        ${b && g.sets && !g.wo_de ? placarTV(g.sets, pode(g) ? '#/placar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
+        ${b && g.wo_de ? woBloco(g, pode(g)) : b && g.sets ? placarTV(g.sets, pode(g) ? '#/placar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F0EDF5;padding-top:8px;font-size:12px">
           ${!b ? '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY +25</span>' : g.wo_de ? `<span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}${g.wo_status === 'aguardando' ? ' · AGUARDANDO' : g.wo_status === 'anulado' ? ' · CONTESTADO' : ''}</span>` : g.sets ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">JOGADO</span>' : '<span class="tag" style="background:#FFF3E8;color:#7A3E0A">PENDENTE</span>'}
           <span style="font-weight:600;color:var(--tinta2)">${g.wo_de ? (pode(g) ? `<a href="#/wo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome)}</a>` : `de ${esc((porId(g.wo_de) || {}).nome)}`) : g.sets ? placarHTML(g.sets) : b && pode(g) ? `<a href="#/placar/${g.id}">Gravar placar</a>` : ''}</span>
         </div>`}
@@ -1363,6 +1381,7 @@ async function render() {
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
   clearInterval(timerCarrossel);
+  if (foraDoRanking() && !ROTAS_FORA.includes(rota || '')) { history.replaceState(null, '', location.pathname + location.search); hashAnterior = ''; return render(); }
   let html;
   try {
     html = rota === 'ranking' ? telaRanking()
@@ -1503,6 +1522,31 @@ async function entrar() {
     .subscribe();
   render();
   parabens();
+  ligarPresenca();
+}
+
+// "online": o app avisa o banco a cada minuto enquanto está aberto na tela; a coordenação consulta quem apareceu nos últimos 2,5 min
+let timerOnline = null;
+function ligarPresenca() {
+  const marcar = () => { if (document.visibilityState === 'visible') sb.rpc('marcar_online').then(() => {}, () => {}); };
+  const consultar = async () => {
+    if (!S.eu || !S.eu.admin || document.visibilityState !== 'visible') return;
+    try {
+      const { data, error } = await sb.rpc('quem_esta_online'); if (error) return;
+      const ids = (data || []).map((x) => (typeof x === 'object' && x ? Object.values(x)[0] : x)).filter((id) => id && id !== S.eu.id).sort();
+      if (ids.join() === (S.online || []).join()) return;
+      S.online = ids; atualizarFaixa();
+    } catch (e) { /* sem rede: tenta no próximo minuto */ }
+  };
+  marcar(); setTimeout(consultar, 1500);
+  clearInterval(timerOnline);
+  timerOnline = setInterval(() => { marcar(); setTimeout(consultar, 1500); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { marcar(); setTimeout(consultar, 1500); } });
+}
+// troca só o texto da faixa (sem redesenhar a tela inteira)
+function atualizarFaixa() {
+  const tk = document.querySelector('.faixa .tk'); if (!tk) return;
+  tk.innerHTML = `${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span>`;
 }
 
 async function iniciar() {
