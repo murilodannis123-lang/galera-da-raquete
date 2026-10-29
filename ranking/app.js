@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029190103';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029190103';
-import { REGULAMENTO } from './regulamento.js?v=20261029190103';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029190103';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029190103';
+import * as M from './motor.js?v=20261029190756';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029190756';
+import { REGULAMENTO } from './regulamento.js?v=20261029190756';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029190756';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029190756';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -807,7 +807,7 @@ function telaAdmin() {
   const sugestao = mes ? proxMes(mes.id) : ult && temp > Number(ult.slice(0, 4)) ? temp + '-01' : ult ? proxMes(ult) : mesId(new Date());
   const pends = S.jogadores.filter((j) => j.pendente);
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
-    ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição dentro do grupo. Ele entra com os pontos de quem está hoje nessa posição do grupo (regra 5.1). Em branco = último do grupo.</span>
+    ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo (pontos, vitórias, derrotas, sets e games) e essa pessoa desce uma (regra 5.1). Em branco = último do grupo.</span>
       ${pends.map((j) => `<form data-form="aprovar" data-id="${j.id}" style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px">
         <span><b>${esc(j.nome)}</b>${voltando(j) ? ' <span class="tag" style="background:#E3F0E8;color:var(--verde)">QUER VOLTAR</span>' : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.celular ? ' · ' + esc(j.celular) : ''}</small></span>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Grupo<select class="campo" name="grupo" required><option value="">Escolher…</option><option>A</option><option>B</option><option>C</option></select></label>
@@ -833,7 +833,7 @@ function telaAdmin() {
       <label class="rot">Jogador 2<select class="campo" name="b" required><option value="">Escolher…</option>${opcoes}</select></label>
       <button class="btn btn-roxo" type="submit">Adicionar</button></form>` : ''}
     ${adminFinals()}
-    <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com os pontos de quem está hoje nessa posição do grupo. Em branco = último do grupo.</span>
+    <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo e essa pessoa desce uma. Em branco = último do grupo.</span>
       <label class="rot">Nome<input class="campo" name="nome" required maxlength="40"></label>
       <label class="rot">E-mail (é o login dele)<input class="campo" name="email" type="email" required></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="rot">Grupo<select class="campo" name="grupo"><option>A</option><option>B</option><option>C</option></select></label>
@@ -1102,33 +1102,35 @@ async function aprovar(f) {
   const j = porId(f.dataset.id); if (!j) return;
   if (!f.grupo.value) throw new Error('Escolha o grupo.');
   let r = await sb.from('jogadores').update({ grupo: f.grupo.value, pendente: false, ativo: true }).eq('id', j.id); if (r.error) throw r.error;
-  await salvarJogadores(encaixar({ ...j, ativo: true, pendente: false }, f.grupo.value, Number(f.pos.value) || 0), ['tp', 'posicao']);
+  await entrarNoGrupo({ ...j, ativo: true, pendente: false }, f.grupo.value, Number(f.pos.value) || 0);
 }
-// regra 5.1 (a coordenação define colocação e categoria): entra na posição N do grupo com os pontos (ao vivo) de quem está hoje nessa posição;
-// sem posição ou além do fim = último do grupo. Devolve a lista geral com as posições renumeradas.
+// regra 5.1 (a coordenação define colocação e categoria): o novo entra na posição N do grupo copiando a linha
+// de quem está hoje nessa posição (pontos, vitórias, derrotas, sets e games, ao vivo); empatado em tudo, fica à frente
+// e quem estava ali desce uma. Sem posição ou além do fim = último do grupo.
+const STATS = ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc'];
 function encaixar(novo, grupo, pos) {
   const doGrupo = rankingVivo().filter((x) => x.id !== novo.id && x.grupo === grupo);
   const alvo = pos >= 1 ? doGrupo[pos - 1] : null, ultimo = doGrupo[doGrupo.length - 1];
-  // pontos de quem está na posição; se no desempate ele cairia uma abaixo, sobe o mínimo necessário (sem passar quem está acima)
-  let tp = alvo ? alvo.tp : ultimo ? Math.max(0, ultimo.tp - 1) : 0;
-  if (alvo) {
-    const acima = doGrupo[pos - 2], teto = acima ? acima.tp : alvo.tp + 1;
-    for (let t = alvo.tp; t <= teto; t++) {
-      if (M.ordenar([...doGrupo.map((x) => ({ ...x })), { ...novo, grupo, tp: t }]).findIndex((x) => x.id === novo.id) === pos - 1) { tp = t; break; }
-    }
-  }
+  const linha = alvo ? Object.fromEntries(STATS.map((k) => [k, alvo[k]]))
+    : { tp: ultimo ? Math.max(0, ultimo.tp - 1) : 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 };
   const base = listaGeral().filter((x) => x.id !== novo.id);
   let i = alvo ? base.findIndex((x) => x.id === alvo.id) : ultimo ? base.findIndex((x) => x.id === ultimo.id) + 1 : base.length;
   if (i < 0) i = base.length;
-  base.splice(i, 0, { ...novo, grupo, tp });
-  return base.map((x, k) => ({ ...x, posicao: k + 1 }));
+  base.splice(i, 0, { ...novo, grupo, ...linha });
+  return { lista: base.map((x, k) => ({ ...x, posicao: k + 1 })), linha };
+}
+async function entrarNoGrupo(novo, grupo, pos) {
+  const { lista, linha } = encaixar(novo, grupo, pos);
+  const r = await sb.from('jogadores').update(linha).eq('id', novo.id); if (r.error) throw r.error;
+  await salvarJogadores(lista.filter((x) => x.id !== novo.id), ['posicao']);
+  const r2 = await sb.from('jogadores').update({ posicao: lista.find((x) => x.id === novo.id).posicao }).eq('id', novo.id); if (r2.error) throw r2.error;
 }
 async function cadastrarJogador(f) {
   const email = f.email.value.trim().toLowerCase(), nome = f.nome.value.trim();
   if (Object.values(S.emails).some((e) => String(e).toLowerCase() === email)) throw new Error('Esse e-mail já está cadastrado.');
   const { data, error } = await sb.from('jogadores').insert({ email, nome, grupo: f.grupo.value }).select(COLS).single();
   if (error) throw error;
-  await salvarJogadores(encaixar({ ...data }, f.grupo.value, Number(f.pos.value) || 0), ['tp', 'posicao']);
+  await entrarNoGrupo({ ...data }, f.grupo.value, Number(f.pos.value) || 0);
 }
 
 const ACOES = {
