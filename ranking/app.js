@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029192157';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029192157';
-import { REGULAMENTO } from './regulamento.js?v=20261029192157';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029192157';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029192157';
+import * as M from './motor.js?v=20261029195546';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029195546';
+import { REGULAMENTO } from './regulamento.js?v=20261029195546';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029195546';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029195546';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -137,6 +137,8 @@ async function carregar() {
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
   const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
   S.backups = backups;
+  const [cb, pg] = await Promise.all([sb.from('cobrancas').select('*').order('criado_em'), sb.from('pagamentos').select('*')]);
+  S.cobrancas = cb.error ? [] : cb.data; S.pagamentos = pg.error ? [] : pg.data;
   aquecerFotos();
   S.jogos = jogos;
   if (!S.eu) return;
@@ -154,7 +156,7 @@ function aquecerFotos() {
   'requestIdleCallback' in window ? requestIdleCallback(vai, { timeout: 3000 }) : setTimeout(vai, 1500);
 }
 // cópia local do último carregamento: o app abre na hora e atualiza em seguida
-const CACHE = 'galera-cache-v1', CAMPOS = ['uid', 'jogadores', 'meses', 'avisos', 'patros', 'config', 'finals', 'fvagas', 'fjogos', 'mesAtual', 'jogos', 'jogosPorMes', 'curtidas', 'eu', 'niver'];
+const CACHE = 'galera-cache-v1', CAMPOS = ['uid', 'jogadores', 'meses', 'avisos', 'patros', 'config', 'finals', 'fvagas', 'fjogos', 'mesAtual', 'jogos', 'jogosPorMes', 'curtidas', 'eu', 'niver', 'cobrancas', 'pagamentos'];
 function salvarCache() { try { localStorage.setItem(CACHE, JSON.stringify(Object.fromEntries(CAMPOS.map((k) => [k, S[k]])))); } catch (e) { /* sem espaço ou sem storage: segue */ } }
 function lerCache() {
   try {
@@ -295,6 +297,7 @@ function telaInicio() {
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
   <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
 }
@@ -563,6 +566,7 @@ function telaPerfil() {
     </div>
     <button class="btn btn-bola" type="submit">Salvar</button>
     <p id="perfil-msg" role="status"></p>
+    <a class="btn btn-linha" href="#/pagamentos">Meus pagamentos</a>
     <a class="btn btn-linha" href="#/senha">Trocar senha</a>
     <button class="btn btn-linha" type="button" data-acao="sair">Sair da conta</button>
   </form>`;
@@ -845,6 +849,7 @@ function telaAdmin() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="rot">Grupo<select class="campo" name="grupo"><option>A</option><option>B</option><option>C</option></select></label>
       <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
       <button class="btn btn-roxo" type="submit">Cadastrar</button></form>
+    ${adminCobrancas()}
     ${adminPatros()}
     <form class="card" data-form="aviso" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Publicar aviso</b>
       <label class="rot">Tipo<select class="campo" name="tipo"><option>AVISO</option><option>RANKING</option><option>TORNEIO</option><option>CARTAZ</option></select></label>
@@ -869,6 +874,156 @@ function telaAdmin() {
 // backup: cópia de tudo dentro do banco (automática todo dia e antes das ações grandes) + arquivo pro celular
 async function backup(motivo) { const r = await sb.rpc('fazer_backup', { p_motivo: motivo }); if (r.error) throw new Error('Não consegui fazer o backup antes: ' + r.error.message); }
 const dataHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+// ---------- cobranças por Pix (anuidade, torneios) ----------
+// Pix direto na chave da coordenação (sem intermediário, sem taxa). O jogador avisa "já paguei"; a coordenação confere no extrato.
+const PIX = { chave: '+5519997635743', mostra: '(19) 99763-5743', tipo: 'celular', nome: 'Daniella Gesualdo', cidade: 'SUMARE' };
+const real = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dataBR = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '');
+const hojeISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const ascii = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9 .,\-\/]/g, '');
+function crc16(s) {
+  let c = 0xFFFF;
+  for (const b of new TextEncoder().encode(s)) { c ^= b << 8; for (let i = 0; i < 8; i++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
+  return c.toString(16).toUpperCase().padStart(4, '0');
+}
+// "Pix copia e cola" (BR Code estático do Banco Central) com valor e mensagem
+function pixCopiaCola(valor, msg, txid) {
+  const f = (id, v) => id + String(v.length).padStart(2, '0') + v;
+  const m = ascii(msg).slice(0, 40).trim();
+  const conta = f('00', 'br.gov.bcb.pix') + f('01', PIX.chave) + (m ? f('02', m) : '');
+  const corpo = f('00', '01') + f('26', conta) + f('52', '0000') + f('53', '986') + f('54', Number(valor).toFixed(2)) + f('58', 'BR')
+    + f('59', ascii(PIX.nome).toUpperCase().slice(0, 25)) + f('60', ascii(PIX.cidade).toUpperCase().slice(0, 15))
+    + f('62', f('05', (String(txid || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 25)) || '***')) + '6304';
+  return corpo + crc16(corpo);
+}
+const txidDe = (c, j) => ('GR' + c.id.replace(/-/g, '').slice(0, 6) + j.id.replace(/-/g, '').slice(0, 10)).toUpperCase();
+// pendências do jogador logado nas cobranças que já começaram
+function minhasCobrancas() {
+  const eu = S.eu; if (!eu || !eu.ativo || eu.pendente) return [];
+  const hoje = hojeISO();
+  return (S.cobrancas || []).filter((c) => !c.inicio || c.inicio <= hoje).map((c) => {
+    const pg = (S.pagamentos || []).find((x) => x.cobranca === c.id && x.jogador === eu.id);
+    if (c.tipo === 'todos') return eu.joga ? { c, pg, status: pg ? pg.status : 'pendente' } : null;
+    return pg ? { c, pg, status: pg.status } : c.aberta ? { c, pg: null, status: 'inscricao' } : null;
+  }).filter(Boolean);
+}
+const pendencias = () => minhasCobrancas().filter((x) => x.status === 'pendente');
+// faixa discreta na tela inicial (onde ficam os patrocinadores)
+function avisoCobranca() {
+  const pend = pendencias(), inf = minhasCobrancas().filter((x) => x.status === 'informado');
+  if (pend.length) {
+    const x = pend[0];
+    return `<a class="cobra" href="#/pagamentos"><span class="cobra-ic" aria-hidden="true">💳</span><span class="cobra-t"><b>${pend.length > 1 ? pend.length + ' pagamentos pendentes' : esc(x.c.titulo) + ' pendente'}</b><small>${pend.length > 1 ? 'Toque pra ver e pagar por Pix' : real(x.c.valor) + (x.c.vence ? ' · até ' + dataBR(x.c.vence) : '') + ' · Pix'}</small></span><span class="cobra-btn">Pagar</span></a>`;
+  }
+  if (inf.length) return `<a class="cobra cobra-ok" href="#/pagamentos"><span class="cobra-ic" aria-hidden="true">⏳</span><span class="cobra-t"><b>${esc(inf[0].c.titulo)}</b><small>Você avisou que pagou. A coordenação vai conferir.</small></span></a>`;
+  return '';
+}
+// lembrete ao abrir o app (uma vez por abertura), logo depois da tela das bolinhas
+function lembrarCobranca() {
+  const pend = pendencias(); if (!pend.length || foraDoRanking()) return;
+  try { if (sessionStorage.getItem('cobranca-avisada')) return; sessionStorage.setItem('cobranca-avisada', '1'); } catch (e) { /* mostra mesmo */ }
+  // espera a abertura (bolinhas) e os parabéns saírem da tela; aí mostra
+  let tentativas = 0;
+  const mostrar = () => {
+    if (document.querySelector('.intro, .niver, .zoom') && tentativas++ < 120) return setTimeout(mostrar, 500);
+    const x = pend[0], d = document.createElement('div');
+    d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Pagamento pendente');
+    d.innerHTML = `<div class="niver-c"><div style="font-size:40px" aria-hidden="true">💳</div><small>PAGAMENTO PENDENTE</small>
+      <b class="cond" style="font-size:24px">${pend.length > 1 ? pend.length + ' pagamentos' : esc(x.c.titulo)}</b>
+      <span style="font-size:16px;font-weight:600">${pend.length > 1 ? pend.map((y) => esc(y.c.titulo) + ' · ' + real(y.c.valor)).join('<br>') : real(x.c.valor) + (x.c.vence ? ' · até ' + dataBR(x.c.vence) : '')}</span>
+      <span class="dica" style="color:inherit;opacity:.8">Pague por Pix pelo app, é rapidinho.</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;width:100%"><button class="btn btn-linha" type="button" data-fechar>Depois</button><a class="btn btn-bola" href="#/pagamentos" data-fechar>Pagar agora</a></div></div>`;
+    d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-fechar]')) d.remove(); });
+    document.body.appendChild(d); const b = d.querySelector('a[data-fechar]'); if (b) b.focus();
+  };
+  setTimeout(mostrar, 900);
+}
+let qrPronto = null;
+const carregarQR = () => qrPronto || (qrPronto = window.qrcode ? Promise.resolve() : new Promise((ok, erro) => {
+  const sc = document.createElement('script'); sc.src = 'vendor/qrcode-generator-1.4.4/qrcode.js'; sc.onload = ok; sc.onerror = () => { qrPronto = null; erro(new Error('QR')); }; document.head.appendChild(sc);
+}));
+function desenharQRs() {
+  const alvos = document.querySelectorAll('[data-qr]'); if (!alvos.length) return;
+  carregarQR().then(() => alvos.forEach((el) => {
+    const q = window.qrcode(0, 'M'); q.addData(el.dataset.qr); q.make();
+    el.innerHTML = `<img src="${q.createDataURL(5, 2)}" alt="QR Code do Pix de ${esc(el.dataset.valor || '')}" width="200" height="200">`;
+  })).catch(() => {});
+}
+function telaPagamentos() {
+  const lista = minhasCobrancas();
+  return voltar('Pagamentos', 'Anuidade e inscrições · Pix') + `<div class="conteudo">
+    ${lista.length ? lista.map(({ c, pg, status }) => {
+      const cab = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">${esc(c.titulo)}</b><div class="dica">${real(c.valor)}${c.vence ? ' · vence ' + dataBR(c.vence) : ''}</div></div>
+        ${status === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : status === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : status === 'pendente' ? '<span class="tag" style="background:#FDECEC;color:var(--verm)">PENDENTE</span>' : '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">INSCRIÇÕES ABERTAS</span>'}</div>`;
+      if (status === 'pago') return `<section class="card">${cab}<p class="dica" style="margin-top:6px">✓ Pagamento confirmado pela coordenação${pg && pg.pago_em ? ' em ' + dataBR(pg.pago_em) : ''}. Obrigado!</p></section>`;
+      if (status === 'inscricao') return `<section class="card" style="display:flex;flex-direction:column;gap:10px">${cab}<button class="btn btn-roxo" data-acao="inscrever" data-id="${c.id}">Quero me inscrever</button><span class="dica">Depois de inscrito aparece o Pix da inscrição.</span></section>`;
+      const cc = pixCopiaCola(c.valor, c.titulo + ' ' + S.eu.nome, txidDe(c, S.eu));
+      return `<section class="card" style="display:flex;flex-direction:column;gap:10px">${cab}
+        ${status === 'informado' ? `<p class="dica">Você avisou que pagou${pg && pg.informado_em ? ' em ' + dataBR(pg.informado_em) : ''}. A coordenação confere no extrato e confirma aqui. Se ainda não pagou, use o Pix abaixo.</p>` : ''}
+        <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(c.valor))}"><span class="dica">Carregando QR Code…</span></div>
+        <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
+        <span class="dica">No app do banco: Pix → Pagar com QR Code ou Pix copia e cola. O valor (${real(c.valor)}) já vem preenchido.<br>Ou pela chave ${PIX.tipo} <b>${PIX.mostra}</b> em nome de <b>${esc(PIX.nome)}</b>.</span>
+        ${status === 'pendente' ? `<button class="btn btn-linha" type="button" data-acao="jaPaguei" data-id="${c.id}">Já paguei</button>` : ''}
+      </section>`;
+    }).join('') : '<p class="dica">Nenhum pagamento pra você agora. 👍</p>'}
+    <p class="dica">Os pagamentos são feitos por Pix direto na conta da coordenação. Só você e a coordenação veem a sua situação.</p>
+  </div>`;
+}
+// ---- Admin ----
+function linhasCobranca(c) {
+  const base = c.tipo === 'todos'
+    ? S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente)
+    : (S.pagamentos || []).filter((p) => p.cobranca === c.id).map((p) => porId(p.jogador)).filter(Boolean);
+  const ordem = { informado: 0, pendente: 1, pago: 2 };
+  return base.map((j) => { const pg = (S.pagamentos || []).find((p) => p.cobranca === c.id && p.jogador === j.id); return { j, pg, status: pg ? pg.status : 'pendente' }; })
+    .sort((a, b) => ordem[a.status] - ordem[b.status] || a.j.nome.localeCompare(b.j.nome));
+}
+function adminCobrancas() {
+  const cs = S.cobrancas || [], ver = S.admin.cobVer, conf = S.admin.cobApagar;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Cobranças (Pix)</b>
+    <span class="dica">Pix na chave ${PIX.tipo} ${PIX.mostra} (${esc(PIX.nome)}). O jogador avisa "Já paguei"; confira no extrato e toque em Confirmar. Só a coordenação vê esta lista.</span>
+    ${cs.map((c) => {
+      const ls = linhasCobranca(c), n = (st) => ls.filter((x) => x.status === st).length, aberta = ver === c.id;
+      return `<div class="patro-adm">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>${esc(c.titulo)}</b><div class="dica">${real(c.valor)}${c.vence ? ' · vence ' + dataBR(c.vence) : ''} · ${c.tipo === 'todos' ? 'todos do ranking' : 'quem se inscrever' + (c.aberta ? ' (aberta)' : ' (fechada)')}${c.inicio > hojeISO() ? ' · aparece em ' + dataBR(c.inicio) : ''}</div></div></div>
+        <div class="cob-cont"><span><b style="color:var(--verde)">${n('pago')}</b> pagos</span><span><b style="color:#6B4A00">${n('informado')}</b> avisaram</span><span><b style="color:var(--verm)">${n('pendente')}</b> pendentes</span>${c.tipo === 'todos' ? '' : `<span><b>${ls.length}</b> inscritos</span>`}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="cobVer" data-id="${c.id}" aria-expanded="${aberta}">${aberta ? 'Fechar lista' : 'Ver lista'}</button><button type="button" class="btn btn-linha" data-acao="cobPlanilha" data-id="${c.id}">Baixar planilha</button></div>
+        ${aberta ? `<div class="cob-lista">${ls.map(({ j, pg, status }) => `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}</b><small class="dica">Grupo ${esc(j.grupo || '–')}${pg && pg.informado_em && status !== 'pendente' ? ' · avisou ' + dataBR(pg.informado_em) : ''}${pg && pg.pago_em && status === 'pago' ? ' · conf. ' + dataBR(pg.pago_em) : ''}</small></span>
+            ${status === 'pago' ? `<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span><button type="button" class="ic-mini" style="width:auto;padding:0 10px;font-size:12px" data-acao="cobDesfazer" data-c="${c.id}" data-j="${j.id}" aria-label="Desfazer pagamento de ${esc(j.nome)}">Desfazer</button>`
+              : `${status === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">AVISOU</span>' : ''}<button type="button" class="ic-mini" style="width:auto;padding:0 10px;font-size:12px;background:var(--verde);color:#fff;border-color:var(--verde)" data-acao="cobConfirmar" data-c="${c.id}" data-j="${j.id}" aria-label="Confirmar pagamento de ${esc(j.nome)}">Confirmar</button>`}
+            ${c.tipo === 'inscricao' ? `<button type="button" class="ic-mini" data-acao="cobTirar" data-c="${c.id}" data-j="${j.id}" aria-label="Tirar ${esc(j.nome)} da lista">✕</button>` : ''}</div>`).join('') || '<p class="dica">Ninguém ainda.</p>'}</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${c.tipo === 'inscricao' ? `<button type="button" class="btn btn-linha" style="flex:1" data-acao="cobAbrir" data-id="${c.id}">${c.aberta ? 'Fechar inscrições' : 'Reabrir inscrições'}</button>` : ''}
+          ${conf === c.id ? `<button type="button" class="btn btn-linha" style="flex:1" data-acao="cobCancelar">Cancelar</button><button type="button" class="btn btn-roxo" style="flex:1;background:var(--verm)" data-acao="cobApagar" data-id="${c.id}">Apagar de vez</button>`
+            : `<button type="button" class="btn btn-linha" style="flex:1" data-acao="cobPedirApagar" data-id="${c.id}">Apagar cobrança</button>`}</div>
+      </div>`;
+    }).join('')}
+    <form data-form="cobNova" class="patro-adm" style="border-style:dashed">
+      <b class="cond" style="font-size:17px">Nova cobrança</b>
+      <label class="rot">Título<input class="campo" name="titulo" required maxlength="60" placeholder="Ex.: Anuidade 2027"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Valor (R$)<input class="campo" name="valor" required inputmode="decimal" placeholder="150,00"></label>
+      <label class="rot">Vencimento<input class="campo" name="vence" type="date"></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Quem paga<select class="campo" name="tipo"><option value="todos">Todos do ranking</option><option value="inscricao">Quem se inscrever (torneio)</option></select></label>
+      <label class="rot">Aparece a partir de<input class="campo" name="inicio" type="date" value="${hojeISO()}"></label></div>
+      <button type="submit" class="btn btn-roxo">Criar cobrança</button>
+    </form></section>`;
+}
+function baixarPlanilha(c) {
+  const ls = linhasCobranca(c), sit = { pago: 'Pago', informado: 'Avisou que pagou', pendente: 'Pendente' };
+  const cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const linhas = [['Nome', 'Grupo', 'Celular', 'Cobrança', 'Valor', 'Vencimento', 'Situação', 'Avisou em', 'Confirmado em']]
+    .concat(ls.map(({ j, pg, status }) => [j.nome, j.grupo || '', j.celular || '', c.titulo, Number(c.valor).toFixed(2).replace('.', ','), dataBR(c.vence), sit[status], pg ? dataBR(pg.informado_em) : '', pg ? dataBR(pg.pago_em) : '']));
+  const csv = '﻿' + linhas.map((l) => l.map(cel).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = ascii(c.titulo).replace(/\s+/g, '-').toLowerCase() + '-' + hojeISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function marcarPagamento(cId, jId, status) {
+  const ja = (S.pagamentos || []).find((p) => p.cobranca === cId && p.jogador === jId);
+  const dados = status === 'pago' ? { status: 'pago', pago_em: new Date().toISOString() } : { status: 'pendente', pago_em: null };
+  const r = ja ? await sb.from('pagamentos').update(dados).eq('cobranca', cId).eq('jogador', jId) : await sb.from('pagamentos').insert({ cobranca: cId, jogador: jId, ...dados });
+  if (r.error) throw r.error;
+}
+
 // ---------- patrocinadores (Admin) ----------
 const TEXTO_PATRO = 'Olá! Vi seu anúncio no app da Galera da Raquete.';
 const foneDoLink = (link) => { const m = /wa\.me\/(\d+)/.exec(link || ''); if (!m) return ''; const d = m[1].replace(/^55(?=\d{10,11}$)/, ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d; };
@@ -1195,6 +1350,22 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  copiarPix: async (el) => {
+    const t = el.dataset.cc;
+    try { await navigator.clipboard.writeText(t); toast('Pix copia e cola copiado. Cole no app do seu banco.'); }
+    catch (e) { const x = document.createElement('textarea'); x.value = t; x.setAttribute('readonly', ''); x.style.position = 'fixed'; x.style.opacity = '0'; document.body.appendChild(x); x.select(); try { document.execCommand('copy'); toast('Pix copia e cola copiado.'); } catch (e2) { toast('Não consegui copiar. Use o QR Code.'); } x.remove(); }
+  },
+  jaPaguei: (el) => comTrava('', async () => { const r = await sb.rpc('informar_pagamento', { p_cobranca: el.dataset.id }); if (r.error) throw r.error; }, 'Valeu! A coordenação vai conferir e confirmar.'),
+  inscrever: (el) => comTrava('', async () => { const r = await sb.rpc('inscrever_cobranca', { p_cobranca: el.dataset.id }); if (r.error) throw r.error; }, 'Inscrição feita. O Pix já está aqui embaixo.'),
+  cobVer: (el) => { S.admin.cobVer = S.admin.cobVer === el.dataset.id ? null : el.dataset.id; render(); },
+  cobPlanilha: (el) => { const c = (S.cobrancas || []).find((x) => x.id === el.dataset.id); if (c) baixarPlanilha(c); },
+  cobConfirmar: (el) => comTrava('', () => marcarPagamento(el.dataset.c, el.dataset.j, 'pago'), 'Pagamento confirmado.'),
+  cobDesfazer: (el) => comTrava('', () => marcarPagamento(el.dataset.c, el.dataset.j, 'pendente'), 'Voltou pra pendente.'),
+  cobTirar: (el) => comTrava('', async () => { const r = await sb.from('pagamentos').delete().eq('cobranca', el.dataset.c).eq('jogador', el.dataset.j); if (r.error) throw r.error; }, 'Tirado da lista.'),
+  cobAbrir: (el) => comTrava('', async () => { const c = (S.cobrancas || []).find((x) => x.id === el.dataset.id); const r = await sb.from('cobrancas').update({ aberta: !c.aberta }).eq('id', c.id); if (r.error) throw r.error; }, ''),
+  cobPedirApagar: (el) => { S.admin.cobApagar = el.dataset.id; render(); },
+  cobCancelar: () => { S.admin.cobApagar = null; render(); },
+  cobApagar: (el) => comTrava('', async () => { S.admin.cobApagar = null; const r = await sb.from('cobrancas').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Cobrança apagada.'),
   patroPedir: (el) => { S.admin.patroApagar = el.dataset.id; render(); },
   patroCancelar: () => { S.admin.patroApagar = null; render(); },
   patroApagar: (el) => comTrava('', async () => {
@@ -1231,6 +1402,12 @@ async function comTrava(espera, fn, ok) {
 }
 
 const FORMS = {
+  cobNova: (f) => comTrava('', async () => {
+    const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
+    if (!(valor > 0)) throw new Error('Valor inválido.');
+    const r = await sb.from('cobrancas').insert({ titulo: f.titulo.value.trim(), valor, vence: f.vence.value || null, tipo: f.tipo.value, inicio: f.inicio.value || hojeISO(), aberta: true });
+    if (r.error) throw r.error;
+  }, 'Cobrança criada.'),
   patroSalvar: (f) => comTrava('', async () => {
     const fone = f.fone.value.trim();
     if (fone && soDigitos(fone).length < 10) throw new Error('WhatsApp incompleto: coloque o DDD e o número.');
@@ -1502,6 +1679,7 @@ async function render() {
       : rota === 'duplas' ? telaDuplas()
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
+      : rota === 'pagamentos' ? telaPagamentos()
       : rota === 'privacidade' ? telaPrivacidade()
       : rota === 'termos' ? telaTermos()
       : rota === 'senha' ? telaSenha(false)
@@ -1518,6 +1696,7 @@ async function render() {
   if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { const c = document.getElementById('carrossel'); if (c && c.matches(':hover, :focus-within')) return; S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   aplicarBusca();
+  desenharQRs();
   document.querySelectorAll('.chave-scroll').forEach((el) => { el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2; });
   // teclado e leitor de tela: a foto que amplia vira um botão (fora de links e botões)
   document.querySelectorAll('.avatar[data-ver]').forEach((av) => {
@@ -1632,6 +1811,7 @@ async function entrar() {
     .subscribe();
   render();
   parabens();
+  lembrarCobranca();
   ligarPresenca();
 }
 
