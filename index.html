@@ -390,8 +390,6 @@ img{display:block;max-width:100%}
 #confOk .cab{margin-bottom:0}
 #confOk .cta{margin-top:10px!important;padding:13px 16px;font-size:17px}
 @media (max-width:360px){.pix-linha b{font-size:20px}.pix-btn{padding:8px 10px;font-size:13px}}
-.nota-priv{font-size:12px;line-height:1.45;color:var(--tinta-2);margin:10px 0 0}
-.nota-jogo{display:block;font-size:11px;color:#cfc6e6;margin:6px 0 2px}
 .brinde{position:relative;display:flex;gap:12px;align-items:center;margin:14px 0 4px;padding:12px 14px;border-radius:16px;
   background:var(--bola);color:var(--roxo-noite);box-shadow:0 0 0 3px rgba(216,241,69,.25),0 8px 22px rgba(216,241,69,.25);animation:brilhaBrinde 2.4s ease-in-out infinite}
 .brinde::after{content:"";position:absolute;left:34px;bottom:-9px;border:9px solid transparent;border-bottom:0;border-top-color:var(--bola)}
@@ -664,7 +662,6 @@ img{display:block;max-width:100%}
         </div>
         <div class="resumo" id="resumo"></div>
         <p class="erro" id="confErro" role="alert"></p>
-        <p class="nota-priv">Privacidade: seu nome, o WhatsApp (se você informar) e os nomes de quem vai com você ficam na planilha da organização e servem só pra organizar a festa e a entrada. Esta página não usa cookies de rastreamento nem anúncios. Quer corrigir ou apagar seus dados? Fale com a coordenação da Galera da Raquete.</p>
         <button class="cta verde vamos" id="bEnviar" type="submit"><svg><use href="#i-bola"/></svg><span class="cta-txt" id="bEnvTxt">VAMOS!!!<small>Confirmar presença</small></span></button>
       </form>
     </div>
@@ -742,7 +739,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202610291200";
+const VERSAO = "202610291830";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
@@ -1627,7 +1624,6 @@ const Ranking = (() => {
     painel(`<h5>GAME OVER</h5><div class="px-num">${String(pts).padStart(5, "0")}</div><p>pontos · ${games} ${games === 1 ? "game" : "games"}</p>
       <input id="jNome" maxlength="24" placeholder="SEU NOME" autocomplete="nickname">
       <button class="cta bola" id="jSalvar" type="button">SALVAR NO RANKING</button>
-      <small class="nota-jogo">O nome que você digitar aparece no ranking do jogo pra todo mundo.</small>
       <div class="ok-rank px" id="jOk"></div>
       <button class="cta" id="jDenovo" type="button" style="background:#221a36;box-shadow:none">JOGAR DE NOVO</button>`);
     $("jNome").value = nome;
