@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029183712';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029183712';
-import { REGULAMENTO } from './regulamento.js?v=20261029183712';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029183712';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029183712';
+import * as M from './motor.js?v=20261029190103';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029190103';
+import { REGULAMENTO } from './regulamento.js?v=20261029190103';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029190103';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029190103';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -807,11 +807,11 @@ function telaAdmin() {
   const sugestao = mes ? proxMes(mes.id) : ult && temp > Number(ult.slice(0, 4)) ? temp + '-01' : ult ? proxMes(ult) : mesId(new Date());
   const pends = S.jogadores.filter((j) => j.pendente);
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
-    ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição. Ele entra com os pontos de quem estava na posição (regra 5.1).</span>
+    ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição dentro do grupo. Ele entra com os pontos de quem está hoje nessa posição do grupo (regra 5.1). Em branco = último do grupo.</span>
       ${pends.map((j) => `<form data-form="aprovar" data-id="${j.id}" style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px">
         <span><b>${esc(j.nome)}</b>${voltando(j) ? ' <span class="tag" style="background:#E3F0E8;color:var(--verde)">QUER VOLTAR</span>' : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.celular ? ' · ' + esc(j.celular) : ''}</small></span>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Grupo<select class="campo" name="grupo" required><option value="">Escolher…</option><option>A</option><option>B</option><option>C</option></select></label>
-        <label class="rot">Posição no geral<input class="campo" name="pos" type="number" min="1" value="${listaGeral().length + 1}"></label></div>
+        <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="recusar" data-id="${j.id}">Recusar</button><button class="btn btn-roxo" type="submit">Aprovar</button></div>
       </form>`).join('')}</section>` : ''}
     <section class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -833,12 +833,13 @@ function telaAdmin() {
       <label class="rot">Jogador 2<select class="campo" name="b" required><option value="">Escolher…</option>${opcoes}</select></label>
       <button class="btn btn-roxo" type="submit">Adicionar</button></form>` : ''}
     ${adminFinals()}
-    <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição. Ele entra com os pontos de quem estava na posição.</span>
+    <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com os pontos de quem está hoje nessa posição do grupo. Em branco = último do grupo.</span>
       <label class="rot">Nome<input class="campo" name="nome" required maxlength="40"></label>
       <label class="rot">E-mail (é o login dele)<input class="campo" name="email" type="email" required></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="rot">Grupo<select class="campo" name="grupo"><option>A</option><option>B</option><option>C</option></select></label>
-      <label class="rot">Posição no geral<input class="campo" name="pos" type="number" min="1" value="${listaGeral().length + 1}"></label></div>
+      <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
       <button class="btn btn-roxo" type="submit">Cadastrar</button></form>
+    ${adminPatros()}
     <form class="card" data-form="aviso" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Publicar aviso</b>
       <label class="rot">Tipo<select class="campo" name="tipo"><option>AVISO</option><option>RANKING</option><option>TORNEIO</option><option>CARTAZ</option></select></label>
       <label class="rot">Título<input class="campo" name="titulo" required maxlength="80"></label>
@@ -862,6 +863,55 @@ function telaAdmin() {
 // backup: cópia de tudo dentro do banco (automática todo dia e antes das ações grandes) + arquivo pro celular
 async function backup(motivo) { const r = await sb.rpc('fazer_backup', { p_motivo: motivo }); if (r.error) throw new Error('Não consegui fazer o backup antes: ' + r.error.message); }
 const dataHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+// ---------- patrocinadores (Admin) ----------
+const TEXTO_PATRO = 'Olá! Vi seu anúncio no app da Galera da Raquete.';
+const foneDoLink = (link) => { const m = /wa\.me\/(\d+)/.exec(link || ''); if (!m) return ''; const d = m[1].replace(/^55(?=\d{10,11}$)/, ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d; };
+function adminPatros() {
+  const ps = S.patros, conf = S.admin.patroApagar;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Patrocinadores (${ps.length})</b>
+    <span class="dica">Aparecem no carrossel da tela inicial, nesta ordem. Com o WhatsApp preenchido, quem tocar no anúncio já cai na conversa com o patrocinador.</span>
+    ${ps.map((p, i) => `<form data-form="patroSalvar" data-id="${p.id}" class="patro-adm">
+      <div class="patro-adm-img" style="background:${esc(p.fundo || '#fff')}"><img src="${esc(p.logo_url)}" alt="${esc(p.nome)}" loading="lazy"></div>
+      <div style="display:flex;gap:8px;align-items:center"><b style="flex-grow:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nome)}</b>
+        <button type="button" class="ic-mini" data-acao="patroMover" data-id="${p.id}" data-v="-1" aria-label="Subir ${esc(p.nome)}" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" class="ic-mini" data-acao="patroMover" data-id="${p.id}" data-v="1" aria-label="Descer ${esc(p.nome)}" ${i === ps.length - 1 ? 'disabled' : ''}>↓</button></div>
+      <label class="rot">WhatsApp do patrocinador<input class="campo" name="fone" type="tel" inputmode="tel" autocomplete="off" placeholder="(19) 9____-____" value="${esc(foneDoLink(p.link))}"></label>
+      ${p.link && !foneDoLink(p.link) ? `<span class="dica">Hoje abre: ${esc(p.link)}. Preencha o WhatsApp pra trocar.</span>` : ''}
+      ${conf === p.id
+        ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="patroCancelar">Cancelar</button><button type="button" class="btn btn-roxo" style="background:var(--verm)" data-acao="patroApagar" data-id="${p.id}">Confirmar remoção</button></div>`
+        : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="patroPedir" data-id="${p.id}">Remover</button><button type="submit" class="btn btn-roxo">Salvar WhatsApp</button></div>`}
+    </form>`).join('')}
+    <form data-form="patroNovo" class="patro-adm" style="border-style:dashed">
+      <b class="cond" style="font-size:17px">Novo patrocinador</b>
+      <label class="rot">Nome<input class="campo" name="nome" required maxlength="60"></label>
+      <label class="rot">Imagem do anúncio (galeria, câmera ou arquivo)<input class="campo" name="arquivo" type="file" accept="image/*" required></label>
+      <span class="dica">O app ajusta a imagem no formato do carrossel sem cortar nada (completa as bordas com a cor do fundo).</span>
+      <label class="rot">WhatsApp do patrocinador (opcional)<input class="campo" name="fone" type="tel" inputmode="tel" autocomplete="off" placeholder="(19) 9____-____"></label>
+      <button type="submit" class="btn btn-roxo">Adicionar patrocinador</button>
+    </form></section>`;
+}
+// imagem do patrocinador no formato exato do carrossel (358×130), inteira, com as bordas na cor do fundo dela
+async function montarFaixa(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error('Não consegui abrir essa imagem.')); i.src = url; });
+    const W = 1074, H = 390, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    // cor do fundo = média dos cantos da imagem
+    const t = document.createElement('canvas'); t.width = 20; t.height = 20; const tc = t.getContext('2d'); tc.drawImage(img, 0, 0, 20, 20);
+    const px = [[0, 0], [19, 0], [0, 19], [19, 19]].map(([x, y]) => tc.getImageData(x, y, 1, 1).data);
+    const cor = [0, 1, 2].map((k) => Math.round(px.reduce((a, p) => a + p[k], 0) / 4));
+    const fundo = '#' + cor.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    ctx.fillStyle = fundo; ctx.fillRect(0, 0, W, H);
+    const k = Math.min((W * 0.94) / img.naturalWidth, (H * 0.9) / img.naturalHeight);
+    const w = img.naturalWidth * k, h = img.naturalHeight * k;
+    ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.9));
+    return { blob, fundo };
+  } finally { URL.revokeObjectURL(url); }
+}
+const PASTA_PATRO = '/storage/v1/object/public/patrocinadores/';
+
 function cardBackup() {
   const bs = S.backups || [], auto = bs.find((b) => b.motivo === 'automático');
   return `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Backup</b>
@@ -1052,16 +1102,33 @@ async function aprovar(f) {
   const j = porId(f.dataset.id); if (!j) return;
   if (!f.grupo.value) throw new Error('Escolha o grupo.');
   let r = await sb.from('jogadores').update({ grupo: f.grupo.value, pendente: false, ativo: true }).eq('id', j.id); if (r.error) throw r.error;
-  const nova = M.inserir(listaGeral(), { ...j, grupo: f.grupo.value }, Number(f.pos.value) || 9999).map((x, i) => ({ ...x, posicao: i + 1 }));
-  await salvarJogadores(nova, ['tp', 'posicao']);
+  await salvarJogadores(encaixar({ ...j, ativo: true, pendente: false }, f.grupo.value, Number(f.pos.value) || 0), ['tp', 'posicao']);
+}
+// regra 5.1 (a coordenação define colocação e categoria): entra na posição N do grupo com os pontos (ao vivo) de quem está hoje nessa posição;
+// sem posição ou além do fim = último do grupo. Devolve a lista geral com as posições renumeradas.
+function encaixar(novo, grupo, pos) {
+  const doGrupo = rankingVivo().filter((x) => x.id !== novo.id && x.grupo === grupo);
+  const alvo = pos >= 1 ? doGrupo[pos - 1] : null, ultimo = doGrupo[doGrupo.length - 1];
+  // pontos de quem está na posição; se no desempate ele cairia uma abaixo, sobe o mínimo necessário (sem passar quem está acima)
+  let tp = alvo ? alvo.tp : ultimo ? Math.max(0, ultimo.tp - 1) : 0;
+  if (alvo) {
+    const acima = doGrupo[pos - 2], teto = acima ? acima.tp : alvo.tp + 1;
+    for (let t = alvo.tp; t <= teto; t++) {
+      if (M.ordenar([...doGrupo.map((x) => ({ ...x })), { ...novo, grupo, tp: t }]).findIndex((x) => x.id === novo.id) === pos - 1) { tp = t; break; }
+    }
+  }
+  const base = listaGeral().filter((x) => x.id !== novo.id);
+  let i = alvo ? base.findIndex((x) => x.id === alvo.id) : ultimo ? base.findIndex((x) => x.id === ultimo.id) + 1 : base.length;
+  if (i < 0) i = base.length;
+  base.splice(i, 0, { ...novo, grupo, tp });
+  return base.map((x, k) => ({ ...x, posicao: k + 1 }));
 }
 async function cadastrarJogador(f) {
   const email = f.email.value.trim().toLowerCase(), nome = f.nome.value.trim();
   if (Object.values(S.emails).some((e) => String(e).toLowerCase() === email)) throw new Error('Esse e-mail já está cadastrado.');
   const { data, error } = await sb.from('jogadores').insert({ email, nome, grupo: f.grupo.value }).select(COLS).single();
   if (error) throw error;
-  const nova = M.inserir(listaGeral(), { ...data }, Number(f.pos.value) || 9999).map((j, i) => ({ ...j, posicao: i + 1 }));
-  await salvarJogadores(nova, ['tp', 'posicao']);
+  await salvarJogadores(encaixar({ ...data }, f.grupo.value, Number(f.pos.value) || 0), ['tp', 'posicao']);
 }
 
 const ACOES = {
@@ -1120,6 +1187,22 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  patroPedir: (el) => { S.admin.patroApagar = el.dataset.id; render(); },
+  patroCancelar: () => { S.admin.patroApagar = null; render(); },
+  patroApagar: (el) => comTrava('', async () => {
+    S.admin.patroApagar = null;
+    const p = S.patros.find((x) => x.id === el.dataset.id); if (!p) return;
+    const r = await sb.from('patrocinadores').delete().eq('id', p.id); if (r.error) throw r.error;
+    const i = (p.logo_url || '').indexOf(PASTA_PATRO);
+    if (i >= 0) await sb.storage.from('patrocinadores').remove([decodeURIComponent(p.logo_url.slice(i + PASTA_PATRO.length))]);
+  }, 'Patrocinador removido.'),
+  patroMover: (el) => comTrava('', async () => {
+    const ps = S.patros.slice(), i = ps.findIndex((x) => x.id === el.dataset.id), j = i + Number(el.dataset.v);
+    if (i < 0 || j < 0 || j >= ps.length) return;
+    [ps[i], ps[j]] = [ps[j], ps[i]];
+    const rs = await Promise.all(ps.map((p, k) => sb.from('patrocinadores').update({ ordem: k + 1 }).eq('id', p.id)));
+    const e = rs.find((r) => r.error); if (e) throw e.error;
+  }, ''),
   fecharLembrete: () => { try { localStorage.setItem('lembrete-senha', String(Date.now())); } catch (e) { /* ok */ } render(); },
   removerFoto: () => comTrava('', async () => { const r = await sb.from('jogadores').update({ foto_url: null }).eq('id', S.eu.id); if (r.error) throw r.error; }, 'Foto removida.'),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
@@ -1140,6 +1223,25 @@ async function comTrava(espera, fn, ok) {
 }
 
 const FORMS = {
+  patroSalvar: (f) => comTrava('', async () => {
+    const fone = f.fone.value.trim();
+    if (fone && soDigitos(fone).length < 10) throw new Error('WhatsApp incompleto: coloque o DDD e o número.');
+    const r = await sb.from('patrocinadores').update({ link: fone ? zap(fone, TEXTO_PATRO) : null }).eq('id', f.dataset.id); if (r.error) throw r.error;
+  }, 'WhatsApp do patrocinador salvo.'),
+  patroNovo: (f) => comTrava('Enviando a imagem…', async () => {
+    const arq = f.arquivo.files[0], nome = f.nome.value.trim(), fone = f.fone.value.trim();
+    if (!arq) throw new Error('Escolha a imagem do anúncio.');
+    if (!/^image\//.test(arq.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(arq.name)) throw new Error('Escolha uma imagem (foto ou arquivo de imagem).');
+    if (arq.size > 20 * 1024 * 1024) throw new Error('Imagem maior que 20 MB.');
+    if (fone && soDigitos(fone).length < 10) throw new Error('WhatsApp incompleto: coloque o DDD e o número.');
+    const { blob, fundo } = await montarFaixa(arq);
+    const caminho = `${Date.now()}-faixa.jpg`;
+    const up = await sb.storage.from('patrocinadores').upload(caminho, blob, { contentType: 'image/jpeg' }); if (up.error) throw up.error;
+    const logo = sb.storage.from('patrocinadores').getPublicUrl(caminho).data.publicUrl;
+    const ordem = Math.max(0, ...S.patros.map((p) => p.ordem || 0)) + 1;
+    const r = await sb.from('patrocinadores').insert({ nome, logo_url: logo, fundo, link: fone ? zap(fone, TEXTO_PATRO) : null, ordem });
+    if (r.error) { await sb.storage.from('patrocinadores').remove([caminho]); throw r.error; }
+  }, 'Patrocinador adicionado. Já aparece no carrossel.'),
   placar: async (f) => {
     const { sets, r, erro } = lerSets(f); const msg = document.getElementById('placar-msg');
     if (erro) { msg.className = 'erro'; msg.textContent = erro; return; }
