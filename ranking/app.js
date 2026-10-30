@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030141558';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030141558';
-import { REGULAMENTO } from './regulamento.js?v=20261030141558';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030141558';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030141558';
+import * as M from './motor.js?v=20261030142230';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030142230';
+import { REGULAMENTO } from './regulamento.js?v=20261030142230';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030142230';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030142230';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -990,7 +990,7 @@ async function carregarDesafio(ano) {
   const [r, n, todos] = await Promise.all([
     sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10'),
     comecou ? sb.rpc('meu_numero_da_sorte', { p_ano: ano }) : Promise.resolve({ data: null }),
-    S.eu.admin ? sb.from('desafio_numeros').select('jogador,numero').eq('ano', ano) : Promise.resolve({ data: [] })
+    S.eu.admin ? sb.from('desafio_numeros').select('jogador,numero,completou,lista_em').eq('ano', ano) : Promise.resolve({ data: [] })
   ]);
   S.desafio = { ano, jogos: r.error ? [] : r.data, numero: n && !n.error ? n.data : null, numeros: todos && !todos.error ? todos.data || [] : [], em: Date.now() };
 }
@@ -1073,10 +1073,14 @@ function telaDesafio() {
 }
 function adminDesafio() {
   const ano = anoDesafio(), pr = S.config['desafio_' + ano] || {}, qtd = Number(pr.qtd) || 10, sorteio = S.config['desafio_' + ano + '_sorteio'];
-  const fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
-  if (fimOut && (!S.desafio || S.desafio.ano !== ano)) carregarDesafio(ano).then(() => { if (location.hash === '#/admin') render(); });
-  const ok = fimOut && S.desafio && S.desafio.ano === ano ? completaram(ano, S.desafio.jogos) : [];
-  const num = (id) => ((S.desafio && S.desafio.numeros) || []).find((x) => x.jogador === id);
+  const comecou = !!S.meses.find((x) => x.id === ano + '-01'), fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
+  if (comecou && (!S.desafio || S.desafio.ano !== ano) && !adminDesafio.carregando) { adminDesafio.carregando = true; carregarDesafio(ano).then(() => { adminDesafio.carregando = false; if (location.hash === '#/admin') render(); }); }
+  const D = S.desafio && S.desafio.ano === ano ? S.desafio : null;
+  const ok = fimOut && D ? completaram(ano, D.jogos) : [];
+  const lista = D ? D.numeros.filter((x) => x.completou) : [], listaEm = lista.length ? lista.map((x) => x.lista_em).sort().pop() : null;
+  const nomeDe = (id) => (porId(id) || {}).nome || '?';
+  const igual = lista.length === ok.length && ok.every((j) => lista.some((x) => x.jogador === j.id));
+  const vivos = comecou && D ? S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente && !resumoDesafio(situacaoDesafio(j.id, ano, D.jogos)).perdidas.length).length : 0;
   return `<form class="card" data-form="desafio" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Desafio ${ano} · sorteio de brindes</b>
     <span class="dica">Cada jogador tem um número da sorte (001 a 999) escondido atrás das 10 caixinhas. Quem completar os 10 jogos vê o número inteiro e entra no sorteio. Só o jogador e a coordenação veem o número.</span>
     <div style="display:grid;grid-template-columns:90px 1fr;gap:8px"><label class="rot">Brindes<input class="campo" name="qtd" type="number" min="1" max="99" inputmode="numeric" value="${qtd}"></label>
@@ -1084,10 +1088,17 @@ function adminDesafio() {
     ${pr.img ? `<img src="${esc(pr.img)}" alt="Foto dos brindes" style="width:100%;border-radius:12px">` : ''}
     <label class="rot">Foto dos brindes (opcional · aparece pra todos)<input class="campo" name="arquivo" type="file" accept="image/*"></label>
     <button class="btn btn-roxo" type="submit">Salvar</button>
-    ${!fimOut ? `<span class="dica">O sorteio libera aqui quando outubro de ${ano} for encerrado.</span>`
-      : sorteio ? `<b>Sorteados:</b><div class="desafio-lista">${sorteio.numeros.map((n) => `<span>${n3(n)}${sorteio.nomes && sorteio.nomes[n] ? ' · ' + esc(sorteio.nomes[n]) : ''}</span>`).join('')}</div>`
-      : `<b>Completaram os 10 jogos: ${ok.length}</b>${ok.length ? `<div class="desafio-lista">${ok.map((j) => `<span>${esc(j.nome)}${num(j.id) ? ' · ' + n3(num(j.id).numero) : ''}</span>`).join('')}</div>` : ''}
-        ${ok.length ? `<button type="button" class="btn btn-roxo" style="background:var(--verde)" data-acao="desafioSortear">Sortear ${Math.min(qtd, ok.length)} número${Math.min(qtd, ok.length) > 1 ? 's' : ''}</button><span class="dica">O resultado fica salvo e aparece pra todo mundo na tela do Desafio.</span>` : ''}`}
+    ${!fimOut ? `<span class="dica">${comecou ? `<b>Ainda na disputa: ${D ? vivos : '…'}</b> · ` : ''}Quando outubro de ${ano} for encerrado, aparece aqui a lista de quem completou os 10 jogos pra você guardar como lista oficial e fazer o sorteio.</span>`
+      : `<div class="patro-adm">
+        ${lista.length ? `<b>Lista oficial: ${lista.length} completaram</b><span class="dica">Guardada em ${dataHora(listaEm)}. Fica salva no banco (e no backup) com o número de cada um.</span>
+          <div class="desafio-lista">${lista.slice().sort((a, b) => a.numero - b.numero).map((x) => `<span>${n3(x.numero)} · ${esc(nomeDe(x.jogador))}</span>`).join('')}</div>
+          ${!igual && !sorteio ? `<span class="erro" style="font-size:13px">Os placares mudaram depois: hoje são ${ok.length} que completaram. Guarde a lista de novo antes do sorteio.</span><button type="button" class="btn btn-linha" data-acao="desafioLista">Guardar a lista de novo</button>` : ''}
+          <button type="button" class="btn btn-linha" data-acao="desafioPlanilha">Baixar planilha da lista</button>`
+        : `<b>Completaram os 10 jogos: ${D ? ok.length : '…'}</b>${ok.length ? `<div class="desafio-lista">${ok.map((j) => `<span>${esc(j.nome)}</span>`).join('')}</div>
+          <button type="button" class="btn btn-roxo" data-acao="desafioLista">Guardar lista oficial (${ok.length})</button><span class="dica">Gera e guarda o número da sorte de cada um. O sorteio sai dessa lista.</span>` : ''}`}
+        ${lista.length && !sorteio ? `<button type="button" class="btn btn-roxo" style="background:var(--verde)" data-acao="desafioSortear">Sortear ${Math.min(qtd, lista.length)} número${Math.min(qtd, lista.length) > 1 ? 's' : ''} da lista</button><span class="dica">Se preferir sortear na festa (papelzinho, globo), use a planilha com os números e não precisa tocar aqui.</span>` : ''}
+        ${sorteio ? `<b>Sorteados (${sorteio.numeros.length} entre ${sorteio.entre}):</b><div class="desafio-lista">${sorteio.numeros.map((n) => `<span>${n3(n)}${sorteio.nomes && sorteio.nomes[n] ? ' · ' + esc(sorteio.nomes[n]) : ''}</span>`).join('')}</div>` : ''}
+      </div>`}
   </form>`;
 }
 
@@ -1615,17 +1626,32 @@ const ACOES = {
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
   verTour: () => abrirTour(),
+  desafioLista: () => comTrava('Guardando a lista…', async () => {
+    const ano = anoDesafio();
+    await carregarDesafio(ano);
+    const ids = completaram(ano, S.desafio.jogos).map((j) => j.id);
+    await backup('antes de guardar a lista do Desafio ' + ano);
+    const r = await sb.rpc('guardar_lista_desafio', { p_ano: ano, p_ids: ids }); if (r.error) throw r.error;
+    await carregarDesafio(ano);
+  }, 'Lista oficial guardada.'),
+  desafioPlanilha: () => {
+    const ano = anoDesafio(), l = (S.desafio && S.desafio.numeros || []).filter((x) => x.completou).sort((a, b) => a.numero - b.numero);
+    const cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const linhas = [['Número da sorte', 'Nome', 'Grupo', 'Celular']].concat(l.map((x) => { const j = porId(x.jogador) || {}; return [n3(x.numero), j.nome || '', j.grupo || '', j.celular || '']; }));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + linhas.map((r) => r.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'desafio-' + ano + '-lista-oficial.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
   desafioSortear: () => comTrava('Sorteando…', async () => {
     const ano = anoDesafio(), qtd = Number((S.config['desafio_' + ano] || {}).qtd) || 10;
     if (S.config['desafio_' + ano + '_sorteio']) throw new Error('O sorteio já foi feito.');
-    let r = await sb.rpc('gerar_numeros_desafio', { p_ano: ano }); if (r.error) throw r.error;
     await carregarDesafio(ano);
-    const ok = completaram(ano, S.desafio.jogos).map((j) => ({ j, n: (S.desafio.numeros.find((x) => x.jogador === j.id) || {}).numero })).filter((x) => x.n);
+    const l = S.desafio.numeros.filter((x) => x.completou);
+    if (!l.length) throw new Error('Guarde a lista oficial antes.');
     // embaralha com números aleatórios do próprio aparelho (crypto) e pega os primeiros
-    const rnd = new Uint32Array(ok.length); crypto.getRandomValues(rnd);
-    const ganhadores = ok.map((x, i) => ({ ...x, k: rnd[i] })).sort((a, b) => a.k - b.k).slice(0, qtd).sort((a, b) => a.n - b.n);
+    const rnd = new Uint32Array(l.length); crypto.getRandomValues(rnd);
+    const ganhadores = l.map((x, i) => ({ ...x, k: rnd[i] })).sort((a, b) => a.k - b.k).slice(0, qtd).sort((a, b) => a.numero - b.numero);
     await backup('antes do sorteio do Desafio ' + ano);
-    r = await sb.from('config').insert({ chave: 'desafio_' + ano + '_sorteio', valor: { numeros: ganhadores.map((x) => x.n), nomes: Object.fromEntries(ganhadores.map((x) => [x.n, x.j.nome])), em: new Date().toISOString(), entre: ok.length } });
+    const r = await sb.from('config').insert({ chave: 'desafio_' + ano + '_sorteio', valor: { numeros: ganhadores.map((x) => x.numero), nomes: Object.fromEntries(ganhadores.map((x) => [x.numero, (porId(x.jogador) || {}).nome || ''])), em: new Date().toISOString(), entre: l.length } });
     if (r.error) throw r.error;
   }, 'Sorteio feito! O resultado já aparece no Desafio.'),
   progAno: (el) => { const a = Number(el.dataset.v); S.admin.prog = { ano: a, itens: progDoAno(a).map((x) => ({ ...x })) }; render(); },
