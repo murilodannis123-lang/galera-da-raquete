@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029213331';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029213331';
-import { REGULAMENTO } from './regulamento.js?v=20261029213331';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029213331';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029213331';
+import * as M from './motor.js?v=20261030085949';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030085949';
+import { REGULAMENTO } from './regulamento.js?v=20261030085949';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030085949';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030085949';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -338,7 +338,7 @@ const MENU = [
   { nome: 'Pontuação', href: () => '#/ranking', ic: IC('<path d="M12 1.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 3.8l2.2-.3z" fill="currentColor" stroke="none"/><rect x="9" y="8.5" width="6" height="12.5" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="2.5" y="12" width="6.5" height="9" rx="1" fill="currentColor" fill-opacity=".12"/><rect x="15" y="14.5" width="6.5" height="6.5" rx="1" fill="currentColor" fill-opacity=".12"/>') },
   { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
-  { nome: 'Enquetes', ic: IC('<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" fill-opacity=".1"/><rect x="6" y="7" width="9" height="2.4" rx="1.2" fill="currentColor" stroke="none"/><rect x="6" y="11" width="12" height="2.4" rx="1.2" fill="currentColor" fill-opacity=".45" stroke="none"/>') },
+  { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Preciso falar com a coordenação do ranking.') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
   { nome: 'Torneios', href: () => '#/torneios', ic: TROFEU(26) },
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
@@ -890,6 +890,7 @@ function telaAdmin() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="rot">Grupo<select class="campo" name="grupo"><option>A</option><option>B</option><option>C</option></select></label>
       <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
       <button class="btn btn-roxo" type="submit">Cadastrar</button></form>
+    ${adminDesafio()}
     ${adminCobrancas()}
     ${adminPatros()}
     <form class="card" data-form="aviso" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Publicar aviso</b>
@@ -972,6 +973,81 @@ document.addEventListener('touchend', (ev) => {
   l.style.transform = '';
   if (dx > 70) abrirOpcoesJogador(l.dataset.arrasta);
 });
+
+// ---------- Desafio do compromisso: uma caixinha de presente por mês (jan–out) ----------
+// Abre quando o jogador cumpre o jogo do mês (placar gravado, ou vitória por WO, ou standby por número ímpar).
+// Perde a caixinha quem deu WO, ficou sem placar no mês encerrado, ficou sem jogo (standby pedido) ou teve WO anulado.
+// Quem abrir todas até o fim de outubro ganha o prêmio que a coordenação escondeu atrás das caixinhas.
+const DESAFIO_INICIO = 2027;
+const MESES_DESAFIO = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const anoDesafio = () => Math.max(anoProg(), DESAFIO_INICIO);
+// ordem embaralhada (igual pra todo mundo) em que as peças da imagem aparecem
+const PECAS = [6, 1, 8, 3, 0, 9, 4, 7, 2, 5];
+async function carregarDesafio(ano) {
+  const r = await sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10');
+  S.desafio = { ano, jogos: r.error ? [] : r.data, em: Date.now() };
+}
+function situacaoDesafio(id, ano, jogos) {
+  let comecou = false;
+  return MESES_DESAFIO.map((m) => {
+    const mes = ano + '-' + String(m).padStart(2, '0'), mm = S.meses.find((x) => x.id === mes);
+    const g = jogos.find((x) => x.mes === mes && (x.jogador_a === id || x.jogador_b === id));
+    if (g) comecou = true;
+    if (!mm) return { mes, st: 'futuro' };
+    if (!g) return { mes, st: comecou ? 'falhou' : 'fora', motivo: comecou ? 'ficou sem jogo no mês' : '' };
+    if (!g.jogador_b) return { mes, st: 'ok', motivo: 'standby da rodada' };
+    if (g.wo_de) {
+      if (g.wo_status === 'anulado') return { mes, st: 'falhou', motivo: 'WO anulado, o jogo não aconteceu' };
+      if (g.wo_de === id) return { mes, st: g.wo_status === 'aguardando' && mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'deu WO' };
+      return { mes, st: 'ok', motivo: 'venceu por WO' };
+    }
+    if (g.sets) return { mes, st: 'ok' };
+    return { mes, st: mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'ficou sem placar' };
+  });
+}
+const resumoDesafio = (cx) => ({ abertas: cx.filter((c) => c.st === 'ok').length, perdidas: cx.filter((c) => c.st === 'falhou'), contam: cx.filter((c) => c.st !== 'fora').length });
+function telaDesafio() {
+  const ano = anoDesafio();
+  if (!S.desafio || S.desafio.ano !== ano || Date.now() - S.desafio.em > 60000) { carregarDesafio(ano).then(() => { if (location.hash === '#/desafio') render(); }); }
+  const jogos = (S.desafio && S.desafio.ano === ano) ? S.desafio.jogos : [];
+  const cx = situacaoDesafio(S.eu.id, ano, jogos), r = resumoDesafio(cx);
+  const premio = S.config['desafio_' + ano] || {};
+  const fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
+  const ganhou = fimOut && !r.perdidas.length && r.abertas > 0;
+  const pecas = Array(10).fill(null); cx.forEach((c, i) => { pecas[PECAS[i]] = c; });
+  const naDisputa = S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).map((j) => ({ j, r: resumoDesafio(situacaoDesafio(j.id, ano, jogos)) }))
+    .filter((x) => !x.r.perdidas.length && x.r.abertas > 0).sort((a, b) => b.r.abertas - a.r.abertas || a.j.nome.localeCompare(b.j.nome));
+  const comecou = !!S.meses.find((x) => x.id === ano + '-01');
+  return voltar('Desafio ' + ano, 'Uma caixinha por mês · jan a out') + `<div class="conteudo">
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div class="presente${ganhou ? ' aberto' : ''}" role="img" aria-label="Prêmio do desafio: ${r.abertas} de 10 caixinhas abertas">
+        ${premio.img ? `<img src="${esc(premio.img)}" alt="">` : `<div class="presente-padrao">${TROFEU(84)}<b class="cond">PRÊMIO SURPRESA</b></div>`}
+        <div class="presente-grade">${pecas.map((c) => { const mesTxt = cap(MESES[Number(c.mes.slice(5)) - 1]).slice(0, 3).toUpperCase();
+          return c.st === 'ok' || ganhou ? `<span class="cx cx-ok"><small>${mesTxt}</small></span>`
+            : c.st === 'falhou' ? `<span class="cx cx-x" title="${esc(c.motivo || '')}"><i>✕</i><small>${mesTxt}</small></span>`
+            : `<span class="cx${c.st === 'andamento' ? ' cx-vez' : ''}${c.st === 'fora' ? ' cx-fora' : ''}"><i aria-hidden="true">🎁</i><small>${mesTxt}</small></span>`; }).join('')}</div>
+      </div>
+      ${ganhou ? `<b class="cond" style="font-size:22px;color:var(--verde)">Você completou o desafio! 🎉</b><span>Prêmio garantido${premio.titulo ? ': <b>' + esc(premio.titulo) + '</b>' : ''}. A coordenação entrega na festa.</span>`
+        : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">Cada mês que você cumprir o seu jogo, uma caixinha abre e mostra um pedaço do prêmio. Abriu todas até outubro? O prêmio é seu.</span>`
+        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Perdeu a caixinha de ${r.perdidas.map((c) => cap(MESES[Number(c.mes.slice(5)) - 1])).join(', ')}</b><span class="dica">${esc(cap(r.perdidas[0].motivo || ''))}. Este ano o prêmio já era, mas continue abrindo caixinhas: o ranking agradece!</span>`
+        : `<b class="cond" style="font-size:20px;color:var(--verde)">Você está 100%: ${r.abertas} de 10 abertas</b><span class="dica">Continue assim: jogue todo mês, sem dar WO, e grave o placar até o último dia às 22h.</span>`}
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Como abrir as caixinhas</b>
+      <span style="font-size:14px;line-height:1.5">✅ Jogou e o placar foi gravado no mês<br>✅ Venceu por WO, ou ficou de standby porque o número de jogadores foi ímpar<br>❌ Deu WO, o jogo ficou sem placar ou você ficou sem jogo no mês<br>🏆 Abriu todas até outubro: ganha o prêmio na festa de fim de ano</span>
+    </section>
+    ${comecou ? `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Ainda 100% no desafio (${naDisputa.length})</b>
+      ${naDisputa.length ? `<div class="desafio-lista">${naDisputa.map((x) => `<span>${esc(x.j.nome)} <small>${x.r.abertas}🎁</small></span>`).join('')}</div>` : '<span class="dica">Ninguém ainda.</span>'}</section>` : ''}
+  </div>`;
+}
+function adminDesafio() {
+  const ano = anoDesafio(), pr = S.config['desafio_' + ano] || {};
+  return `<form class="card" data-form="desafio" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Desafio ${ano} · prêmio</b>
+    <span class="dica">A imagem fica escondida atrás das 10 caixinhas e vai aparecendo pra cada jogador conforme ele cumpre os jogos. O nome do prêmio só aparece pra quem completar.</span>
+    ${pr.img ? `<img src="${esc(pr.img)}" alt="Prêmio atual" style="width:100%;aspect-ratio:5/2;object-fit:cover;border-radius:12px">` : ''}
+    <label class="rot">Imagem do prêmio (galeria, câmera ou arquivo)<input class="campo" name="arquivo" type="file" accept="image/*"></label>
+    <label class="rot">Nome do prêmio (opcional)<input class="campo" name="titulo" maxlength="60" value="${esc(pr.titulo || '')}" placeholder="Ex.: Raquete nova"></label>
+    <button class="btn btn-roxo" type="submit">Salvar prêmio</button></form>`;
+}
 
 // ---------- cobranças por Pix (anuidade, torneios) ----------
 // Pix direto na chave da coordenação (sem intermediário, sem taxa). O jogador avisa "já paguei"; a coordenação confere no extrato.
@@ -1516,6 +1592,17 @@ async function comTrava(espera, fn, ok) {
 }
 
 const FORMS = {
+  desafio: (f) => comTrava('Salvando…', async () => {
+    const ano = anoDesafio(), atual = S.config['desafio_' + ano] || {}, arq = f.arquivo.files[0];
+    let img = atual.img || null;
+    if (arq) {
+      const blob = await prepararImagem(arq, 1400, false), caminho = `desafio-${ano}-${Date.now()}.jpg`;
+      const up = await sb.storage.from('avisos').upload(caminho, blob, { contentType: 'image/jpeg' }); if (up.error) throw up.error;
+      img = sb.storage.from('avisos').getPublicUrl(caminho).data.publicUrl;
+    }
+    let r = await sb.from('config').delete().eq('chave', 'desafio_' + ano); if (r.error) throw r.error;
+    r = await sb.from('config').insert({ chave: 'desafio_' + ano, valor: { img, titulo: f.titulo.value.trim() || null } }); if (r.error) throw r.error;
+  }, 'Prêmio do desafio salvo.'),
   cobNova: (f) => comTrava('', async () => {
     const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
     if (!(valor > 0)) throw new Error('Valor inválido.');
@@ -1798,6 +1885,7 @@ async function render() {
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
       : rota === 'pagamentos' ? telaPagamentos()
+      : rota === 'desafio' ? telaDesafio()
       : rota === 'privacidade' ? telaPrivacidade()
       : rota === 'termos' ? telaTermos()
       : rota === 'senha' ? telaSenha(false)
