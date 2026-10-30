@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029195546';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029195546';
-import { REGULAMENTO } from './regulamento.js?v=20261029195546';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029195546';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029195546';
+import * as M from './motor.js?v=20261029211216';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029211216';
+import { REGULAMENTO } from './regulamento.js?v=20261029211216';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029211216';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029211216';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -167,6 +167,8 @@ function lerCache() {
 }
 // ---------- Finals ----------
 const ANO = () => new Date().getFullYear();
+// ano da temporada em andamento = ano do último mês do ranking (o Finals de 2026 continua sendo 2026 mesmo se terminar em janeiro)
+const anoRanking = () => { const anos = S.meses.map((m) => Number(m.id.slice(0, 4))); return anos.length ? Math.max(...anos) : ANO(); };
 const anoFinals = () => (S.finals.length ? Math.max(...S.finals.map((x) => x.ano)) : ANO());
 const FASES = { grupos: 'Fase de grupos', semi: 'Semifinais', final: 'Final', encerrado: 'Encerrado' };
 const pg = (g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets });
@@ -222,7 +224,7 @@ function prazo() {
   return { texto: ultimo + '/' + String(m).padStart(2, '0') + ' às 22h', dias: hoje > fim ? 'Prazo encerrado' : dias <= 1 ? 'Último dia!' : 'Faltam ' + dias + ' dias', pct };
 }
 const FRASES_V = ['Missão cumprida! Você venceu este mês.', 'Vitória na barragem. Sobe no ranking!', 'Boa! Venceu o jogo do mês.'];
-const FRASES_D = ['Perdeu, bracinho de dinossauro!', 'Não foi dessa vez. Mês que vem tem revanche.', 'Derrota hoje, mas ainda somou pontos.'];
+const FRASES_D = ['Faz parte. Treina esse backhand e volta mais forte.', 'Não foi dessa vez. Mês que vem tem revanche.', 'Derrota hoje, mas ainda somou pontos.'];
 
 // ---------- telas ----------
 function telaInicio() {
@@ -272,7 +274,7 @@ function telaInicio() {
     } else {
       const venci = v === eu.id, k = new Date().getMonth() % 3;
       corpo = `<div class="resultado">
-        <div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:20px;color:${venci ? 'var(--verde)' : 'var(--verm)'}">${venci ? 'Parabéns, ' + esc(eu.nome) + '!' : 'Você perdeu este mês'}</b>
+        <div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:20px;color:${venci ? 'var(--verde)' : 'var(--verm)'}">${venci ? 'Parabéns, ' + esc(eu.nome) + '!' : 'Você perdeu, bracinho de dinossauro!'}</b>${venci ? '' : DINO}
         <div class="dica">${esc(venci ? FRASES_V[k] : FRASES_D[k])}</div>${venci && (S.curtidas[meu.id] || []).length ? `<div class="curtir" style="margin-top:6px"><span class="curtir-b on">${CORACAO} ${S.curtidas[meu.id].length}</span><small>curtiram sua vitória</small></div>` : ''}</div>
         <a class="btn btn-linha" href="#/placar/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Corrigir</a></div>`;
     }
@@ -307,6 +309,18 @@ function lembreteFechado() {
   try { return Date.now() - Number(localStorage.getItem('lembrete-senha') || 0) < 7 * 864e5; } catch (e) { return true; }
 }
 
+// dinossauro verde andando (desenho próprio) pra quem perdeu o jogo do mês
+const DINO = `<div class="dino-trilha" aria-hidden="true"><span class="dino"><svg viewBox="0 0 64 46" width="48" height="35">
+  <path d="M6 30c6 1 12-2 16-6l3 9c-6 2-13 1-19-3z" fill="#2E8B3E"/>
+  <ellipse cx="30" cy="27" rx="13" ry="10" fill="#3DA94F"/>
+  <path d="M36 21c1-7 4-12 10-13h7c4 0 6 3 6 6v3c0 2-2 3-4 3h-6l-1 4z" fill="#3DA94F"/>
+  <path d="M48 18h9" stroke="#1F5E2A" stroke-width="1.4" stroke-linecap="round"/>
+  <circle cx="51" cy="11.5" r="1.6" fill="#10240F"/>
+  <path d="M38 27l4 2" stroke="#2E8B3E" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M24 19l2-3 2 3 2-3 2 3" stroke="#2E8B3E" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+  <g class="dino-p1"><path d="M26 34v8h4" stroke="#2E8B3E" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="dino-p2"><path d="M34 34v8h4" stroke="#2E8B3E" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg></span></div>`;
 const IC_WO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".12"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
 const woTxt = (g) => 'WO de ' + ((porId(g.wo_de) || {}).nome || '?') + ' · ' + (g.wo_motivo === 'lesao' ? 'lesão' : 'não comparecimento') + (g.wo_status === 'aguardando' ? ' (aguardando resposta)' : g.wo_status === 'anulado' ? ' (contestado)' : '');
 // WO na lista de jogos: etiqueta, quem levou e a justificativa, tudo junto
@@ -1156,7 +1170,7 @@ async function reabrirMes(id) {
   S.jogosPorMes = {};
 }
 function adminFinals() {
-  const ano = ANO();
+  const ano = anoRanking();
   return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Finals ${ano}</b>
     ${['A', 'B', 'C'].map((gr) => {
       const { fz, js, semis, final } = dadosFinals(ano, gr);
@@ -1224,7 +1238,7 @@ async function rodarMes(abrirProx = true) {
   if (abrirProx) await abrirMes(proxMes(mes.id));
 }
 async function finMontar(gr) {
-  const ano = ANO(), ids = idsFinals(gr);
+  const ano = anoRanking(), ids = idsFinals(gr);
   const ch = S.admin.sorteio[gr];
   if (!ch || ch.map((v) => v.id).join() !== ids.join()) throw new Error('Faça o sorteio de novo: a lista mudou.');
   let r = await sb.from('finals').insert({ ano, grupo: gr, fase: 'grupos' }); if (r.error) throw r.error;
@@ -1238,7 +1252,7 @@ function idsFinals(gr) {
   return (S.admin.fin[gr] || listaGeral().filter((j) => j.grupo === gr).slice(0, 8).map((j) => j.id)).slice().sort((x, y) => ordem.indexOf(x) - ordem.indexOf(y));
 }
 async function finAvancar(gr, fase) {
-  const ano = ANO(), { t, semis } = dadosFinals(ano, gr);
+  const ano = anoRanking(), { t, semis } = dadosFinals(ano, gr);
   let novos;
   if (fase === 'semi') novos = M.semifinais(t[0], t[1]).map(([a, b]) => ({ ano, grupo: gr, fase: 'semi', jogador_a: a, jogador_b: b }));
   else { const [w1, w2] = semis.map((g) => M.vencedorDe(pg(g))); novos = [{ ano, grupo: gr, fase: 'final', jogador_a: w1, jogador_b: w2 }]; }
@@ -1247,7 +1261,7 @@ async function finAvancar(gr, fase) {
 }
 async function finEncerrar(gr) {
   await backup('antes de encerrar o Finals ' + gr);
-  const ano = ANO(), { vg, semis, final } = dadosFinals(ano, gr);
+  const ano = anoRanking(), { vg, semis, final } = dadosFinals(ano, gr);
   const bonus = M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));
   // regra 7.2.5: bônus somado ao ranking; 7.2.4: classificação final só depois do Finals
   const nova = M.ordenar(listaGeral().map((j) => ({ ...j, tp: j.tp + (bonus[j.id] || 0) }))).map((j, i) => ({ ...j, posicao: i + 1 }));
@@ -1256,7 +1270,7 @@ async function finEncerrar(gr) {
 }
 async function finApagar(gr) {
   await backup('antes de apagar o Finals ' + gr);
-  const ano = ANO();
+  const ano = anoRanking();
   for (const t of ['finals_jogos', 'finals_vagas', 'finals']) { const r = await sb.from(t).delete().eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error; }
 }
 async function aprovar(f) {

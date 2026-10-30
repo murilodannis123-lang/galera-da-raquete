@@ -75,12 +75,13 @@ export function rodarMes(lista, jogos, standbyIds, h2h) {
     }
     if (!g.sets) continue;
     const r = resultado(g.sets), A = porId[g.a], B = porId[g.b];
+    if (!A || !B) continue;   // alguém saiu do ranking no meio do mês: o jogo não derruba o cálculo dos outros
     A.tp += r.ptsA; B.tp += r.ptsB;
     A.sp += r.setsA; A.sc += r.setsB; B.sp += r.setsB; B.sc += r.setsA;
     A.gp += r.gamesA; A.gc += r.gamesB; B.gp += r.gamesB; B.gc += r.gamesA;
     if (r.aVenceu) { A.vi++; B.de++; } else { B.vi++; A.de++; }
   }
-  for (const id of standbyIds) if (id) porId[id].tp += 25;
+  for (const id of standbyIds) if (id && porId[id]) porId[id].tp += 25;
   return ordenar(lista.map((j) => porId[j.id]), h2h);
 }
 // nova temporada: zera tudo e mantém as colocações; pontos de partida = N pro 1º, N-1 pro 2º ... 1 pro último

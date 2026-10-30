@@ -118,6 +118,15 @@ body.noite .conteudo>div:not(.card) :focus-visible,body.noite .conteudo>:not(.ca
 .cob-cont{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
 .cob-lista{display:flex;flex-direction:column;border-top:1px solid var(--linha)}
 .cob-linha{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #F0EDF5}
+.dino-trilha{position:relative;height:36px;margin-top:4px}
+.dino{position:absolute;left:0;bottom:0;display:block;animation:dinoVai 9s linear infinite}
+.dino svg{display:block;animation:dinoBalanca .45s ease-in-out infinite alternate}
+.dino-p1,.dino-p2{transform-box:fill-box;transform-origin:50% 0;animation:dinoPerna .45s ease-in-out infinite alternate}
+.dino-p2{animation-direction:alternate-reverse}
+@keyframes dinoPerna{from{transform:rotate(-18deg)}to{transform:rotate(18deg)}}
+@keyframes dinoBalanca{from{transform:translateY(0)}to{transform:translateY(-1.5px)}}
+@keyframes dinoVai{0%{left:0;transform:scaleX(1)}48%{left:calc(100% - 48px);transform:scaleX(1)}50%{left:calc(100% - 48px);transform:scaleX(-1)}98%{left:0;transform:scaleX(-1)}100%{left:0;transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.dino,.dino svg,.dino-p1,.dino-p2{animation:none!important}}
 button.link{background:none;border:0;padding:4px 2px;font:inherit;color:var(--roxo);text-decoration:underline;cursor:pointer}
 .texto-legal{align-items:flex-start;overflow-y:auto;padding:16px}
 .texto-legal-c{background:var(--fundo);color:var(--tinta);border-radius:18px;padding:16px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto}
@@ -187,7 +196,7 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .top4 .g span{flex-grow:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pontos{display:flex;justify-content:center;gap:5px;margin-top:6px}
 .pontos i{height:5px;border-radius:999px;background:#D8D0E8}
-.faixa{margin-top:auto;height:26px;background:var(--noite);overflow:hidden;display:flex;align-items:center;padding-bottom:calc(env(safe-area-inset-bottom) * .45);box-sizing:content-box}
+.faixa{margin-top:auto;height:26px;background:#000;overflow:hidden;display:flex;align-items:center;padding-bottom:calc(env(safe-area-inset-bottom) * .45);box-sizing:content-box}
 .faixa .tk{display:flex;flex-shrink:0;white-space:nowrap;animation:tk 40s linear infinite}
 .faixa .tk2{display:contents}.faixa:hover .tk,.faixa:active .tk{animation-play-state:paused}
 .faixa .tk>span:not(.tk2),.faixa .tk2>span{padding-right:32px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff}
@@ -243,6 +252,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261029195546"></script>
+<script type="module" src="app.js?v=20261029211216"></script>
 </body>
 </html>
