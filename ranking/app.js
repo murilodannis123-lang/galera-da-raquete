@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030113229';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030113229';
-import { REGULAMENTO } from './regulamento.js?v=20261030113229';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030113229';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030113229';
+import * as M from './motor.js?v=20261030132907';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030132907';
+import { REGULAMENTO } from './regulamento.js?v=20261030132907';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030132907';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030132907';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -982,8 +982,8 @@ document.addEventListener('touchend', (ev) => {
 const DESAFIO_INICIO = 2027;
 const MESES_DESAFIO = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const anoDesafio = () => Math.max(anoProg(), DESAFIO_INICIO);
-// ordem embaralhada (igual pra todo mundo) em que as peças da imagem aparecem
-const PECAS = [6, 1, 8, 3, 0, 9, 4, 7, 2, 5];
+// caixinhas na ordem dos meses: jan a mai em cima, jun a out embaixo
+const PECAS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 async function carregarDesafio(ano) {
   const comecou = !!S.meses.find((x) => x.id === ano + '-01');
   const [r, n, todos] = await Promise.all([
