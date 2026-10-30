@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030110839';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030110839';
-import { REGULAMENTO } from './regulamento.js?v=20261030110839';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030110839';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030110839';
+import * as M from './motor.js?v=20261030113229';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030113229';
+import { REGULAMENTO } from './regulamento.js?v=20261030113229';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030113229';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030113229';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -298,7 +298,7 @@ function telaInicio() {
     ${corpo || ''}
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.nome === 'Desafio' ? miniDesafio() : t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile${t.nome === 'Desafio' ? ' tile-desafio' : ''}" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}>${t.nome === 'Desafio' ? miniDesafio(t.rotulo()) : `<span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}`}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -995,14 +995,16 @@ async function carregarDesafio(ano) {
 }
 const n3 = (n) => String(n).padStart(3, '0');
 // 10 caixinhas pequenas no botão do menu (amarela = fechada, verde = aberta, vermelha = perdida, cinza = travada)
-function miniDesafio() {
+function miniDesafio(nome) {
   const ano = anoDesafio(), comecou = !!S.meses.find((x) => x.id === ano + '-01');
   if (comecou && S.eu && S.eu.ativo && (!S.desafio || S.desafio.ano !== ano) && !miniDesafio.carregando) {
     miniDesafio.carregando = true;
     carregarDesafio(ano).then(() => { miniDesafio.carregando = false; if (!location.hash || location.hash === '#/') render(); }).catch(() => { miniDesafio.carregando = false; });
   }
   const cx = comecou && S.desafio && S.desafio.ano === ano ? situacaoDesafio(S.eu.id, ano, S.desafio.jogos) : MESES_DESAFIO.map(() => ({ st: 'futuro' }));
-  return `<span class="mini-cx" aria-hidden="true">${cx.map((c) => `<i class="m-${c.st}"></i>`).join('')}</span>`;
+  const fila = (l) => `<span class="mini-cx" aria-hidden="true">${l.map((c) => `<i class="m-${c.st}"></i>`).join('')}</span>`;
+  const abertas = cx.filter((c) => c.st === 'ok').length;
+  return fila(cx.slice(0, 5)) + `<span class="tile-nome">${nome}<span class="sr"> · ${abertas} de 10 caixinhas abertas</span></span>` + fila(cx.slice(5));
 }
 // quem fechou os 10 meses (só vale depois de outubro encerrado)
 function completaram(ano, jogos) {
