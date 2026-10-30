@@ -156,6 +156,16 @@ body.noite .conteudo>div:not(.card) :focus-visible,body.noite .conteudo>:not(.ca
 .numero-sorte b{font-size:112px;line-height:1;letter-spacing:16px;margin-right:-16px;color:var(--bola);text-shadow:0 4px 18px rgba(216,241,69,.35)}
 .mini-cx{display:grid;grid-template-columns:repeat(5,5px);grid-template-rows:5px 5px;gap:2px}
 .mini-cx i{border-radius:1.5px;background:#F2B705}.mini-cx .m-ok{background:#1B8A4E}.mini-cx .m-falhou{background:#D13A3A}.mini-cx .m-travado{background:#B8B2C4}.mini-cx .m-andamento{background:#FFD84D;box-shadow:0 0 0 1px #B88A00}
+.tour{position:fixed;inset:0;z-index:97;background:rgba(10,5,22,.82);display:flex;align-items:center;justify-content:center;padding:20px;animation:zoomIn .2s ease-out}
+.tour-c{position:relative;width:100%;max-width:420px;background:linear-gradient(170deg,#2A1650,#1A0D33);color:#fff;border-radius:24px;padding:28px 20px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.tour-pular{position:absolute;top:10px;right:10px;background:none;border:0;color:rgba(255,255,255,.75);font:600 14px Inter,sans-serif;padding:8px 10px;cursor:pointer;border-radius:10px}
+.tour-ic{font-size:64px;line-height:1;min-height:96px;display:flex;align-items:center}
+.tour-ic img{border-radius:50%}
+.tour-t{font-size:26px;color:var(--bola)}
+.tour-x{font-size:15.5px;line-height:1.5;color:rgba(255,255,255,.92);min-height:120px;margin:0}
+.tour-pontos{display:flex;gap:6px;margin:4px 0}.tour-pontos i{width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.3)}.tour-pontos i.on{width:20px;background:var(--bola)}
+.tour-bt{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;width:100%}
+.tour-bt .btn-linha{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
 button.link{background:none;border:0;padding:4px 2px;font:inherit;color:var(--roxo);text-decoration:underline;cursor:pointer}
 .texto-legal{align-items:flex-start;overflow-y:auto;padding:16px}
 .texto-legal-c{background:var(--fundo);color:var(--tinta);border-radius:18px;padding:16px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto}
@@ -281,6 +291,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261030110450"></script>
+<script type="module" src="app.js?v=20261030110839"></script>
 </body>
 </html>

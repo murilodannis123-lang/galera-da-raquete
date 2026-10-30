@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030110450';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030110450';
-import { REGULAMENTO } from './regulamento.js?v=20261030110450';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030110450';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030110450';
+import * as M from './motor.js?v=20261030110839';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030110839';
+import { REGULAMENTO } from './regulamento.js?v=20261030110839';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030110839';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030110839';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -857,6 +857,7 @@ function telaAdmin() {
   const sugestao = mes ? proxMes(mes.id) : ult && temp > Number(ult.slice(0, 4)) ? temp + '-01' : ult ? proxMes(ult) : mesId(new Date());
   const pends = S.jogadores.filter((j) => j.pendente);
   return voltar('Admin', 'Área da coordenação') + `<div class="conteudo">
+    <button type="button" class="btn btn-linha" data-acao="verTour">▶ Ver apresentação do app</button>
     ${pends.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Inscrições novas (${pends.length})</b><span class="dica">Defina o grupo e a posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo (pontos, vitórias, derrotas, sets e games) e essa pessoa desce uma (regra 5.1). Em branco = último do grupo.</span>
       ${pends.map((j) => `<form data-form="aprovar" data-id="${j.id}" style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px">
         <span><b>${esc(j.nome)}</b>${voltando(j) ? ' <span class="tag" style="background:#E3F0E8;color:var(--verde)">QUER VOLTAR</span>' : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.celular ? ' · ' + esc(j.celular) : ''}</small></span>
@@ -1089,6 +1090,52 @@ function adminDesafio() {
   </form>`;
 }
 
+// ---------- apresentação do app (1º acesso; dá pra pular; a coordenação revê pelo Admin) ----------
+const TOUR = [
+  ['🎾', 'Bem-vindo ao app da Galera!', 'O ranking do Portal do Lago agora é aqui: seu jogo do mês, placares, pontuação, Finals e avisos, tudo no celular. Bora conhecer em 1 minuto?'],
+  ['🆚', 'Seu jogo do mês', 'Na tela inicial aparece quem é seu adversário. Toque em <b>WhatsApp</b> pra marcar o jogo e em <b>Gravar placar</b> depois de jogar: vale até o último dia do mês, às 22h. Não vai dar? Use o botão <b>WO</b>.'],
+  ['🏆', 'Pontuação', 'Veja o <b>Dynamics</b> (todos juntos) e os grupos <b>A, B e C</b>. A bolinha <span style="color:#1B8A4E">●</span> verde mostra quem já jogou no mês e a <span style="color:#D13A3A">●</span> vermelha quem ainda não. Faixa verde = top 8, vão ao Finals.'],
+  ['📋', 'Jogos do ranking', 'Todos os confrontos e placares do mês, com busca por nome. Curta a vitória dos amigos e toque na foto pra ver maior.'],
+  ['🎁', 'Desafio do ano', 'Cada mês que você joga abre uma caixinha e mostra um pedaço do seu <b>número da sorte</b>. Abriu as 10 até outubro? Concorre ao sorteio de brindes na festa. Perdeu um mês, sai do desafio.'],
+  ['🔔', 'Avisos e notícias', 'O sino traz os avisos da coordenação. Na faixa de baixo passam as notícias: jogões, líder do ranking e aniversariantes do dia.'],
+  ['👤', 'Meu perfil e pagamentos', 'Troque sua foto, celular e senha, ligue o standby se precisar parar e veja seus pagamentos por Pix (anuidade e torneios).'],
+  ['📲', 'Deixe na tela do celular', '<b>iPhone:</b> no Safari, toque em Compartilhar e em "Adicionar à Tela de Início".<br><b>Android:</b> no Chrome, toque nos 3 pontinhos e em "Adicionar à tela inicial".<br>Pronto: abre como um aplicativo.']
+];
+function abrirTour() {
+  if (document.querySelector('.tour')) return;
+  let i = 0;
+  const volta = document.activeElement, d = document.createElement('div');
+  d.className = 'tour'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Apresentação do app');
+  const fim = () => { try { localStorage.setItem('tour-visto', '1'); } catch (e) { /* ok */ } d.remove(); document.removeEventListener('keydown', tecla); if (volta && volta.isConnected && volta.focus) volta.focus(); };
+  const pintar = () => {
+    const [ic, tit, txt] = TOUR[i], ult = i === TOUR.length - 1;
+    d.innerHTML = `<div class="tour-c">
+      <button type="button" class="tour-pular" data-t="pular">${ult ? 'Fechar' : 'Pular'}</button>
+      <div class="tour-ic" aria-hidden="true">${i === 0 ? '<img src="icones/logo.png" alt="" width="96" height="96">' : ic}</div>
+      <b class="cond tour-t" id="tour-t">${tit}</b>
+      <p class="tour-x">${txt}</p>
+      <div class="tour-pontos" role="img" aria-label="Passo ${i + 1} de ${TOUR.length}">${TOUR.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="tour-bt">${i ? '<button type="button" class="btn btn-linha" data-t="voltar">Voltar</button>' : '<span></span>'}<button type="button" class="btn btn-bola" data-t="${ult ? 'fim' : 'prox'}">${ult ? 'Começar!' : 'Próximo'}</button></div></div>`;
+    d.querySelector(`[data-t="${ult ? 'fim' : 'prox'}"]`).focus();
+  };
+  const ir = (k) => { i = Math.max(0, Math.min(TOUR.length - 1, k)); pintar(); };
+  const tecla = (e) => { if (e.key === 'Escape') fim(); else if (e.key === 'ArrowRight') ir(i + 1); else if (e.key === 'ArrowLeft') ir(i - 1); };
+  d.addEventListener('click', (e) => { const t = e.target.closest('[data-t]'); if (!t) return; const a = t.dataset.t; if (a === 'pular' || a === 'fim') fim(); else ir(i + (a === 'prox' ? 1 : -1)); });
+  let x0 = null;
+  d.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  d.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) ir(i + (dx < 0 ? 1 : -1)); });
+  document.addEventListener('keydown', tecla);
+  document.body.appendChild(d); pintar();
+}
+// no 1º acesso, depois da abertura das bolinhas
+function tourPrimeiraVez() {
+  try { if (localStorage.getItem('tour-visto')) return; } catch (e) { return; }
+  if (window.__SB__ && !window.__TOUR__) return;   // testes automáticos
+  let n = 0;
+  const tenta = () => { if (document.querySelector('.intro') && n++ < 40) return setTimeout(tenta, 400); abrirTour(); };
+  setTimeout(tenta, 600);
+}
+
 // ---------- cobranças por Pix (anuidade, torneios) ----------
 // Pix direto na chave da coordenação (sem intermediário, sem taxa). O jogador avisa "já paguei"; a coordenação confere no extrato.
 const PIX = { chave: '+5519997635743', mostra: '(19) 99763-5743', tipo: 'celular', nome: 'Daniella Gesualdo', cidade: 'SUMARE' };
@@ -1140,7 +1187,7 @@ function lembrarCobranca() {
   // espera a abertura (bolinhas) e os parabéns saírem da tela; aí mostra
   let tentativas = 0;
   const mostrar = () => {
-    if (document.querySelector('.intro, .niver, .zoom') && tentativas++ < 120) return setTimeout(mostrar, 500);
+    if (document.querySelector('.intro, .niver, .zoom, .tour') && tentativas++ < 240) return setTimeout(mostrar, 500);
     const x = pend[0], d = document.createElement('div');
     d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Pagamento pendente');
     d.innerHTML = `<div class="niver-c"><div style="font-size:40px" aria-hidden="true">💳</div><small>PAGAMENTO PENDENTE</small>
@@ -1566,6 +1613,7 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  verTour: () => abrirTour(),
   desafioSortear: () => comTrava('Sorteando…', async () => {
     const ano = anoDesafio(), qtd = Number((S.config['desafio_' + ano] || {}).qtd) || 10;
     if (S.config['desafio_' + ano + '_sorteio']) throw new Error('O sorteio já foi feito.');
@@ -2070,6 +2118,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
     .subscribe();
   render();
+  tourPrimeiraVez();
   parabens();
   lembrarCobranca();
   ligarPresenca();
