@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030090608';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030090608';
-import { REGULAMENTO } from './regulamento.js?v=20261030090608';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030090608';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030090608';
+import * as M from './motor.js?v=20261030110450';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030110450';
+import { REGULAMENTO } from './regulamento.js?v=20261030110450';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030110450';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030110450';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -298,7 +298,7 @@ function telaInicio() {
     ${corpo || ''}
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.nome === 'Desafio' ? miniDesafio() : t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -984,8 +984,28 @@ const anoDesafio = () => Math.max(anoProg(), DESAFIO_INICIO);
 // ordem embaralhada (igual pra todo mundo) em que as peças da imagem aparecem
 const PECAS = [6, 1, 8, 3, 0, 9, 4, 7, 2, 5];
 async function carregarDesafio(ano) {
-  const r = await sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10');
-  S.desafio = { ano, jogos: r.error ? [] : r.data, em: Date.now() };
+  const comecou = !!S.meses.find((x) => x.id === ano + '-01');
+  const [r, n, todos] = await Promise.all([
+    sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10'),
+    comecou ? sb.rpc('meu_numero_da_sorte', { p_ano: ano }) : Promise.resolve({ data: null }),
+    S.eu.admin ? sb.from('desafio_numeros').select('jogador,numero').eq('ano', ano) : Promise.resolve({ data: [] })
+  ]);
+  S.desafio = { ano, jogos: r.error ? [] : r.data, numero: n && !n.error ? n.data : null, numeros: todos && !todos.error ? todos.data || [] : [], em: Date.now() };
+}
+const n3 = (n) => String(n).padStart(3, '0');
+// 10 caixinhas pequenas no botão do menu (amarela = fechada, verde = aberta, vermelha = perdida, cinza = travada)
+function miniDesafio() {
+  const ano = anoDesafio(), comecou = !!S.meses.find((x) => x.id === ano + '-01');
+  if (comecou && S.eu && S.eu.ativo && (!S.desafio || S.desafio.ano !== ano) && !miniDesafio.carregando) {
+    miniDesafio.carregando = true;
+    carregarDesafio(ano).then(() => { miniDesafio.carregando = false; if (!location.hash || location.hash === '#/') render(); }).catch(() => { miniDesafio.carregando = false; });
+  }
+  const cx = comecou && S.desafio && S.desafio.ano === ano ? situacaoDesafio(S.eu.id, ano, S.desafio.jogos) : MESES_DESAFIO.map(() => ({ st: 'futuro' }));
+  return `<span class="mini-cx" aria-hidden="true">${cx.map((c) => `<i class="m-${c.st}"></i>`).join('')}</span>`;
+}
+// quem fechou os 10 meses (só vale depois de outubro encerrado)
+function completaram(ano, jogos) {
+  return S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).filter((j) => resumoDesafio(situacaoDesafio(j.id, ano, jogos)).abertas === 10);
 }
 // são 10 jogos: o primeiro mês perdido tira o jogador do desafio (os meses seguintes ficam travados)
 function situacaoDesafio(id, ano, jogos) {
@@ -1015,45 +1035,58 @@ const resumoDesafio = (cx) => ({ abertas: cx.filter((c) => c.st === 'ok').length
 function telaDesafio() {
   const ano = anoDesafio();
   if (!S.desafio || S.desafio.ano !== ano || Date.now() - S.desafio.em > 60000) { carregarDesafio(ano).then(() => { if (location.hash === '#/desafio') render(); }); }
-  const jogos = (S.desafio && S.desafio.ano === ano) ? S.desafio.jogos : [];
-  const cx = situacaoDesafio(S.eu.id, ano, jogos), r = resumoDesafio(cx);
-  const premio = S.config['desafio_' + ano] || {};
+  const D = (S.desafio && S.desafio.ano === ano) ? S.desafio : { jogos: [], numero: null };
+  const cx = situacaoDesafio(S.eu.id, ano, D.jogos), r = resumoDesafio(cx);
+  const cfg = S.config['desafio_' + ano] || {}, qtd = Number(cfg.qtd) || 10, sorteio = S.config['desafio_' + ano + '_sorteio'];
   const fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
   const ganhou = fimOut && r.abertas === 10;
   const pecas = Array(10).fill(null); cx.forEach((c, i) => { pecas[PECAS[i]] = c; });
-  const naDisputa = S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).map((j) => ({ j, r: resumoDesafio(situacaoDesafio(j.id, ano, jogos)) }))
+  const naDisputa = S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).map((j) => ({ j, r: resumoDesafio(situacaoDesafio(j.id, ano, D.jogos)) }))
     .filter((x) => !x.r.perdidas.length && x.r.abertas > 0).sort((a, b) => b.r.abertas - a.r.abertas || a.j.nome.localeCompare(b.j.nome));
   const comecou = !!S.meses.find((x) => x.id === ano + '-01');
+  const meu = D.numero ? n3(D.numero) : '???', premiado = sorteio && D.numero && sorteio.numeros.includes(D.numero);
   return voltar('Desafio ' + ano, 'Uma caixinha por mês · jan a out') + `<div class="conteudo">
     <section class="card" style="display:flex;flex-direction:column;gap:10px">
-      <div class="presente${ganhou ? ' aberto' : ''}" role="img" aria-label="Prêmio do desafio: ${r.abertas} de 10 caixinhas abertas">
-        ${premio.img ? `<img src="${esc(premio.img)}" alt="">` : `<div class="presente-padrao">${TROFEU(84)}<b class="cond">PRÊMIO SURPRESA</b></div>`}
-        <div class="presente-grade">${pecas.map((c) => { const mesTxt = cap(MESES[Number(c.mes.slice(5)) - 1]).slice(0, 3).toUpperCase();
-          return c.st === 'ok' || ganhou ? `<span class="cx cx-ok"><small>${mesTxt}</small></span>`
+      <div class="presente" role="img" aria-label="${ganhou ? 'Seu número da sorte: ' + meu : 'Número da sorte escondido: ' + r.abertas + ' de 10 caixinhas abertas'}">
+        ${pecas.map((c, k) => { const mesTxt = cap(MESES[Number(c.mes.slice(5)) - 1]).slice(0, 3).toUpperCase(), pos = `--c:${k % 5};--r:${Math.floor(k / 5)}`;
+          return c.st === 'ok' || ganhou ? `<span class="cx cx-ok" style="${pos}"><span class="cx-peca"><span class="numero-sorte"><small>SEU NÚMERO DA SORTE</small><b class="cond">${meu}</b></span></span><small>${mesTxt}</small></span>`
             : c.st === 'falhou' ? `<span class="cx cx-x" title="${esc(c.motivo || '')}"><i>✕</i><small>${mesTxt}</small></span>`
             : c.st === 'travado' ? `<span class="cx cx-fora"><i aria-hidden="true">🔒</i><small>${mesTxt}</small></span>`
-            : `<span class="cx${c.st === 'andamento' ? ' cx-vez' : ''}"><i aria-hidden="true">🎁</i><small>${mesTxt}</small></span>`; }).join('')}</div>
+            : `<span class="cx${c.st === 'andamento' ? ' cx-vez' : ''}"><i aria-hidden="true">🎁</i><small>${mesTxt}</small></span>`; }).join('')}
       </div>
-      ${ganhou ? `<b class="cond" style="font-size:22px;color:var(--verde)">Você completou o desafio! 🎉</b><span>Prêmio garantido${premio.titulo ? ': <b>' + esc(premio.titulo) + '</b>' : ''}. A coordenação entrega na festa.</span>`
-        : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">São 10 jogos, de janeiro a outubro. Cada mês cumprido abre uma caixinha e mostra um pedaço do prêmio; perdeu um mês, sai do desafio. Abriu todas? O prêmio é seu.</span>`
-        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Você está fora do Desafio ${ano}</b><span class="dica">${cap(MESES[Number(r.perdidas[0].mes.slice(5)) - 1])}: ${esc(r.perdidas[0].motivo || '')}. O desafio são os 10 jogos, de janeiro a outubro: perdeu um mês, sai da disputa. Ano que vem tem de novo!</span>`
-        : `<b class="cond" style="font-size:20px;color:var(--verde)">Você está 100%: ${r.abertas} de 10 abertas</b><span class="dica">Continue assim: jogue todo mês, sem dar WO, e grave o placar até o último dia às 22h.</span>`}
+      ${ganhou ? `<b class="cond" style="font-size:22px;color:var(--verde)">Você completou o desafio! 🎉</b><span>Seu número da sorte é <b>${meu}</b>. ${sorteio ? (premiado ? '<b style="color:var(--verde)">Ele foi sorteado: você ganhou um brinde! 🎁</b>' : 'Não foi sorteado desta vez, mas valeu o compromisso!') : `Você concorre no sorteio de ${qtd} brindes na festa.`}</span>`
+        : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">São 10 jogos, de janeiro a outubro. Cada mês cumprido abre uma caixinha e mostra um pedaço do seu número da sorte; perdeu um mês, sai do desafio. Abriu as 10? Você concorre no sorteio de ${qtd} brindes na festa.</span>`
+        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Você está fora do Desafio ${ano}</b><span class="dica">${cap(MESES[Number(r.perdidas[0].mes.slice(5)) - 1])}: ${esc(r.perdidas[0].motivo || '')}. O desafio são os 10 jogos, de janeiro a outubro: perdeu um mês, sai do sorteio. Ano que vem tem de novo!</span>`
+        : `<b class="cond" style="font-size:20px;color:var(--verde)">Você está 100%: ${r.abertas} de 10 abertas</b><span class="dica">Continue assim: jogue todo mês, sem dar WO, e grave o placar até o último dia às 22h. Seu número da sorte vai aparecendo a cada caixinha.</span>`}
     </section>
+    ${sorteio ? `<section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--verde)"><b class="cond" style="font-size:18px">Sorteio dos brindes · resultado</b>
+      <div class="desafio-lista">${sorteio.numeros.map((n) => `<span>${n3(n)}${sorteio.nomes && sorteio.nomes[n] ? ' · ' + esc(sorteio.nomes[n]) : ''}</span>`).join('')}</div></section>` : ''}
+    ${cfg.titulo || cfg.img ? `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Brindes do sorteio (${qtd})</b>${cfg.img ? `<img src="${esc(cfg.img)}" alt="Brindes do sorteio" style="width:100%;border-radius:12px">` : ''}${cfg.titulo ? `<span>${esc(cfg.titulo)}</span>` : ''}</section>` : ''}
     <section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Como abrir as caixinhas</b>
-      <span style="font-size:14px;line-height:1.5">✅ Jogou e o placar foi gravado no mês<br>✅ Venceu por WO, ou ficou de standby porque o número de jogadores foi ímpar<br>❌ Deu WO, o jogo ficou sem placar ou você ficou sem jogo no mês: <b>sai do desafio</b> (são os 10 jogos)<br>🏆 Abriu todas até outubro: ganha o prêmio na festa de fim de ano</span>
+      <span style="font-size:14px;line-height:1.5">✅ Jogou e o placar foi gravado no mês<br>✅ Venceu por WO, ou ficou de standby porque o número de jogadores foi ímpar<br>❌ Deu WO, o jogo ficou sem placar ou você ficou sem jogo no mês: <b>sai do desafio</b> (são os 10 jogos)<br>🎟️ Abriu as 10: seu número da sorte aparece inteiro e você concorre ao sorteio de ${qtd} brindes na festa</span>
     </section>
     ${comecou ? `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Ainda 100% no desafio (${naDisputa.length})</b>
       ${naDisputa.length ? `<div class="desafio-lista">${naDisputa.map((x) => `<span>${esc(x.j.nome)} <small>${x.r.abertas}🎁</small></span>`).join('')}</div>` : '<span class="dica">Ninguém ainda.</span>'}</section>` : ''}
   </div>`;
 }
 function adminDesafio() {
-  const ano = anoDesafio(), pr = S.config['desafio_' + ano] || {};
-  return `<form class="card" data-form="desafio" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Desafio ${ano} · prêmio</b>
-    <span class="dica">A imagem fica escondida atrás das 10 caixinhas e vai aparecendo pra cada jogador conforme ele cumpre os jogos. O nome do prêmio só aparece pra quem completar.</span>
-    ${pr.img ? `<img src="${esc(pr.img)}" alt="Prêmio atual" style="width:100%;aspect-ratio:5/2;object-fit:cover;border-radius:12px">` : ''}
-    <label class="rot">Imagem do prêmio (galeria, câmera ou arquivo)<input class="campo" name="arquivo" type="file" accept="image/*"></label>
-    <label class="rot">Nome do prêmio (opcional)<input class="campo" name="titulo" maxlength="60" value="${esc(pr.titulo || '')}" placeholder="Ex.: Raquete nova"></label>
-    <button class="btn btn-roxo" type="submit">Salvar prêmio</button></form>`;
+  const ano = anoDesafio(), pr = S.config['desafio_' + ano] || {}, qtd = Number(pr.qtd) || 10, sorteio = S.config['desafio_' + ano + '_sorteio'];
+  const fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
+  if (fimOut && (!S.desafio || S.desafio.ano !== ano)) carregarDesafio(ano).then(() => { if (location.hash === '#/admin') render(); });
+  const ok = fimOut && S.desafio && S.desafio.ano === ano ? completaram(ano, S.desafio.jogos) : [];
+  const num = (id) => ((S.desafio && S.desafio.numeros) || []).find((x) => x.jogador === id);
+  return `<form class="card" data-form="desafio" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Desafio ${ano} · sorteio de brindes</b>
+    <span class="dica">Cada jogador tem um número da sorte (001 a 999) escondido atrás das 10 caixinhas. Quem completar os 10 jogos vê o número inteiro e entra no sorteio. Só o jogador e a coordenação veem o número.</span>
+    <div style="display:grid;grid-template-columns:90px 1fr;gap:8px"><label class="rot">Brindes<input class="campo" name="qtd" type="number" min="1" max="99" inputmode="numeric" value="${qtd}"></label>
+    <label class="rot">Quais são (opcional)<input class="campo" name="titulo" maxlength="80" value="${esc(pr.titulo || '')}" placeholder="Ex.: 10 kits com bolas e munhequeira"></label></div>
+    ${pr.img ? `<img src="${esc(pr.img)}" alt="Foto dos brindes" style="width:100%;border-radius:12px">` : ''}
+    <label class="rot">Foto dos brindes (opcional · aparece pra todos)<input class="campo" name="arquivo" type="file" accept="image/*"></label>
+    <button class="btn btn-roxo" type="submit">Salvar</button>
+    ${!fimOut ? `<span class="dica">O sorteio libera aqui quando outubro de ${ano} for encerrado.</span>`
+      : sorteio ? `<b>Sorteados:</b><div class="desafio-lista">${sorteio.numeros.map((n) => `<span>${n3(n)}${sorteio.nomes && sorteio.nomes[n] ? ' · ' + esc(sorteio.nomes[n]) : ''}</span>`).join('')}</div>`
+      : `<b>Completaram os 10 jogos: ${ok.length}</b>${ok.length ? `<div class="desafio-lista">${ok.map((j) => `<span>${esc(j.nome)}${num(j.id) ? ' · ' + n3(num(j.id).numero) : ''}</span>`).join('')}</div>` : ''}
+        ${ok.length ? `<button type="button" class="btn btn-roxo" style="background:var(--verde)" data-acao="desafioSortear">Sortear ${Math.min(qtd, ok.length)} número${Math.min(qtd, ok.length) > 1 ? 's' : ''}</button><span class="dica">O resultado fica salvo e aparece pra todo mundo na tela do Desafio.</span>` : ''}`}
+  </form>`;
 }
 
 // ---------- cobranças por Pix (anuidade, torneios) ----------
@@ -1533,6 +1566,19 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  desafioSortear: () => comTrava('Sorteando…', async () => {
+    const ano = anoDesafio(), qtd = Number((S.config['desafio_' + ano] || {}).qtd) || 10;
+    if (S.config['desafio_' + ano + '_sorteio']) throw new Error('O sorteio já foi feito.');
+    let r = await sb.rpc('gerar_numeros_desafio', { p_ano: ano }); if (r.error) throw r.error;
+    await carregarDesafio(ano);
+    const ok = completaram(ano, S.desafio.jogos).map((j) => ({ j, n: (S.desafio.numeros.find((x) => x.jogador === j.id) || {}).numero })).filter((x) => x.n);
+    // embaralha com números aleatórios do próprio aparelho (crypto) e pega os primeiros
+    const rnd = new Uint32Array(ok.length); crypto.getRandomValues(rnd);
+    const ganhadores = ok.map((x, i) => ({ ...x, k: rnd[i] })).sort((a, b) => a.k - b.k).slice(0, qtd).sort((a, b) => a.n - b.n);
+    await backup('antes do sorteio do Desafio ' + ano);
+    r = await sb.from('config').insert({ chave: 'desafio_' + ano + '_sorteio', valor: { numeros: ganhadores.map((x) => x.n), nomes: Object.fromEntries(ganhadores.map((x) => [x.n, x.j.nome])), em: new Date().toISOString(), entre: ok.length } });
+    if (r.error) throw r.error;
+  }, 'Sorteio feito! O resultado já aparece no Desafio.'),
   progAno: (el) => { const a = Number(el.dataset.v); S.admin.prog = { ano: a, itens: progDoAno(a).map((x) => ({ ...x })) }; render(); },
   progMais: () => { S.admin.prog.itens.push({ ini: '', fim: '', titulo: '' }); render(); const c = document.querySelectorAll('[data-campo="titulo"]'); if (c.length) c[c.length - 1].focus(); },
   progTirar: (el) => { S.admin.prog.itens.splice(Number(el.dataset.v), 1); render(); },
@@ -1607,9 +1653,10 @@ const FORMS = {
       const up = await sb.storage.from('avisos').upload(caminho, blob, { contentType: 'image/jpeg' }); if (up.error) throw up.error;
       img = sb.storage.from('avisos').getPublicUrl(caminho).data.publicUrl;
     }
+    const qtd = Math.max(1, Math.min(99, Number(f.qtd.value) || 10));
     let r = await sb.from('config').delete().eq('chave', 'desafio_' + ano); if (r.error) throw r.error;
-    r = await sb.from('config').insert({ chave: 'desafio_' + ano, valor: { img, titulo: f.titulo.value.trim() || null } }); if (r.error) throw r.error;
-  }, 'Prêmio do desafio salvo.'),
+    r = await sb.from('config').insert({ chave: 'desafio_' + ano, valor: { qtd, img, titulo: f.titulo.value.trim() || null } }); if (r.error) throw r.error;
+  }, 'Desafio salvo.'),
   cobNova: (f) => comTrava('', async () => {
     const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
     if (!(valor > 0)) throw new Error('Valor inválido.');
