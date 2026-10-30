@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030133406';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030133406';
-import { REGULAMENTO } from './regulamento.js?v=20261030133406';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030133406';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030133406';
+import * as M from './motor.js?v=20261030141558';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030141558';
+import { REGULAMENTO } from './regulamento.js?v=20261030141558';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030141558';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030141558';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -298,7 +298,7 @@ function telaInicio() {
     ${corpo || ''}
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile${t.nome === 'Desafio' ? ' tile-desafio' : ''}" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}>${t.nome === 'Desafio' ? miniDesafio(t.rotulo()) : `<span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}`}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -1047,6 +1047,7 @@ function telaDesafio() {
   const comecou = !!S.meses.find((x) => x.id === ano + '-01');
   const meu = D.numero ? n3(D.numero) : '???', premiado = sorteio && D.numero && sorteio.numeros.includes(D.numero);
   return voltar('Desafio ' + ano, 'Uma caixinha por mês · jan a out') + `<div class="conteudo">
+    <p class="desafio-intro">O desafio é jogar <b>os 10 jogos do ano</b> (janeiro a outubro) <b>sem falhar nenhum</b>. Sem falhar, você libera um <b>número surpresa</b> que concorre a <b>prêmios</b> na festa de fim de ano.</p>
     <section class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="presente" role="img" aria-label="${ganhou ? 'Seu número da sorte: ' + meu : 'Número da sorte escondido: ' + r.abertas + ' de 10 caixinhas abertas'}">
         ${pecas.map((c, k) => { const mesTxt = cap(MESES[Number(c.mes.slice(5)) - 1]).slice(0, 3).toUpperCase(), pos = `--c:${k % 5};--r:${Math.floor(k / 5)}`;
