@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029211216';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029211216';
-import { REGULAMENTO } from './regulamento.js?v=20261029211216';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029211216';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029211216';
+import * as M from './motor.js?v=20261029211549';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029211549';
+import { REGULAMENTO } from './regulamento.js?v=20261029211549';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029211549';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029211549';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -419,10 +419,10 @@ function telaRanking() {
     ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
     <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
     ${lista.map((j, i) => { const fin = !geral && i < 8, sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
-      <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}>
+      <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
-          <div style="min-width:0;flex-grow:1"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
+          <div style="min-width:0;flex-grow:1"${S.eu.admin ? ` class="nome-adm" data-adm-jog="${j.id}" role="button" tabindex="0" aria-label="Opções da coordenação para ${esc(j.nome)}"` : ''}><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
         </div>
         <div class="stats"><span><b style="color:var(--roxo)">${j.tp}</b><small>TP</small></span><span><b>${j.vi}</b><small>VI</small></span><span><b>${j.sp}</b><small>SP</small></span><span><b>${j.de}</b><small>DE</small></span><span><b style="color:${sg < 0 ? 'var(--verm)' : 'inherit'}">${sg > 0 ? '+' : ''}${sg}</b><small>SG</small></span></div>
       </div>${!geral && i === 7 && lista.length > 8 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador ainda.</p>'}
@@ -888,6 +888,64 @@ function telaAdmin() {
 // backup: cópia de tudo dentro do banco (automática todo dia e antes das ações grandes) + arquivo pro celular
 async function backup(motivo) { const r = await sb.rpc('fazer_backup', { p_motivo: motivo }); if (r.error) throw new Error('Não consegui fazer o backup antes: ' + r.error.message); }
 const dataHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+// ---------- atalhos da coordenação na Pontuação: tocar no nome (ou arrastar a linha pra direita) ----------
+function abrirOpcoesJogador(id) {
+  if (!S.eu || !S.eu.admin) return;
+  const j = porId(id); if (!j || document.querySelector('.folha-adm')) return;
+  const g = S.mesAtual && S.jogos.find((x) => x.jogador_a === id || x.jogador_b === id);
+  const comPlacar = g && g.jogador_b && (g.sets || g.wo_de);
+  const volta = document.activeElement;
+  const d = document.createElement('div');
+  d.className = 'folha-adm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Opções para ' + j.nome);
+  const pintar = (confirmar) => {
+    d.innerHTML = `<div class="folha-adm-c"><div style="display:flex;align-items:center;gap:10px">${avatar(j, 44)}<div style="min-width:0"><b class="cond" style="font-size:20px">${esc(j.nome)}</b><div class="dica">Grupo ${esc(j.grupo || '–')} · ${j.standby ? 'em standby' : 'jogando'}</div></div></div>
+      ${confirmar ? `<p style="font-size:14px;margin:4px 0 0"><b>Tirar ${esc(j.nome)} do ranking?</b> Ele some da Pontuação e dos próximos jogos. Dá pra voltar depois em Admin → Jogadores → "Voltar ao ranking".</p>
+        ${comPlacar ? '<p class="erro" style="font-size:13px;margin:0">Ele já tem placar neste mês: tirando agora, esse jogo deixa de contar (inclusive pro adversário). O ideal é tirar depois de encerrar o mês.</p>' : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" style="background:var(--verm)" data-f="tirar">Tirar do ranking</button></div>`
+      : `<button class="btn btn-roxo" type="button" data-f="standby">${j.standby ? 'Tirar do standby' : 'Colocar em standby'}</button>
+        <span class="dica" style="margin-top:-4px">${j.standby ? 'Volta a ter jogo a partir da próxima rodada.' : 'Fica sem jogo a partir da próxima rodada (regra 8.2).'}</span>
+        <button class="btn btn-linha" type="button" style="color:var(--verm)" data-f="pedir">Tirar do ranking…</button>
+        <button class="btn btn-linha" type="button" data-f="fechar">Cancelar</button>`}</div>`;
+    const b = d.querySelector('[data-f]'); if (b) b.focus();
+  };
+  const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); if (volta && volta.isConnected && volta.focus) volta.focus(); };
+  const esc1 = (e) => { if (e.key === 'Escape') fechar(); };
+  d.addEventListener('click', (e) => {
+    const f = e.target.closest('[data-f]') && e.target.closest('[data-f]').dataset.f;
+    if (e.target === d || f === 'fechar') return fechar();
+    if (f === 'pedir') return pintar(true);
+    if (f === 'voltar') return pintar(false);
+    if (f === 'standby') { fechar(); comTrava('', async () => { const r = await sb.from('jogadores').update({ standby: !j.standby }).eq('id', j.id); if (r.error) throw r.error; }, j.standby ? j.nome + ' fora do standby: entra nos jogos da próxima rodada.' : j.nome + ' em standby.'); }
+    if (f === 'tirar') { fechar(); comTrava('', async () => { const r = await sb.from('jogadores').update({ ativo: false, standby: false }).eq('id', j.id); if (r.error) throw r.error; }, j.nome + ' saiu do ranking.'); }
+  });
+  document.addEventListener('keydown', esc1);
+  pintar(false); document.body.appendChild(d); const b = d.querySelector('[data-f]'); if (b) b.focus();
+}
+document.addEventListener('click', (ev) => {
+  const n = ev.target.closest && ev.target.closest('[data-adm-jog]');
+  if (n && !ev.target.closest('.avatar')) abrirOpcoesJogador(n.dataset.admJog);
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const n = ev.target.closest && ev.target.closest('[data-adm-jog]');
+  if (n && ev.target === n) { ev.preventDefault(); abrirOpcoesJogador(n.dataset.admJog); }
+});
+// arrastar a linha pra direita (celular)
+let toque = null;
+document.addEventListener('touchstart', (ev) => { const l = ev.target.closest && ev.target.closest('[data-arrasta]'); toque = l ? { l, x: ev.touches[0].clientX, y: ev.touches[0].clientY } : null; }, { passive: true });
+document.addEventListener('touchmove', (ev) => {
+  if (!toque) return;
+  const dx = ev.touches[0].clientX - toque.x, dy = Math.abs(ev.touches[0].clientY - toque.y);
+  if (dy > 30) { toque.l.style.transform = ''; toque = null; return; }
+  if (dx > 0) toque.l.style.transform = `translateX(${Math.min(dx, 90)}px)`;
+}, { passive: true });
+document.addEventListener('touchend', (ev) => {
+  if (!toque) return;
+  const dx = ev.changedTouches[0].clientX - toque.x, l = toque.l; toque = null;
+  l.style.transform = '';
+  if (dx > 70) abrirOpcoesJogador(l.dataset.arrasta);
+});
+
 // ---------- cobranças por Pix (anuidade, torneios) ----------
 // Pix direto na chave da coordenação (sem intermediário, sem taxa). O jogador avisa "já paguei"; a coordenação confere no extrato.
 const PIX = { chave: '+5519997635743', mostra: '(19) 99763-5743', tipo: 'celular', nome: 'Daniella Gesualdo', cidade: 'SUMARE' };
