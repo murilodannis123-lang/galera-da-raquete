@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261029211549';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029211549';
-import { REGULAMENTO } from './regulamento.js?v=20261029211549';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029211549';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029211549';
+import * as M from './motor.js?v=20261029213331';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261029213331';
+import { REGULAMENTO } from './regulamento.js?v=20261029213331';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261029213331';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261029213331';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -298,7 +298,7 @@ function telaInicio() {
     ${corpo || ''}
   </section>
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -336,7 +336,7 @@ const MENU = [
   { nome: 'Meu perfil', href: () => '#/perfil', ic: IC('<circle cx="12" cy="12" r="10.5" stroke-opacity=".35"/><circle cx="12" cy="9" r="3.6" fill="currentColor" fill-opacity=".22"/><path d="M5.6 19.2c1-3 3.4-4.7 6.4-4.7s5.4 1.7 6.4 4.7" fill="currentColor" fill-opacity=".22"/>') },
   { nome: 'Jogos do ranking', href: () => '#/jogos', ic: IC('<ellipse cx="8.3" cy="7.6" rx="3.9" ry="5" transform="rotate(-35 8.3 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M10.9 11.6l7.6 8.6"/><ellipse cx="15.7" cy="7.6" rx="3.9" ry="5" transform="rotate(35 15.7 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M13.1 11.6l-7.6 8.6"/><circle cx="12" cy="19.6" r="1.6" fill="currentColor" stroke="none"/>') },
   { nome: 'Pontuação', href: () => '#/ranking', ic: IC('<path d="M12 1.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 3.8l2.2-.3z" fill="currentColor" stroke="none"/><rect x="9" y="8.5" width="6" height="12.5" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="2.5" y="12" width="6.5" height="9" rx="1" fill="currentColor" fill-opacity=".12"/><rect x="15" y="14.5" width="6.5" height="6.5" rx="1" fill="currentColor" fill-opacity=".12"/>') },
-  { nome: 'Programação 2026', href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
+  { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
   { nome: 'Enquetes', ic: IC('<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" fill-opacity=".1"/><rect x="6" y="7" width="9" height="2.4" rx="1.2" fill="currentColor" stroke="none"/><rect x="6" y="11" width="12" height="2.4" rx="1.2" fill="currentColor" fill-opacity=".45" stroke="none"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Preciso falar com a coordenação do ranking.') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
@@ -346,7 +346,7 @@ const MENU = [
 
 // quem saiu do ranking (e não é da coordenação) só vê o próprio perfil e o básico; o banco também não entrega os dados do grupo
 const foraDoRanking = () => !!(S.eu && !S.eu.ativo && !S.eu.admin);
-const LIVRE_FORA = ['Meu perfil', 'Programação 2026', 'Fale conosco', 'Regulamento'];
+const LIVRE_FORA = ['Meu perfil', 'Programação', 'Fale conosco', 'Regulamento'];
 const ROTAS_FORA = ['', 'perfil', 'senha', 'privacidade', 'termos', 'regulamento', 'programacao'];
 
 function faixa() {
@@ -417,9 +417,9 @@ function telaRanking() {
   </div></div>
   <div class="conteudo">
     ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
-    <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
-    ${lista.map((j, i) => { const fin = !geral && i < 8, sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
-      <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
+    <span class="dica">${geral ? '' : 'Faixa verde = top 8, vão ao Finals · '}${aba === 'A' || aba === 'B' ? 'Faixa vermelha = 2 últimos, descem de grupo em janeiro (regra 5.3) · ' : ''}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
+    ${lista.map((j, i) => { const fin = !geral && i < 8, cai = (aba === 'A' || aba === 'B') && lista.length > 10 && i >= lista.length - 2, sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
+      ${cai && i === lista.length - 2 ? '<div class="corte corte-cai" aria-hidden="true">ZONA DE DESCIDA · 2 ÚLTIMOS</div>' : ''}<div class="linha-rk${fin ? ' fin' : ''}${cai ? ' cai' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
           <div style="min-width:0;flex-grow:1"${S.eu.admin ? ` class="nome-adm" data-adm-jog="${j.id}" role="button" tabindex="0" aria-label="Opções da coordenação para ${esc(j.nome)}"` : ''}><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
@@ -619,16 +619,42 @@ const PROGRAMACAO = [
   ['2026-12-01', '2026-12-04', '01/12 a 04/12', 'Semifinais do Finals — podem ser jogadas antes!'],
   ['2026-12-05', '2026-12-05', '05/12', 'Final do Finals + Festa de encerramento']
 ];
+// programação de cada ano: guardada pela coordenação em config (programacao_AAAA); 2026 usa a lista acima
+const anoProg = () => Math.max(Number(S.config.temporada) || 0, anoRanking());
+function progDoAno(ano) {
+  const c = S.config['programacao_' + ano];
+  const l = Array.isArray(c) ? c : ano === 2026 ? PROGRAMACAO.map(([ini, fim, , titulo]) => ({ ini, fim, titulo })) : [];
+  return l.filter((x) => x && x.ini && x.titulo).slice().sort((a, b) => (a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0));
+}
+const ddmm = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+const dataProg = (x) => (!x.fim || x.fim === x.ini ? ddmm(x.ini) : ddmm(x.ini) + ' a ' + ddmm(x.fim));
 function telaProgramacao() {
-  const hoje = new Date(); let achou = false;
-  return voltar('Programação 2026', 'Tênis Portal do Lago') + `<ol class="conteudo" style="list-style:none">${PROGRAMACAO.map(([ini, fim, data, tit]) => {
-    const feito = new Date(fim + 'T23:59:59') < hoje, agora = !feito && new Date(ini + 'T00:00:00') <= hoje, prox = !feito && !agora && !achou;
+  const hoje = new Date(), ano = anoProg(), lista = progDoAno(ano); let achou = false;
+  return voltar('Programação ' + ano, 'Tênis Portal do Lago') + `<ol class="conteudo" style="list-style:none">${lista.map((x) => {
+    const fim = x.fim || x.ini, feito = new Date(fim + 'T23:59:59') < hoje, agora = !feito && new Date(x.ini + 'T00:00:00') <= hoje, prox = !feito && !agora && !achou;
     if (agora || prox) achou = true;
     // o que já passou fica cinza e apagado, com "JÁ FOI"; o que vem pela frente continua em destaque
     return `<li class="card${feito ? ' prog-feito' : ''}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;${agora || prox ? 'border:2px solid var(--roxo)' : ''}">
-      <span><b style="font-size:12px;color:${feito ? 'inherit' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${data}</b><br><span style="font-weight:600;${feito ? 'text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)' : ''}">${esc(tit)}</span></span>
+      <span><b style="font-size:12px;color:${feito ? 'inherit' : 'var(--roxo)'}">${feito ? '✓ ' : ''}${dataProg(x)}</b><br><span style="font-weight:600;${feito ? 'text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)' : ''}">${esc(x.titulo)}</span></span>
       ${agora || prox ? `<span class="tag" style="background:var(--bola);color:var(--noite)">${agora ? 'AGORA' : 'PRÓXIMO'}</span>` : feito ? '<span class="tag" style="background:#ECEAF0;color:#5E586B;white-space:nowrap">JÁ FOI</span>' : ''}</li>`;
-  }).join('')}</ol>`;
+  }).join('') || `<li class="card"><span class="dica">A programação de ${ano} ainda vai ser divulgada pela coordenação.</span></li>`}</ol>`;
+}
+// Admin: editar a programação (rascunho em S.admin.prog até salvar)
+function adminProgramacao() {
+  const base = anoProg(), padrao = new Date().getMonth() >= 9 ? base + 1 : base;
+  if (!S.admin.prog) S.admin.prog = { ano: padrao, itens: progDoAno(padrao).map((x) => ({ ...x })) };
+  const pr = S.admin.prog, anterior = progDoAno(pr.ano - 1);
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Programação</b>
+    <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[base, base + 1].map((a) => `<button class="aba${a === pr.ano ? '' : ''}" role="tab" aria-selected="${a === pr.ano}" data-acao="progAno" data-v="${a}" style="${a === pr.ano ? '' : 'color:var(--roxo)'}">${a}</button>`).join('')}</div>
+    <span class="dica">Aparece na tela "Programação ${anoProg()}" pra todo mundo.${pr.ano > base ? ` A de ${pr.ano} aparece quando a temporada ${pr.ano} começar, e é ela que libera o botão "Iniciar temporada ${pr.ano}".` : ''}</span>
+    ${!pr.itens.length && anterior.length ? `<button type="button" class="btn btn-linha" data-acao="progCopiar">Copiar a de ${pr.ano - 1} com as datas um ano pra frente</button>` : ''}
+    ${pr.itens.map((x, i) => `<div class="prog-ed">
+      <label class="rot" style="grid-area:t">Evento<input class="campo" data-prog="${i}" data-campo="titulo" value="${esc(x.titulo || '')}" maxlength="80"></label>
+      <label class="rot" style="grid-area:a">De<input class="campo" type="date" data-prog="${i}" data-campo="ini" value="${esc(x.ini || '')}"></label>
+      <label class="rot" style="grid-area:b">Até (opcional)<input class="campo" type="date" data-prog="${i}" data-campo="fim" value="${esc(x.fim && x.fim !== x.ini ? x.fim : '')}"></label>
+      <button type="button" class="ic-mini" style="grid-area:x;align-self:end;color:var(--verm)" data-acao="progTirar" data-v="${i}" aria-label="Tirar ${esc(x.titulo || 'evento')}">✕</button></div>`).join('')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="progMais">+ Evento</button><button type="button" class="btn btn-roxo" data-acao="progSalvar">Salvar ${pr.ano}</button></div>
+  </section>`;
 }
 
 function telaResumo() {
@@ -850,6 +876,7 @@ function telaAdmin() {
     </section>
     ${cardReabrir()}
     ${cardTemporada()}
+    ${adminProgramacao()}
     ${cardBackup()}
     ${pend.length ? `<section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Ainda sem placar</b>${pend.map((g) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:14px">${esc((porId(g.jogador_a) || {}).nome)} x ${esc((porId(g.jogador_b) || {}).nome)}</span><a class="btn btn-linha" style="height:40px;font-size:12px" href="#/placar/${g.id}">Gravar placar</a></div>`).join('')}</section>` : ''}
     ${mes ? `<form class="card" data-form="addJogo" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Adicionar jogo ao mês</b><span class="dica">Pra quem entrou de última hora ou ficou fora da rodada.</span>
@@ -1179,6 +1206,7 @@ function cardTemporada() {
   const lista = listaGeral(), n = lista.length, conf = S.admin.temporada;
   const falta = ['A', 'B', 'C'].filter((g) => (S.finals.find((fz) => fz.ano === T - 1 && fz.grupo === g) || {}).fase !== 'encerrado');
   // só libera depois da final do Finals (5/12)
+  if (new Date() >= new Date(T - 1, 11, 6) && !progDoAno(T).length) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">Pra liberar o botão de iniciar a temporada ${T}, cadastre a <b>Programação ${T}</b> aqui embaixo (dá pra copiar a de ${T - 1} e ajustar as datas). Lembre também das subidas e descidas de grupo (regra 5.3) em Jogadores.</span></section>`;
   if (new Date() < new Date(T - 1, 11, 6)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">O botão de iniciar a temporada ${T} libera depois da final do Finals, a partir de 06/12/${T - 1}.</span></section>`;
   return `<section class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Temporada ${T}</b>
     ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas):</span>
@@ -1186,7 +1214,7 @@ function cardTemporada() {
       ${falta.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${falta.join(', ')}: encerre antes, senão o bônus não entra.</span>` : ''}
       <span class="dica">Uma cópia dos pontos de agora fica guardada no banco.</span>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="temporadaCancelar">Voltar</button><button class="btn btn-roxo" data-acao="temporada" data-v="${T}">Confirmar</button></div>`
-      : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Depois é só abrir janeiro e gerar os confrontos.</span>`}
+      : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Antes, confira as subidas e descidas de grupo (regra 5.3) em Jogadores. Depois é só abrir janeiro e gerar os confrontos.</span>`}
   </section>`;
 }
 async function iniciarTemporada(T) {
@@ -1422,6 +1450,20 @@ const ACOES = {
   recusar: (el) => comTrava('', async () => { const j = porId(el.dataset.id) || {}; const r = voltando(j) ? await sb.from('jogadores').update({ pendente: false }).eq('id', j.id) : await sb.from('jogadores').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Pedido recusado.'),
   pedirVolta: () => comTrava('', async () => { const r = await sb.rpc('pedir_volta'); if (r.error) throw r.error; }, ''),
   atualizar: () => comTrava('', async () => {}, ''),
+  progAno: (el) => { const a = Number(el.dataset.v); S.admin.prog = { ano: a, itens: progDoAno(a).map((x) => ({ ...x })) }; render(); },
+  progMais: () => { S.admin.prog.itens.push({ ini: '', fim: '', titulo: '' }); render(); const c = document.querySelectorAll('[data-campo="titulo"]'); if (c.length) c[c.length - 1].focus(); },
+  progTirar: (el) => { S.admin.prog.itens.splice(Number(el.dataset.v), 1); render(); },
+  progCopiar: () => { const pr = S.admin.prog, mais1 = (d) => (d ? String(Number(d.slice(0, 4)) + 1) + d.slice(4) : '');
+    pr.itens = progDoAno(pr.ano - 1).map((x) => ({ ini: mais1(x.ini), fim: mais1(x.fim), titulo: String(x.titulo).replace(String(pr.ano - 1), String(pr.ano)) })); render(); toast('Copiado. Ajuste as datas e os nomes e toque em Salvar.'); },
+  progSalvar: () => comTrava('', async () => {
+    const pr = S.admin.prog;
+    const itens = pr.itens.map((x) => ({ ini: x.ini, fim: x.fim && x.fim > x.ini ? x.fim : x.ini, titulo: String(x.titulo || '').trim() })).filter((x) => x.ini || x.titulo);
+    const ruim = itens.find((x) => !x.ini || !x.titulo || x.ini.slice(0, 4) !== String(pr.ano));
+    if (ruim) throw new Error(ruim.titulo ? `Confira a data de "${ruim.titulo}" (tem que ser de ${pr.ano}).` : 'Tem evento sem nome.');
+    let r = await sb.from('config').delete().eq('chave', 'programacao_' + pr.ano); if (r.error) throw r.error;
+    r = await sb.from('config').insert({ chave: 'programacao_' + pr.ano, valor: itens }); if (r.error) throw r.error;
+    S.admin.prog = null;
+  }, 'Programação salva.'),
   copiarPix: async (el) => {
     const t = el.dataset.cc;
     try { await navigator.clipboard.writeText(t); toast('Pix copia e cola copiado. Cole no app do seu banco.'); }
@@ -1590,6 +1632,10 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Enter' && ev.key !== ' ') return;
   const av = ev.target.closest && ev.target.closest('.avatar[data-ver][role="button"]');
   if (av) { ev.preventDefault(); abrirFoto(av.dataset.ver); }
+});
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (el.dataset && el.dataset.prog != null && S.admin.prog) { const x = S.admin.prog.itens[Number(el.dataset.prog)]; if (x) x[el.dataset.campo] = el.value; }
 });
 document.addEventListener('change', (ev) => {
   const el = ev.target;

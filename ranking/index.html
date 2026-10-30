@@ -131,6 +131,9 @@ body.noite .conteudo>div:not(.card) :focus-visible,body.noite .conteudo>:not(.ca
 .linha-rk[data-arrasta]{transition:transform .15s ease-out}
 .folha-adm{position:fixed;inset:0;z-index:96;background:rgba(10,5,22,.6);display:flex;align-items:flex-end;justify-content:center;animation:zoomIn .15s ease-out}
 .folha-adm-c{width:100%;max-width:520px;background:#fff;color:var(--tinta);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.linha-rk.cai{background:#FDECEC;border-color:#E8A3A3}
+.corte.corte-cai{color:#9B1C1C}.corte.corte-cai::before,.corte.corte-cai::after{background:#E8A3A3}body.noite .corte.corte-cai{color:#FF9C9C}
+.prog-ed{display:grid;grid-template-columns:1fr 1fr 40px;grid-template-areas:"t t t" "a b x";gap:6px 8px;padding:8px 0;border-top:1px solid #F0EDF5}
 button.link{background:none;border:0;padding:4px 2px;font:inherit;color:var(--roxo);text-decoration:underline;cursor:pointer}
 .texto-legal{align-items:flex-start;overflow-y:auto;padding:16px}
 .texto-legal-c{background:var(--fundo);color:var(--tinta);border-radius:18px;padding:16px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto}
@@ -256,6 +259,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261029211549"></script>
+<script type="module" src="app.js?v=20261029213331"></script>
 </body>
 </html>
