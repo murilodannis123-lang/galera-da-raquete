@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030085949';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030085949';
-import { REGULAMENTO } from './regulamento.js?v=20261030085949';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030085949';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030085949';
+import * as M from './motor.js?v=20261030090608';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030090608';
+import { REGULAMENTO } from './regulamento.js?v=20261030090608';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030090608';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030090608';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -987,25 +987,31 @@ async function carregarDesafio(ano) {
   const r = await sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10');
   S.desafio = { ano, jogos: r.error ? [] : r.data, em: Date.now() };
 }
+// são 10 jogos: o primeiro mês perdido tira o jogador do desafio (os meses seguintes ficam travados)
 function situacaoDesafio(id, ano, jogos) {
-  let comecou = false;
+  let fora = false;
   return MESES_DESAFIO.map((m) => {
-    const mes = ano + '-' + String(m).padStart(2, '0'), mm = S.meses.find((x) => x.id === mes);
-    const g = jogos.find((x) => x.mes === mes && (x.jogador_a === id || x.jogador_b === id));
-    if (g) comecou = true;
-    if (!mm) return { mes, st: 'futuro' };
-    if (!g) return { mes, st: comecou ? 'falhou' : 'fora', motivo: comecou ? 'ficou sem jogo no mês' : '' };
-    if (!g.jogador_b) return { mes, st: 'ok', motivo: 'standby da rodada' };
-    if (g.wo_de) {
-      if (g.wo_status === 'anulado') return { mes, st: 'falhou', motivo: 'WO anulado, o jogo não aconteceu' };
-      if (g.wo_de === id) return { mes, st: g.wo_status === 'aguardando' && mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'deu WO' };
-      return { mes, st: 'ok', motivo: 'venceu por WO' };
-    }
-    if (g.sets) return { mes, st: 'ok' };
-    return { mes, st: mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'ficou sem placar' };
+    const c = mesDesafio(id, ano, jogos, m);
+    if (fora && c.st !== 'futuro') return { mes: c.mes, st: 'travado' };
+    if (c.st === 'falhou') fora = true;
+    return c;
   });
 }
-const resumoDesafio = (cx) => ({ abertas: cx.filter((c) => c.st === 'ok').length, perdidas: cx.filter((c) => c.st === 'falhou'), contam: cx.filter((c) => c.st !== 'fora').length });
+function mesDesafio(id, ano, jogos, m) {
+  const mes = ano + '-' + String(m).padStart(2, '0'), mm = S.meses.find((x) => x.id === mes);
+  const g = jogos.find((x) => x.mes === mes && (x.jogador_a === id || x.jogador_b === id));
+  if (!mm) return { mes, st: 'futuro' };
+  if (!g) return { mes, st: 'falhou', motivo: 'ficou sem jogo no mês' };
+  if (!g.jogador_b) return { mes, st: 'ok', motivo: 'standby da rodada' };
+  if (g.wo_de) {
+    if (g.wo_status === 'anulado') return { mes, st: 'falhou', motivo: 'WO anulado, o jogo não aconteceu' };
+    if (g.wo_de === id) return { mes, st: g.wo_status === 'aguardando' && mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'deu WO' };
+    return { mes, st: 'ok', motivo: 'venceu por WO' };
+  }
+  if (g.sets) return { mes, st: 'ok' };
+  return { mes, st: mm.status === 'aberto' ? 'andamento' : 'falhou', motivo: 'ficou sem placar' };
+}
+const resumoDesafio = (cx) => ({ abertas: cx.filter((c) => c.st === 'ok').length, perdidas: cx.filter((c) => c.st === 'falhou') });
 function telaDesafio() {
   const ano = anoDesafio();
   if (!S.desafio || S.desafio.ano !== ano || Date.now() - S.desafio.em > 60000) { carregarDesafio(ano).then(() => { if (location.hash === '#/desafio') render(); }); }
@@ -1013,7 +1019,7 @@ function telaDesafio() {
   const cx = situacaoDesafio(S.eu.id, ano, jogos), r = resumoDesafio(cx);
   const premio = S.config['desafio_' + ano] || {};
   const fimOut = (S.meses.find((x) => x.id === ano + '-10') || {}).status === 'fechado';
-  const ganhou = fimOut && !r.perdidas.length && r.abertas > 0;
+  const ganhou = fimOut && r.abertas === 10;
   const pecas = Array(10).fill(null); cx.forEach((c, i) => { pecas[PECAS[i]] = c; });
   const naDisputa = S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).map((j) => ({ j, r: resumoDesafio(situacaoDesafio(j.id, ano, jogos)) }))
     .filter((x) => !x.r.perdidas.length && x.r.abertas > 0).sort((a, b) => b.r.abertas - a.r.abertas || a.j.nome.localeCompare(b.j.nome));
@@ -1025,15 +1031,16 @@ function telaDesafio() {
         <div class="presente-grade">${pecas.map((c) => { const mesTxt = cap(MESES[Number(c.mes.slice(5)) - 1]).slice(0, 3).toUpperCase();
           return c.st === 'ok' || ganhou ? `<span class="cx cx-ok"><small>${mesTxt}</small></span>`
             : c.st === 'falhou' ? `<span class="cx cx-x" title="${esc(c.motivo || '')}"><i>✕</i><small>${mesTxt}</small></span>`
-            : `<span class="cx${c.st === 'andamento' ? ' cx-vez' : ''}${c.st === 'fora' ? ' cx-fora' : ''}"><i aria-hidden="true">🎁</i><small>${mesTxt}</small></span>`; }).join('')}</div>
+            : c.st === 'travado' ? `<span class="cx cx-fora"><i aria-hidden="true">🔒</i><small>${mesTxt}</small></span>`
+            : `<span class="cx${c.st === 'andamento' ? ' cx-vez' : ''}"><i aria-hidden="true">🎁</i><small>${mesTxt}</small></span>`; }).join('')}</div>
       </div>
       ${ganhou ? `<b class="cond" style="font-size:22px;color:var(--verde)">Você completou o desafio! 🎉</b><span>Prêmio garantido${premio.titulo ? ': <b>' + esc(premio.titulo) + '</b>' : ''}. A coordenação entrega na festa.</span>`
-        : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">Cada mês que você cumprir o seu jogo, uma caixinha abre e mostra um pedaço do prêmio. Abriu todas até outubro? O prêmio é seu.</span>`
-        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Perdeu a caixinha de ${r.perdidas.map((c) => cap(MESES[Number(c.mes.slice(5)) - 1])).join(', ')}</b><span class="dica">${esc(cap(r.perdidas[0].motivo || ''))}. Este ano o prêmio já era, mas continue abrindo caixinhas: o ranking agradece!</span>`
+        : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">São 10 jogos, de janeiro a outubro. Cada mês cumprido abre uma caixinha e mostra um pedaço do prêmio; perdeu um mês, sai do desafio. Abriu todas? O prêmio é seu.</span>`
+        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Você está fora do Desafio ${ano}</b><span class="dica">${cap(MESES[Number(r.perdidas[0].mes.slice(5)) - 1])}: ${esc(r.perdidas[0].motivo || '')}. O desafio são os 10 jogos, de janeiro a outubro: perdeu um mês, sai da disputa. Ano que vem tem de novo!</span>`
         : `<b class="cond" style="font-size:20px;color:var(--verde)">Você está 100%: ${r.abertas} de 10 abertas</b><span class="dica">Continue assim: jogue todo mês, sem dar WO, e grave o placar até o último dia às 22h.</span>`}
     </section>
     <section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Como abrir as caixinhas</b>
-      <span style="font-size:14px;line-height:1.5">✅ Jogou e o placar foi gravado no mês<br>✅ Venceu por WO, ou ficou de standby porque o número de jogadores foi ímpar<br>❌ Deu WO, o jogo ficou sem placar ou você ficou sem jogo no mês<br>🏆 Abriu todas até outubro: ganha o prêmio na festa de fim de ano</span>
+      <span style="font-size:14px;line-height:1.5">✅ Jogou e o placar foi gravado no mês<br>✅ Venceu por WO, ou ficou de standby porque o número de jogadores foi ímpar<br>❌ Deu WO, o jogo ficou sem placar ou você ficou sem jogo no mês: <b>sai do desafio</b> (são os 10 jogos)<br>🏆 Abriu todas até outubro: ganha o prêmio na festa de fim de ano</span>
     </section>
     ${comecou ? `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Ainda 100% no desafio (${naDisputa.length})</b>
       ${naDisputa.length ? `<div class="desafio-lista">${naDisputa.map((x) => `<span>${esc(x.j.nome)} <small>${x.r.abertas}🎁</small></span>`).join('')}</div>` : '<span class="dica">Ninguém ainda.</span>'}</section>` : ''}
