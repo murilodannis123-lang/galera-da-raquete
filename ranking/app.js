@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261030132907';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030132907';
-import { REGULAMENTO } from './regulamento.js?v=20261030132907';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030132907';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030132907';
+import * as M from './motor.js?v=20261030133406';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261030133406';
+import { REGULAMENTO } from './regulamento.js?v=20261030133406';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261030133406';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261030133406';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -581,6 +581,7 @@ function telaPerfil() {
     <button class="btn btn-bola" type="submit">Salvar</button>
     <p id="perfil-msg" role="status"></p>
     <a class="btn btn-linha" href="#/pagamentos">Meus pagamentos</a>
+    <button type="button" class="btn btn-linha" data-acao="verTour">▶ Ver apresentação do app</button>
     <a class="btn btn-linha" href="#/senha">Trocar senha</a>
     <button class="btn btn-linha" type="button" data-acao="sair">Sair da conta</button>
   </form>`;
@@ -1011,14 +1012,11 @@ function completaram(ano, jogos) {
   return S.jogadores.filter((j) => j.ativo && j.joga && !j.pendente).filter((j) => resumoDesafio(situacaoDesafio(j.id, ano, jogos)).abertas === 10);
 }
 // são 10 jogos: o primeiro mês perdido tira o jogador do desafio (os meses seguintes ficam travados)
+// perdeu um mês, está fora: todas as caixinhas ficam cinzas (a do mês perdido com ✕) e o número some
 function situacaoDesafio(id, ano, jogos) {
-  let fora = false;
-  return MESES_DESAFIO.map((m) => {
-    const c = mesDesafio(id, ano, jogos, m);
-    if (fora && c.st !== 'futuro') return { mes: c.mes, st: 'travado' };
-    if (c.st === 'falhou') fora = true;
-    return c;
-  });
+  const cx = MESES_DESAFIO.map((m) => mesDesafio(id, ano, jogos, m));
+  const perdeu = cx.find((c) => c.st === 'falhou');
+  return perdeu ? cx.map((c) => (c === perdeu ? c : { mes: c.mes, st: 'travado' })) : cx;
 }
 function mesDesafio(id, ano, jogos, m) {
   const mes = ano + '-' + String(m).padStart(2, '0'), mm = S.meses.find((x) => x.id === mes);
@@ -1059,7 +1057,7 @@ function telaDesafio() {
       </div>
       ${ganhou ? `<b class="cond" style="font-size:22px;color:var(--verde)">Você completou o desafio! 🎉</b><span>Seu número da sorte é <b>${meu}</b>. ${sorteio ? (premiado ? '<b style="color:var(--verde)">Ele foi sorteado: você ganhou um brinde! 🎁</b>' : 'Não foi sorteado desta vez, mas valeu o compromisso!') : `Você concorre no sorteio de ${qtd} brindes na festa.`}</span>`
         : !comecou ? `<b class="cond" style="font-size:20px">Começa em janeiro de ${ano}</b><span class="dica">São 10 jogos, de janeiro a outubro. Cada mês cumprido abre uma caixinha e mostra um pedaço do seu número da sorte; perdeu um mês, sai do desafio. Abriu as 10? Você concorre no sorteio de ${qtd} brindes na festa.</span>`
-        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Você está fora do Desafio ${ano}</b><span class="dica">${cap(MESES[Number(r.perdidas[0].mes.slice(5)) - 1])}: ${esc(r.perdidas[0].motivo || '')}. O desafio são os 10 jogos, de janeiro a outubro: perdeu um mês, sai do sorteio. Ano que vem tem de novo!</span>`
+        : r.perdidas.length ? `<b class="cond" style="font-size:20px;color:var(--verm)">Você está fora do Desafio ${ano}</b><span class="dica">${cap(MESES[Number(r.perdidas[0].mes.slice(5)) - 1])}: ${esc(r.perdidas[0].motivo || '')}. Perdeu um mês, está fora do sorteio: as caixinhas ficam cinzas e o número da sorte não aparece mais. Ano que vem tem de novo!</span>`
         : `<b class="cond" style="font-size:20px;color:var(--verde)">Você está 100%: ${r.abertas} de 10 abertas</b><span class="dica">Continue assim: jogue todo mês, sem dar WO, e grave o placar até o último dia às 22h. Seu número da sorte vai aparecendo a cada caixinha.</span>`}
     </section>
     ${sorteio ? `<section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--verde)"><b class="cond" style="font-size:18px">Sorteio dos brindes · resultado</b>
