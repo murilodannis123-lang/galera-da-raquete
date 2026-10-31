@@ -1,0 +1,17 @@
+# A cada publicação aqui, avisa o site novo (galeradaraquete.github.io) pra publicar na hora.
+# Precisa do segredo PUBLICAR_TOKEN (token da conta galeradoraquete-bot com permissão de Actions no repositório do site novo).
+# Sem o segredo, nada quebra: o site novo continua publicando sozinho no horário automático.
+name: Avisar o site novo
+on:
+  push:
+    branches: [main]
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.PUBLICAR_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "Sem PUBLICAR_TOKEN: o site novo publica no horário automático."; exit 0; fi
+          gh workflow run publicar.yml -R galeradaraquete/galeradaraquete.github.io --ref main
+          echo "Site novo avisado."
