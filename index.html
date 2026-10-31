@@ -2,7 +2,31 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script>if(location.hostname==="murilodannis123-lang.github.io")location.replace("https://galeradaraquete.github.io"+location.pathname.replace(/^\/galera-da-raquete/,"")+location.search+location.hash);</script>
+<script>
+/* Mudança de endereço: o link antigo leva pro novo e carrega junto o que este celular lembrava
+   (confirmação, votos da enquete, joguinho). Vai no "#" do endereço, que não é enviado a nenhum servidor. */
+(function () {
+  var P = "gr-", ANTIGO = "murilodannis123-lang.github.io";
+  if (location.hostname === ANTIGO) {
+    var d = {}, n = 0;
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(P) === 0) { d[k] = localStorage.getItem(k); n++; } } } catch (e) {}
+    location.replace("https://galeradaraquete.github.io" + location.pathname.replace(/^\/galera-da-raquete/, "") + location.search +
+      (n ? "#gr-migra=" + encodeURIComponent(JSON.stringify(d)) : location.hash));
+    return;
+  }
+  var m = location.hash.match(/^#gr-migra=(.*)$/);
+  if (!m) return;
+  try {
+    var dados = JSON.parse(decodeURIComponent(m[1]));
+    for (var c in dados) {
+      if (c.indexOf(P) !== 0 || typeof dados[c] !== "string") continue;
+      // o aparelho e os votos do endereço antigo valem (é o que a enquete já conhece); o resto só se aqui ainda não tiver
+      if (c === "gr-aparelho" || c === "gr-votos" || localStorage.getItem(c) === null) localStorage.setItem(c, dados[c]);
+    }
+  } catch (e) {}
+  history.replaceState(null, "", location.pathname + location.search);
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Festa de Encerramento & Finals 2026 · Galera da Raquete</title>
 <meta name="description" content="Sábado, 05/12 às 18h30 · Rodízio de pizzas e música ao vivo. Tenistas confirmam até 09/11; de 10/11 a 30/11 abre pra amigos.">
@@ -740,7 +764,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202610311200";
+const VERSAO = "202610311210";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
