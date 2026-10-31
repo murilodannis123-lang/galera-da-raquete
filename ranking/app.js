@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261031075942';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261031075942';
-import { REGULAMENTO } from './regulamento.js?v=20261031075942';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261031075942';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261031075942';
+import * as M from './motor.js?v=20261031124906';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261031124906';
+import { REGULAMENTO } from './regulamento.js?v=20261031124906';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261031124906';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261031124906';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -255,7 +255,7 @@ function telaInicio() {
     const sub = meu.wo_de ? 'WO · ' + (meu.wo_status === 'aguardando' ? 'AGUARDANDO' : meu.wo_status === 'anulado' ? 'CONTESTADO' : v === eu.id ? 'VITÓRIA' : 'DERROTA') : meu.sets ? (v === eu.id ? 'VITÓRIA' : 'DERROTA') : (trazBola(meu) === eu.id ? 'VOCÊ TRAZ AS BOLAS' : 'ELE TRAZ AS BOLAS');
     vs = `<div class="vs">
       <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}${BOLINHA(eu.id, meu)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
-      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${meu.sets || meu.wo_de ? '' : 'brilho'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${esc(sub)}</small>${meu.sets && !meu.wo_de ? `<b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(meu.sets))}${pneuTag(meu.sets, 14)}</b>` : ''}</div>
+      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${/DERROTA$/.test(sub) ? 'derrota-pisca' : meu.sets || meu.wo_de ? '' : 'brilho'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${esc(sub)}</small>${meu.sets && !meu.wo_de ? `<b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(meu.sets))}${pneuTag(meu.sets, 14)}</b>` : ''}</div>
       <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}${BOLINHA(adv && adv.id, meu)}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
     </div>`;
     if (meu.wo_de && meu.wo_status === 'aguardando' && meu.wo_de === eu.id) {

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261031075942"></script>
+<script src="redireciona.js?v=20261031124906"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -215,6 +215,9 @@ textarea.campo{height:auto;padding:10px 12px}
 small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.6) 35%,#D8F145 45%,#fff 50%,#D8F145 55%,rgba(255,255,255,.6) 65%,rgba(255,255,255,.6) 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:brilho 2.6s linear infinite}
 @keyframes brilho{from{background-position:100% 0}to{background-position:-150% 0}}
 .vs-mini{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--noite);box-shadow:0 4px 12px rgba(26,13,51,.3)}.vs-mini .vs-txt{font-size:17px;text-shadow:0 0 12px rgba(216,241,69,.6);padding-right:2px}
+.vs .derrota-pisca{color:#ff3b3b!important;font-weight:800;font-size:11px!important;text-shadow:0 0 10px rgba(255,59,59,.7);animation:pisca-derrota 1s steps(1,end) infinite}
+@keyframes pisca-derrota{50%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.vs .derrota-pisca{animation:none}}
 .vs-txt{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-style:italic;font-size:36px;line-height:1;color:var(--bola);text-shadow:0 0 20px rgba(216,241,69,.55)}
 .barra{position:relative;height:5px;margin:6px 0;border-radius:999px;background:rgba(255,255,255,.15)}
 .barra i{display:block;height:5px;border-radius:999px;background:var(--bola)}
@@ -303,6 +306,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261031075942"></script>
+<script type="module" src="app.js?v=20261031124906"></script>
 </body>
 </html>
