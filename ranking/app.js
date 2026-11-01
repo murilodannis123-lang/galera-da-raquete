@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101161003';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101161003';
-import { REGULAMENTO } from './regulamento.js?v=20261101161003';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101161003';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101161003';
+import * as M from './motor.js?v=20261101170232';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101170232';
+import { REGULAMENTO } from './regulamento.js?v=20261101170232';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101170232';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101170232';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -526,6 +526,7 @@ async function telaJogos() {
     <button class="ic-btn" data-acao="mesVer" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
   </div>
   <div class="conteudo">
+    ${S.verMeses && S.finals.some((f) => f.ano === anoRanking()) && !S.mesAtual ? '<button type="button" class="btn btn-roxo" data-acao="verMeses" data-v="0">🏆 Voltar pro Finals</button>' : ''}
     ${S.eu.admin && idx === 0 && (S.mesAtual || (() => { const u = S.meses.map((m) => m.id).sort().pop() || ''; return !/-10$/.test(u) || Number(S.config.temporada) > Number(u.slice(0, 4)); })()) ? painelMes(true) : ''}
     ${jogos.length ? BUSCA('Buscar jogador…') + NADA : ''}
     ${jogos.map((g) => { const a = porId(g.jogador_a), b = porId(g.jogador_b), v = vencedor(g); return `
@@ -879,16 +880,21 @@ function telaDuplas() {
     <p class="dica">Datas, inscrição e regulamento aparecem aqui e no sino de avisos assim que a coordenação divulgar.</p>
   </div>`;
 }
-function telaFinals() {
+// novembro/dezembro: sem jogos do ranking, a tela de Jogos mostra o Finals (dá pra voltar pros meses anteriores)
+function finalsNosJogos() {
+  const a = anoRanking(), ult = S.meses.map((m) => m.id).sort().pop() || '';
+  return !S.mesAtual && !S.verMeses && /-10$/.test(ult) && Number(ult.slice(0, 4)) === a && S.finals.some((f) => f.ano === a);
+}
+function telaFinals(viaJogos) {
   const ano = anoFinals(), aba = S.abaFin || (S.eu.grupo || 'A'), vista = S.vistaFin || 'chave';
   const { fz, vg, js, t, semis, final } = dadosFinals(ano, aba);
   const abas = `<div style="background:#2A1650;padding:0 16px 14px;display:flex;flex-direction:column;gap:8px"><div class="abas" role="tablist" style="grid-template-columns:1fr 1fr 1fr">
     ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div>
     <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[['chave', 'CHAVEAMENTO'], ['class', 'CLASSIFICAÇÃO']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${vista === v}" data-acao="vistaFin" data-v="${v}">${r}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
-  const outFechado = (S.meses.find((m) => m.id === anoRanking() + '-10') || {}).status === 'fechado';
-  const painelAdm = S.eu.admin && ano === anoRanking() && (fz || outFechado) ? `<div class="conteudo" style="padding-bottom:0"><section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--roxo)"><b class="cond" style="font-size:18px">Coordenação · Finals ${ano}</b>${adminFinalsGrupo(aba)}<span class="dica" style="font-size:11px">Só a coordenação vê este quadro. O resto fica em Admin.</span></section></div>` : '';
-  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas + painelAdm;
+  const painelAdm = S.eu.admin && ano === anoRanking() ? `<div class="conteudo" style="padding-bottom:0">${!fz && S.mesAtual ? `<p class="erro" style="font-size:13px;margin:0"><b>${nomeMes(S.mesAtual.id)} ainda está aberto.</b> Dá pra sortear assim mesmo, mas os placares desse mês não entram na classificação. O ideal é encerrar antes:</p>${painelMes(true)}` : ''}<section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--roxo)"><b class="cond" style="font-size:18px">Coordenação · Finals ${ano}</b>${!fz ? '<span class="dica">Pode sortear mesmo com gente sem responder a confirmação: quem não respondeu conta como "vai".</span>' : ''}${adminFinalsGrupo(aba).replace(/<a href="#\/finals"[^>]*>Ver jogos e placares<\/a>/, '')}<span class="dica" style="font-size:11px">Só a coordenação vê este quadro. O resto fica em Admin.</span></section></div>` : '';
+  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas
+    + (viaJogos ? `<div class="conteudo" style="padding-bottom:0"><div class="card" style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="flex-grow:1">Agora é a vez do <b>Finals</b>: os jogos do ranking voltam em janeiro.</span><button type="button" class="btn btn-linha" style="height:40px;padding:0 12px;font-size:13px;white-space:nowrap" data-acao="verMeses" data-v="1">Ver outubro</button></div></div>` : '') + painelAdm;
   const grupo = rankingVivo().filter((j) => j.grupo === aba);
 
   if (vista === 'class') {
@@ -1841,6 +1847,7 @@ const ACOES = {
   }, ''),
   fecharLembrete: () => { try { localStorage.setItem('lembrete-senha', String(Date.now())); } catch (e) { /* ok */ } render(); },
   removerFoto: () => comTrava('', async () => { const r = await sb.from('jogadores').update({ foto_url: null }).eq('id', S.eu.id); if (r.error) throw r.error; }, 'Foto removida.'),
+  verMeses: (el) => { S.verMeses = el.dataset.v === '1'; if (location.hash !== '#/jogos') location.hash = '#/jogos'; else render(); },
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => {
     const liga = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', liga);
@@ -2144,12 +2151,13 @@ async function render() {
   document.body.classList.toggle('noite', ehNoite());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
+  if (rota !== 'jogos' && rota !== 'placar' && rota !== 'wo') S.verMeses = false;
   clearInterval(timerCarrossel);
   if (foraDoRanking() && !ROTAS_FORA.includes(rota || '')) { history.replaceState(null, '', location.pathname + location.search); hashAnterior = ''; return render(); }
   let html;
   try {
     html = rota === 'ranking' ? telaRanking()
-      : rota === 'jogos' ? await telaJogos()
+      : rota === 'jogos' ? (finalsNosJogos() ? telaFinals(true) : await telaJogos())
       : rota === 'placar' ? await telaPlacar(arg)
       : rota === 'fplacar' ? await telaPlacar(arg, true)
       : rota === 'torneios' ? telaTorneios()
