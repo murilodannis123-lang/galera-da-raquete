@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101105647';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101105647';
-import { REGULAMENTO } from './regulamento.js?v=20261101105647';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101105647';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101105647';
+import * as M from './motor.js?v=20261101111127';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101111127';
+import { REGULAMENTO } from './regulamento.js?v=20261101111127';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101111127';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101111127';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -925,6 +925,7 @@ function telaAdmin() {
       <label class="rot">Jogador 1<select class="campo" name="a" required><option value="">Escolher…</option>${opcoes}</select></label>
       <label class="rot">Jogador 2<select class="campo" name="b" required><option value="">Escolher…</option>${opcoes}</select></label>
       <button class="btn btn-roxo" type="submit">Adicionar</button></form>` : ''}
+    ${adminRespostasFinals()}
     ${adminFinals()}
     <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo e essa pessoa desce uma. Em branco = último do grupo.</span>
       <label class="rot">Nome<input class="campo" name="nome" required maxlength="40"></label>
@@ -1473,6 +1474,24 @@ async function reabrirMes(id) {
   await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
   const r = await sb.from('meses').update({ status: 'aberto', fechado_em: null }).eq('id', id); if (r.error) throw r.error;
   S.jogosPorMes = {};
+}
+// Respostas do Finals: só a coordenação vê (fica no Admin)
+function adminRespostasFinals() {
+  const ano = anoRanking(), grupos = ['A', 'B', 'C'].filter((g) => perguntaFinals(g));
+  if (!S.fresp && new Date() >= new Date(ano, 9, 31)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:20px">Respostas do Finals ${ano}</b><span class="erro" style="font-size:13px">Falta ativar no banco de dados: as respostas ainda não estão sendo salvas.</span></section>`;
+  if (!grupos.length) return '';
+  const quando = (r) => r ? new Date(r.respondido_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + (r.marcado_por_admin ? ' · marcado pela coordenação' : '') : '';
+  const item = (j, r) => `<li style="display:flex;justify-content:space-between;gap:8px;font-size:14px"><span>${esc(j.nome)}</span><small class="dica">${quando(r)}</small></li>`;
+  const bloco = (tit, cor, xs) => `<div><b style="font-size:13px;color:${cor}">${tit} (${xs.length})</b>${xs.length ? `<ul style="list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px">${xs.join('')}</ul>` : '<div class="dica">ninguém</div>'}</div>`;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Respostas do Finals ${ano}</b>
+    <span class="dica">Só a coordenação vê esta lista. Quem não vai sai e o próximo do ranking entra. Pra marcar por alguém, toque no nome dele na Pontuação.</span>
+    ${grupos.map((g) => {
+      const lista = rankingVivo().filter((j) => j.grupo === g), vagas = vagasFinals(lista);
+      const vao = [], falta = [], nao = [];
+      lista.forEach((j) => { const r = respFinals(j.id); if (r && r.vai === false) nao.push(item(j, r)); else if (vagas.includes(j.id)) (r && r.vai ? vao : falta).push(item(j, r)); });
+      return `<div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px"><b style="font-size:15px">Grupo ${g}</b>
+        ${bloco('✓ Vão jogar', 'var(--verde)', vao)}${bloco('? Ainda não responderam', '#7A3E0A', falta)}${bloco('✕ Não vão', 'var(--verm)', nao)}</div>`;
+    }).join('')}</section>`;
 }
 function adminFinals() {
   const ano = anoRanking();
