@@ -764,7 +764,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202610311210";
+const VERSAO = "202611011654";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
@@ -803,7 +803,7 @@ const API = (() => {
   }
   async function post(dados) {
     if (!on) throw new Error("offline");
-    const r = await tempo(fetch(CONFIG.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) }), 25000);
+    const r = await tempo(fetch(CONFIG.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) }), 45000);
     return r.json();
   }
   return { on, get, post };
@@ -1200,10 +1200,24 @@ const Pix = (() => {
       }
       $("pixBox").hidden = !!r.espera; $("okEspera").hidden = !r.espera;
       if (r.espera) {
+        if (r.jaNaFila) r.posicao = r.posicao || 1;
         ls.set("gr-espera", { nome, posicao: r.posicao });
         $("okTit").textContent = "Você está na lista de espera!";
         $("okTxt").textContent = nome.split(" ")[0] + ", as 100 vagas já foram preenchidas. Se alguém desistir, a organização chama pela ordem da lista e te passa os dados do pagamento.";
         $("okEspera").textContent = "Sua posição na fila: " + r.posicao + "º";
+        $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0;
+        $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
+        return;
+      }
+      if (r.jaConfirmado) {   // já estava na lista (ex.: tocou de novo porque demorou): não duplica
+        const pri = nome.split(" ")[0], tot = Number(r.total) || pessoas;
+        const conf = { nome, total: tot, valor: Number(r.valor) || 0, detalhe: tot + (tot === 1 ? " pessoa" : " pessoas") };
+        $("pixBox").hidden = !!r.por;
+        if (!r.por) { ls.set("gr-confirmado", conf); mostraJa(conf); Pix.valor(conf.valor); Pix.comprovante(conf); }
+        $("okTit").textContent = "Você já está na lista!";
+        $("okTxt").textContent = r.por
+          ? pri + ", você já foi confirmado junto com " + r.por + ". Não precisa confirmar de novo."
+          : pri + ", sua confirmação já tinha entrado (" + conf.detalhe + "). Não precisa confirmar de novo. Se quiser mudar a quantidade de pessoas, fale com a organização.";
         $("confForm").hidden = true; $("confOk").hidden = false; f.querySelector(".caixa").scrollTop = 0;
         $("formConf").reset(); Object.assign(st, { tenista: true, tenistas: 1, nomesTen: [], familia: 0, amigos: 0, criancas: 0, bebes: 0 });
         return;
@@ -1226,7 +1240,7 @@ const Pix = (() => {
       Confete.solta(3000, 70);
     } catch (_) {
       Musica.paraVamos();
-      $("confErro").textContent = "Sem conexão agora. Confira sua internet e tente de novo.";
+      $("confErro").textContent = "A internet demorou pra responder. Toque em VAMOS!!! de novo: se a sua confirmação já tiver entrado, ela não duplica.";
     } finally {
       enviando = false; bt.disabled = false; pinta();
     }
