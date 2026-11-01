@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261101142401"></script>
+<script src="redireciona.js?v=20261101144938"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -222,6 +222,13 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .fin-perg{display:flex;flex-direction:column;gap:8px;border:2px solid var(--bola);margin:12px 16px 0}.fin-perg.ok{border-color:#BFE3CC}.conteudo .fin-perg{margin:0}
 .fin-adm{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;background:#F6F3FB}
 .link-btn{background:none;border:0;padding:0;font:inherit;color:var(--roxo);text-decoration:underline;cursor:pointer;min-height:24px}
+.tag-fin.pisca{background:var(--bola);color:var(--noite);animation:pisca-fin 1s steps(1,end) infinite}
+@keyframes pisca-fin{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.tag-fin.pisca{animation:none}}
+.fin-linha{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px 40px;padding:8px 10px;border-radius:12px;background:#FFFBE6;border:1px dashed #D9C200}
+.fin-linha-t{font-size:13px;font-weight:700;flex-grow:1}
+.fin-q{min-width:64px;min-height:36px;padding:0 14px;border-radius:10px;border:2px solid var(--roxo);background:#fff;color:var(--roxo);font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.fin-q.sim{background:var(--verde);border-color:var(--verde);color:#fff}.fin-q.nao{border-color:var(--verm);color:var(--verm)}
 .vs-txt{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-style:italic;font-size:36px;line-height:1;color:var(--bola);text-shadow:0 0 20px rgba(216,241,69,.55)}
 .barra{position:relative;height:5px;margin:6px 0;border-radius:999px;background:rgba(255,255,255,.15)}
 .barra i{display:block;height:5px;border-radius:999px;background:var(--bola)}
@@ -310,6 +317,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261101142401"></script>
+<script type="module" src="app.js?v=20261101144938"></script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101142401';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101142401';
-import { REGULAMENTO } from './regulamento.js?v=20261101142401';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101142401';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101142401';
+import * as M from './motor.js?v=20261101144938';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101144938';
+import { REGULAMENTO } from './regulamento.js?v=20261101144938';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101144938';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101144938';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -194,7 +194,13 @@ function tagFinals(id, naVaga) {
   if (!naVaga) return '';
   return r && r.vai ? ' <span class="tag tag-fin ok" title="Confirmou que vai jogar o Finals">FINALS ✓</span>' : ' <span class="tag tag-fin falta" title="Ainda não respondeu se vai jogar o Finals">FINALS ?</span>';
 }
-// pergunta pro próprio jogador (início e pontuação)
+// Sim / Não na própria linha da Pontuação
+function respFinalsLinha() {
+  return `<div class="fin-linha" role="group" aria-label="Vai jogar o Finals ${anoRanking()}?">${S.finConfirma
+    ? `<span class="fin-linha-t" style="color:var(--verm)">Não vai mesmo? A vaga passa pro próximo.</span><button type="button" class="fin-q nao" data-acao="finResp" data-v="nao">Confirmar</button><button type="button" class="fin-q" data-acao="finVoltar">Voltar</button>`
+    : `<span class="fin-linha-t">Vai jogar o Finals?</span><button type="button" class="fin-q sim" data-acao="finResp" data-v="sim">Sim</button><button type="button" class="fin-q nao" data-acao="finNaoVou">Não</button>`}</div>`;
+}
+// pergunta pro próprio jogador (início)
 function cardFinals() {
   const eu = S.eu;
   if (!eu || !eu.joga || foraDoRanking() || !perguntaFinals(eu.grupo)) return '';
@@ -456,15 +462,14 @@ function telaRanking() {
     ${[['D', 'DYNAMICS'], ['A', 'A'], ['B', 'B'], ['C', 'C']].map(([id, r]) => `<button class="aba" role="tab" aria-selected="${aba === id}" data-acao="abaRk" data-v="${id}">${r}</button>`).join('')}
   </div></div>
   <div class="conteudo">
-    ${aba === S.eu.grupo ? cardFinals() : ''}
     ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
     <span class="dica">${geral ? '' : pergunta ? 'Faixa verde = as 8 vagas do Finals (FINALS ✓ confirmou · FINALS ? ainda não respondeu; quem não vai sai e o próximo entra) · ' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
     ${lista.map((j, i) => { const fin = !geral && vagas.includes(j.id), sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
       <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
-          <div style="min-width:0;flex-grow:1"${S.eu.admin ? ` class="nome-adm" data-adm-jog="${j.id}" role="button" tabindex="0" aria-label="Opções da coordenação para ${esc(j.nome)}"` : ''}><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}${pergunta ? tagFinals(j.id, fin) : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
-        </div>
+          <div style="min-width:0;flex-grow:1"${S.eu.admin ? ` class="nome-adm" data-adm-jog="${j.id}" role="button" tabindex="0" aria-label="Opções da coordenação para ${esc(j.nome)}"` : ''}><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}${pergunta && !(j.id === S.eu.id && fin && !respFinals(j.id)) ? tagFinals(j.id, fin) : ''}${pergunta && j.id === S.eu.id && fin && !respFinals(j.id) ? ' <span class="tag tag-fin falta pisca">FINALS?</span>' : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
+        </div>${pergunta && j.id === S.eu.id && fin && !respFinals(j.id) ? respFinalsLinha() : ''}
         <div class="stats"><span><b style="color:var(--roxo)">${j.tp}</b><small>TP</small></span><span><b>${j.vi}</b><small>VI</small></span><span><b>${j.sp}</b><small>SP</small></span><span><b>${j.de}</b><small>DE</small></span><span><b style="color:${sg < 0 ? 'var(--verm)' : 'inherit'}">${sg > 0 ? '+' : ''}${sg}</b><small>SG</small></span></div>
       </div>${!geral && i === ultimaVaga && lista.length > i + 1 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador ainda.</p>'}
   </div>`;
