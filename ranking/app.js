@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101144938';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101144938';
-import { REGULAMENTO } from './regulamento.js?v=20261101144938';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101144938';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101144938';
+import * as M from './motor.js?v=20261101150133';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101150133';
+import { REGULAMENTO } from './regulamento.js?v=20261101150133';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101150133';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101150133';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -194,6 +194,43 @@ function tagFinals(id, naVaga) {
   if (!naVaga) return '';
   return r && r.vai ? ' <span class="tag tag-fin ok" title="Confirmou que vai jogar o Finals">FINALS ✓</span>' : ' <span class="tag tag-fin falta" title="Ainda não respondeu se vai jogar o Finals">FINALS ?</span>';
 }
+// Lembrete ao abrir o app (uma vez por sessão) pra quem está nas 8 vagas e ainda não respondeu,
+// inclusive quem subiu (9º, 10º...) porque alguém dos 8 não vai
+function lembrarFinals() {
+  let tentativas = 0;
+  const mostrar = () => {
+    if (document.querySelector('.intro, .niver, .zoom, .tour') && tentativas++ < 240) return setTimeout(mostrar, 500);
+    const eu = S.eu;
+    if (!eu || !eu.joga || foraDoRanking() || !perguntaFinals(eu.grupo) || respFinals(eu.id)) return;
+    const lista = rankingVivo().filter((j) => j.grupo === eu.grupo), pos = lista.findIndex((j) => j.id === eu.id) + 1;
+    if (!vagasFinals(lista).includes(eu.id)) return;
+    const chave = 'finals-lembrado-' + anoRanking() + '-' + (pos > 8 ? 'subiu' : 'top');
+    try { if (sessionStorage.getItem(chave)) return; sessionStorage.setItem(chave, '1'); } catch (e) { /* mostra mesmo */ }
+    const subiu = pos > 8, d = document.createElement('div');
+    d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Finals ' + anoRanking());
+    const pintar = (conf) => {
+      d.innerHTML = `<div class="niver-c"><div style="font-size:40px" aria-hidden="true">🏆</div><small>FINALS ${anoRanking()}</small>
+        <b class="cond" style="font-size:24px">${subiu ? 'Abriu uma vaga pra você!' : 'Você está no Finals!'}</b>
+        <span style="font-size:15px">${subiu ? `Alguém dos 8 do Grupo ${esc(eu.grupo)} não vai jogar e você, ${pos}º, entrou na lista.` : `Você está entre os 8 do Grupo ${esc(eu.grupo)}.`} Vai jogar o Finals?</span>
+        ${conf ? `<b style="font-size:14px">Não vai mesmo? A vaga passa pro próximo do ranking.</b>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;width:100%"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" style="background:var(--verm)" data-f="nao">Não vou</button></div>`
+        : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;width:100%"><button class="btn btn-bola" type="button" data-f="sim">Sim, vou jogar</button><button class="btn btn-linha" type="button" data-f="pedirNao">Não vou poder</button></div>
+          <button type="button" class="link-btn" data-f="depois" style="color:inherit;opacity:.8;margin-top:4px">Responder depois</button>`}</div>`;
+      const b = d.querySelector('[data-f]'); if (b) b.focus();
+    };
+    const responder = (vai) => { d.remove(); comTrava('Salvando…', async () => { const r = await sb.rpc('responder_finals', { p_ano: anoRanking(), p_vai: vai }); if (r.error) throw r.error; }, vai ? 'Presença no Finals confirmada!' : 'Pronto: sua vaga passou pro próximo do ranking.'); };
+    d.addEventListener('click', (e) => {
+      const f = e.target.closest('[data-f]') && e.target.closest('[data-f]').dataset.f;
+      if (e.target === d || f === 'depois') return d.remove();
+      if (f === 'pedirNao') return pintar(true);
+      if (f === 'voltar') return pintar(false);
+      if (f === 'sim') return responder(true);
+      if (f === 'nao') return responder(false);
+    });
+    pintar(false); document.body.appendChild(d); const b = d.querySelector('[data-f]'); if (b) b.focus();
+  };
+  setTimeout(mostrar, 1200);
+}
 // Sim / Não na própria linha da Pontuação
 function respFinalsLinha() {
   return `<div class="fin-linha" role="group" aria-label="Vai jogar o Finals ${anoRanking()}?">${S.finConfirma
@@ -226,7 +263,7 @@ function dadosFinals(ano, grupo) {
 let recarregando = null;
 function recarregarDepois() {
   clearTimeout(recarregando);
-  recarregando = setTimeout(async () => { try { await carregar(); render(); } catch (e) { console.error(e); } }, 600);
+  recarregando = setTimeout(async () => { try { await carregar(); render(); lembrarFinals(); } catch (e) { console.error(e); } }, 600);
 }
 
 // ---------- regras de exibição ----------
@@ -2232,11 +2269,13 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_jogos' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_resposta' }, recarregarDepois)
     .subscribe();
   render();
   tourPrimeiraVez();
   parabens();
   lembrarCobranca();
+  lembrarFinals();
   ligarPresenca();
 }
 
