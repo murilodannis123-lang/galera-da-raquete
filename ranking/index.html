@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261101111127"></script>
+<script src="redireciona.js?v=20261101123323"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -134,7 +134,7 @@ body.noite .conteudo>div:not(.card) :focus-visible,body.noite .conteudo>:not(.ca
 .folha-adm-c{width:100%;max-width:520px;background:#fff;color:var(--tinta);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
 .linha-rk.cai{background:#FDECEC;border-color:#E8A3A3}
 .corte.corte-cai{color:#9B1C1C}.corte.corte-cai::before,.corte.corte-cai::after{background:#E8A3A3}body.noite .corte.corte-cai{color:#FF9C9C}
-.prog-ed{display:grid;grid-template-columns:1fr 1fr 40px;grid-template-areas:"t t t" "a b x";gap:6px 8px;padding:8px 0;border-top:1px solid #F0EDF5}
+.prog-ed .campo{min-width:0;width:100%}.prog-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;grid-template-areas:"t t t" "a b x";gap:6px 8px;padding:8px 0;border-top:1px solid #F0EDF5}
 .presente{position:relative;aspect-ratio:5/2;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr;gap:6px}
 .presente>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .presente-padrao{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--bola);font-size:18px;letter-spacing:2px}
@@ -308,8 +308,8 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 </style>
 </head>
 <body>
-<div id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></div>
+<main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261101111127"></script>
+<script type="module" src="app.js?v=20261101123323"></script>
 </body>
 </html>

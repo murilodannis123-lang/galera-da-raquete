@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101111127';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101111127';
-import { REGULAMENTO } from './regulamento.js?v=20261101111127';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101111127';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101111127';
+import * as M from './motor.js?v=20261101123323';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101123323';
+import { REGULAMENTO } from './regulamento.js?v=20261101123323';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101123323';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101123323';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -256,7 +256,8 @@ function prazo() {
   const hoje = new Date();
   const fim = new Date(a, m - 1, ultimo, 22, 0);
   const dias = Math.max(0, Math.ceil((fim - hoje) / 864e5));
-  const pct = Math.min(100, Math.max(0, Math.round((hoje.getDate() / ultimo) * 100)));
+  // barra do prazo: proporção do mês que já passou (cheia depois do prazo, vazia antes de o mês começar)
+  const ini = new Date(a, m - 1, 1), pct = Math.min(100, Math.max(0, Math.round(((hoje - ini) / (fim - ini)) * 100)));
   return { texto: ultimo + '/' + String(m).padStart(2, '0') + ' às 22h', dias: hoje > fim ? 'Prazo encerrado' : dias <= 1 ? 'Último dia!' : 'Faltam ' + dias + ' dias', pct };
 }
 const FRASES_V = ['Missão cumprida! Você venceu este mês.', 'Vitória na barragem. Sobe no ranking!', 'Boa! Venceu o jogo do mês.'];
@@ -299,7 +300,7 @@ function telaInicio() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="woResp" data-v="confirmado" data-id="${meu.id}">Aceitar</button><button class="btn btn-roxo" data-acao="woResp" data-v="anulado" data-id="${meu.id}">Contestar</button></div>
         <span class="dica" style="font-size:11px">Contestar = 0 pontos pros dois (regra 2.7). Sem resposta até o fim do mês, vale o WO.</span></div>`;
     } else if (meu.wo_de) {
-      corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">${esc(woTxt(meu))}</b><div class="dica">${meu.wo_status === 'aguardando' ? 'Esperando ' + esc(adv ? adv.nome : '?') + ' aceitar ou contestar.' : meu.wo_status === 'anulado' ? 'Contestado: zero pontos para os dois (regra 2.7).' : meu.wo_de === eu.id ? 'Você não soma pontos neste mês.' : 'Você ganha 25 pontos.'}</div></div>
+      corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">${esc(woTxt(meu))}</b><div class="dica">${meu.wo_status === 'aguardando' ? 'Esperando ' + esc(adv ? adv.nome : '?') + ' aceitar ou contestar.' : meu.wo_status === 'anulado' ? 'Contestado: zero pontos para os dois (regra 2.7).' : meu.wo_de === eu.id ? 'Você não soma pontos neste mês.' : 'Você ganha 35 pontos (regra 2.6).'}</div></div>
         <a class="btn btn-linha" href="#/wo/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Ver</a></div>`;
     } else if (!meu.sets) {
       const link = adv && zap(adv.celular, 'E aí, bora marcar nosso jogo do ranking?');
@@ -584,8 +585,8 @@ async function telaWo(id) {
   <form class="conteudo" data-form="wo" data-id="${g.id}">
     ${fechado ? '<p class="erro">Prazo encerrado. Só a coordenação registra WO agora.</p>' : ''}
     ${participa ? `
-    ${opc('eu-lesao', 'Estou lesionado', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 25 pontos.', true)}
-    ${opc('eu-ausencia', 'Não vou poder comparecer', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 25 pontos.')}
+    ${opc('eu-lesao', 'Estou lesionado', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 35 pontos (regra 2.6).', true)}
+    ${opc('eu-ausencia', 'Não vou poder comparecer', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 35 pontos (regra 2.6).')}
     ${opc('ele-ausencia', 'Meu adversário não compareceu', 'Ele recebe no app e aceita ou contesta. Contestou = 0 pontos pros dois (regra 2.7). Sem resposta até o fim do mês, vale o WO. Explique abaixo (regra 2.5).')}`
     : `${opc('a-lesao', quem(a) + 'lesão', 'WO de ' + esc(a && a.nome), true)}${opc('a-ausencia', quem(a) + 'não compareceu', 'WO de ' + esc(a && a.nome))}
        ${opc('b-lesao', quem(b) + 'lesão', 'WO de ' + esc(b && b.nome))}${opc('b-ausencia', quem(b) + 'não compareceu', 'WO de ' + esc(b && b.nome))}`}
@@ -910,6 +911,8 @@ function telaAdmin() {
       <b class="cond" style="font-size:20px">${mes ? 'Mês em andamento: ' + nomeMes(mes.id) : 'Nenhum mês aberto'}</b>
       ${mes ? `<span class="dica">${S.jogos.filter((g) => g.sets).length} placares · ${pend.length} pendentes · ${S.jogos.filter((g) => !g.jogador_b).length} standby</span>
         ${S.admin.confirmar ? `<div class="card" style="border:2px solid var(--roxo)"><b>Encerrar ${nomeMes(mes.id)} agora?</b><p class="dica" style="margin:6px 0 10px">Os placares de ${nomeMes(mes.id)} entram nos pontos e ninguém grava mais placar desse mês.</p>
+          ${prazo() && prazo().dias !== 'Prazo encerrado' ? `<p class="erro" style="font-size:13px;margin:0 0 10px"><b>Atenção:</b> o prazo dos jogadores só acaba em ${prazo().texto}. Encerrando agora, quem ainda não gravou não consegue mais.</p>` : ''}
+          ${(() => { const semPlacar = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de).length, agu = S.jogos.filter((g) => g.wo_status === 'aguardando').length; return semPlacar || agu ? `<p class="dica" style="margin:0 0 10px">${semPlacar ? `<b>${semPlacar}</b> jogo(s) sem placar vão ficar com 0 pontos pros dois (regra 2.4). ` : ''}${agu ? `<b>${agu}</b> WO sem resposta vão valer como WO (regra 2.6).` : ''}</p>` : ''; })()}
           <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600;margin-bottom:10px"><input type="checkbox" id="abrirProx" ${mes.id.endsWith('-10') ? '' : 'checked'} style="width:20px;height:20px;accent-color:var(--roxo)">Já abrir ${nomeMes(proxMes(mes.id))} com os novos confrontos</label>
           ${mes.id.endsWith('-10') ? '<p class="dica" style="margin:-4px 0 10px">Outubro é o último mês do ranking; depois vem o Finals (montado aqui embaixo).</p>' : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="cancelarRodar">Segurar mês</button><button class="btn btn-roxo" data-acao="rodar">Confirmar</button></div></div>`
@@ -970,13 +973,18 @@ function abrirOpcoesJogador(id) {
   d.className = 'folha-adm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Opções para ' + j.nome);
   const pintar = (confirmar) => {
     d.innerHTML = `<div class="folha-adm-c"><div style="display:flex;align-items:center;gap:10px">${avatar(j, 44)}<div style="min-width:0"><b class="cond" style="font-size:20px">${esc(j.nome)}</b><div class="dica">Grupo ${esc(j.grupo || '–')} · ${j.standby ? 'em standby' : 'jogando'}</div></div></div>
-      ${confirmar ? `<p style="font-size:14px;margin:4px 0 0"><b>Tirar ${esc(j.nome)} do ranking?</b> Ele some da Pontuação e dos próximos jogos. Dá pra voltar depois em Admin → Jogadores → "Voltar ao ranking".</p>
+      ${confirmar === 'grupo' ? `<p style="font-size:14px;margin:4px 0 0"><b>Mudar ${esc(j.nome)} de grupo</b> (regra 5.3: em janeiro os 2 últimos de A e B descem e os 2 primeiros de B e C sobem). Ele assume a linha de quem está na posição escolhida e essa pessoa desce uma.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Grupo<select class="campo" data-f-grupo>${['A', 'B', 'C'].map((x) => `<option ${x === j.grupo ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+        <label class="rot">Posição no grupo<input class="campo" data-f-pos type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" data-f="mudarGrupo">Mudar</button></div>`
+      : confirmar ? `<p style="font-size:14px;margin:4px 0 0"><b>Tirar ${esc(j.nome)} do ranking?</b> Ele some da Pontuação e dos próximos jogos. Dá pra voltar depois em Admin → Jogadores → "Voltar ao ranking".</p>
         ${comPlacar ? '<p class="erro" style="font-size:13px;margin:0">Ele já tem placar neste mês: tirando agora, esse jogo deixa de contar (inclusive pro adversário). O ideal é tirar depois de encerrar o mês.</p>' : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" style="background:var(--verm)" data-f="tirar">Tirar do ranking</button></div>`
       : `${perguntaFinals(j.grupo) ? `<div class="fin-adm"><b style="font-size:14px">Finals ${anoRanking()}: ${(() => { const r = respFinals(j.id); return !r ? 'ainda não respondeu' : r.vai ? 'vai jogar' : 'não vai jogar'; })()}</b>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"><button class="btn btn-linha" type="button" data-f="finSim">Vai</button><button class="btn btn-linha" type="button" style="color:var(--verm)" data-f="finNao">Não vai</button><button class="btn btn-linha" type="button" data-f="finLimpa">Sem resposta</button></div></div>` : ''}
         <button class="btn btn-roxo" type="button" data-f="standby">${j.standby ? 'Tirar do standby' : 'Colocar em standby'}</button>
         <span class="dica" style="margin-top:-4px">${j.standby ? 'Volta a ter jogo a partir da próxima rodada.' : 'Fica sem jogo a partir da próxima rodada (regra 8.2).'}</span>
+        <button class="btn btn-linha" type="button" data-f="grupo">Mudar de grupo…</button>
         <button class="btn btn-linha" type="button" style="color:var(--verm)" data-f="pedir">Tirar do ranking…</button>
         <button class="btn btn-linha" type="button" data-f="fechar">Cancelar</button>`}</div>`;
     const b = d.querySelector('[data-f]'); if (b) b.focus();
@@ -987,6 +995,12 @@ function abrirOpcoesJogador(id) {
     const f = e.target.closest('[data-f]') && e.target.closest('[data-f]').dataset.f;
     if (e.target === d || f === 'fechar') return fechar();
     if (f === 'pedir') return pintar(true);
+    if (f === 'grupo') return pintar('grupo');
+    if (f === 'mudarGrupo') {
+      const gr = d.querySelector('[data-f-grupo]').value, pos = Number(d.querySelector('[data-f-pos]').value) || 0;
+      fechar(); comTrava('Mudando…', async () => { await entrarNoGrupo({ ...j }, gr, pos); const r = await sb.from('jogadores').update({ grupo: gr }).eq('id', j.id); if (r.error) throw r.error; }, j.nome + ' agora está no grupo ' + gr + '.');
+      return;
+    }
     if (f === 'voltar') return pintar(false);
     if (f === 'standby') { fechar(); comTrava('', async () => { const r = await sb.from('jogadores').update({ standby: !j.standby }).eq('id', j.id); if (r.error) throw r.error; }, j.standby ? j.nome + ' fora do standby: entra nos jogos da próxima rodada.' : j.nome + ' em standby.'); }
     if (f === 'finSim' || f === 'finNao') { fechar(); const vai = f === 'finSim'; comTrava('', async () => { const r = await sb.from('finals_resposta').upsert({ ano: anoRanking(), jogador: j.id, vai, respondido_em: new Date().toISOString(), marcado_por_admin: true }); if (r.error) throw r.error; }, j.nome + (vai ? ' vai jogar o Finals.' : ' não vai ao Finals: o próximo do ranking entra.')); }
@@ -1541,6 +1555,7 @@ async function gerarConfrontos(mesNovo) {
 async function abrirMes(id) {
   if (!/^\d{4}-\d{2}$/.test(id)) throw new Error('Mês inválido.');
   if (S.meses.some((m) => m.id === id)) throw new Error('Esse mês já existe.');
+  if (S.meses.some((m) => m.id > id)) throw new Error('Já existe um mês depois de ' + nomeMes(id) + '. Confira o mês escolhido.');
   const { error } = await sb.from('meses').insert({ id }); if (error) throw error;
   await gerarConfrontos(id);
 }
@@ -1771,7 +1786,11 @@ const ACOES = {
   fecharLembrete: () => { try { localStorage.setItem('lembrete-senha', String(Date.now())); } catch (e) { /* ok */ } render(); },
   removerFoto: () => comTrava('', async () => { const r = await sb.from('jogadores').update({ foto_url: null }).eq('id', S.eu.id); if (r.error) throw r.error; }, 'Foto removida.'),
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
-  alterna: (el) => { el.setAttribute('aria-checked', el.getAttribute('aria-checked') !== 'true'); },
+  alterna: (el) => {
+    const liga = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', liga);
+    // standby salva na hora (antes dependia do "Salvar" e muita gente ia esquecer)
+    if (el.dataset.v === 'standby' && S.eu) comTrava('', async () => { const r = await sb.from('jogadores').update({ standby: liga }).eq('id', S.eu.id); if (r.error) throw r.error; }, liga ? 'Standby ligado: você fica sem jogo a partir da próxima rodada.' : 'Standby desligado: você volta a ter jogo na próxima rodada.');
+  },
   sair: async () => { try { localStorage.removeItem(CACHE); } catch (e) { /* ok */ } await sb.auth.signOut(); location.hash = ''; location.reload(); },
   pedirRodar: () => { S.admin.confirmar = true; render(); },
   cancelarRodar: () => { S.admin.confirmar = false; render(); },
