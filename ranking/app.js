@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101150133';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101150133';
-import { REGULAMENTO } from './regulamento.js?v=20261101150133';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101150133';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101150133';
+import * as M from './motor.js?v=20261101152701';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101152701';
+import { REGULAMENTO } from './regulamento.js?v=20261101152701';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101152701';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101152701';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -526,6 +526,7 @@ async function telaJogos() {
     <button class="ic-btn" data-acao="mesVer" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
   </div>
   <div class="conteudo">
+    ${S.eu.admin && idx === 0 && (S.mesAtual || (() => { const u = S.meses.map((m) => m.id).sort().pop() || ''; return !/-10$/.test(u) || Number(S.config.temporada) > Number(u.slice(0, 4)); })()) ? painelMes(true) : ''}
     ${jogos.length ? BUSCA('Buscar jogador…') + NADA : ''}
     ${jogos.map((g) => { const a = porId(g.jogador_a), b = porId(g.jogador_b), v = vencedor(g); return `
       <div class="card" ${dn(a && a.nome, b && b.nome)} style="padding:12px;display:flex;flex-direction:column;gap:10px">
@@ -885,7 +886,9 @@ function telaFinals() {
     ${['A', 'B', 'C'].map((g) => `<button class="aba" role="tab" aria-selected="${aba === g}" data-acao="abaFin" data-v="${g}">GRUPO ${g}</button>`).join('')}</div>
     <div class="abas" role="tablist" style="grid-template-columns:1fr 1fr">${[['chave', 'CHAVEAMENTO'], ['class', 'CLASSIFICAÇÃO']].map(([v, r]) => `<button class="aba" role="tab" aria-selected="${vista === v}" data-acao="vistaFin" data-v="${v}">${r}</button>`).join('')}</div></div>`;
   const tit = (x) => `<h2 class="cond" style="font-size:20px;margin-top:6px">${x}</h2>`;
-  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas;
+  const outFechado = (S.meses.find((m) => m.id === anoRanking() + '-10') || {}).status === 'fechado';
+  const painelAdm = S.eu.admin && ano === anoRanking() && (fz || outFechado) ? `<div class="conteudo" style="padding-bottom:0"><section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--roxo)"><b class="cond" style="font-size:18px">Coordenação · Finals ${ano}</b>${adminFinalsGrupo(aba)}<span class="dica" style="font-size:11px">Só a coordenação vê este quadro. O resto fica em Admin.</span></section></div>` : '';
+  const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas + painelAdm;
   const grupo = rankingVivo().filter((j) => j.grupo === aba);
 
   if (vista === 'class') {
@@ -939,6 +942,25 @@ function telaRegulamento() {
   return voltar('Regulamento', 'Versão 01-2025 · vigência 01/01/2026') + `<div class="conteudo"><div class="card" style="white-space:pre-line;font-size:14px;line-height:1.5">${esc(REGULAMENTO)}</div></div>`;
 }
 
+// encerrar o mês / abrir o próximo (Admin e tela de Jogos, só coordenação)
+function painelMes(compacto) {
+  const mes = S.mesAtual;
+  const pend = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de);
+  const ult = S.meses.map((m) => m.id).sort().pop(), temp = Number(S.config.temporada) || 0;
+  const sugestao = mes ? proxMes(mes.id) : ult && temp > Number(ult.slice(0, 4)) ? temp + '-01' : ult ? proxMes(ult) : mesId(new Date());
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <b class="cond" style="font-size:20px">${mes ? 'Mês em andamento: ' + nomeMes(mes.id) : 'Nenhum mês aberto'}</b>
+      ${mes ? `<span class="dica">${S.jogos.filter((g) => g.sets).length} placares · ${pend.length} pendentes · ${S.jogos.filter((g) => !g.jogador_b).length} standby</span>
+        ${S.admin.confirmar ? `<div class="card" style="border:2px solid var(--roxo)"><b>Encerrar ${nomeMes(mes.id)} agora?</b><p class="dica" style="margin:6px 0 10px">Os placares de ${nomeMes(mes.id)} entram nos pontos e ninguém grava mais placar desse mês.</p>
+          ${prazo() && prazo().dias !== 'Prazo encerrado' ? `<p class="erro" style="font-size:13px;margin:0 0 10px"><b>Atenção:</b> o prazo dos jogadores só acaba em ${prazo().texto}. Encerrando agora, quem ainda não gravou não consegue mais.</p>` : ''}
+          ${(() => { const semPlacar = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de).length, agu = S.jogos.filter((g) => g.wo_status === 'aguardando').length; return semPlacar || agu ? `<p class="dica" style="margin:0 0 10px">${semPlacar ? `<b>${semPlacar}</b> jogo(s) sem placar vão ficar com 0 pontos pros dois (regra 2.4). ` : ''}${agu ? `<b>${agu}</b> WO sem resposta vão valer como WO (regra 2.6).` : ''}</p>` : ''; })()}
+          <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600;margin-bottom:10px"><input type="checkbox" id="abrirProx" ${mes.id.endsWith('-10') ? '' : 'checked'} style="width:20px;height:20px;accent-color:var(--roxo)">Já abrir ${nomeMes(proxMes(mes.id))} com os novos confrontos</label>
+          ${mes.id.endsWith('-10') ? '<p class="dica" style="margin:-4px 0 10px">Outubro é o último mês do ranking; depois vem o Finals (montado aqui embaixo).</p>' : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="cancelarRodar">Segurar mês</button><button class="btn btn-roxo" data-acao="rodar">Confirmar</button></div></div>`
+        : `<button class="btn btn-roxo" data-acao="pedirRodar">Encerrar ${nomeMes(mes.id)} e calcular os pontos</button><span class="dica">Os jogos de ${nomeMes(mes.id)} estão valendo. Só encerre depois do prazo (último dia do mês): aí os pontos entram no ranking e você pode abrir o próximo mês. Nada encerra sozinho.</span>`}`
+      : `<label class="rot">Mês<input class="campo" id="novoMes" type="month" value="${sugestao}"></label><button class="btn btn-roxo" data-acao="abrirMes">Abrir mês e gerar confrontos</button>`}
+    ${compacto ? '<span class="dica" style="font-size:11px">Só a coordenação vê este quadro. O resto fica em Admin.</span>' : ''}</section>`;
+}
 function telaAdmin() {
   if (!S.eu.admin) return voltar('Admin') + '<div class="conteudo"><p class="erro">Área só da coordenação.</p></div>';
   const mes = S.mesAtual;
@@ -957,18 +979,7 @@ function telaAdmin() {
         <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="recusar" data-id="${j.id}">Recusar</button><button class="btn btn-roxo" type="submit">Aprovar</button></div>
       </form>`).join('')}</section>` : ''}
-    <section class="card" style="display:flex;flex-direction:column;gap:10px">
-      <b class="cond" style="font-size:20px">${mes ? 'Mês em andamento: ' + nomeMes(mes.id) : 'Nenhum mês aberto'}</b>
-      ${mes ? `<span class="dica">${S.jogos.filter((g) => g.sets).length} placares · ${pend.length} pendentes · ${S.jogos.filter((g) => !g.jogador_b).length} standby</span>
-        ${S.admin.confirmar ? `<div class="card" style="border:2px solid var(--roxo)"><b>Encerrar ${nomeMes(mes.id)} agora?</b><p class="dica" style="margin:6px 0 10px">Os placares de ${nomeMes(mes.id)} entram nos pontos e ninguém grava mais placar desse mês.</p>
-          ${prazo() && prazo().dias !== 'Prazo encerrado' ? `<p class="erro" style="font-size:13px;margin:0 0 10px"><b>Atenção:</b> o prazo dos jogadores só acaba em ${prazo().texto}. Encerrando agora, quem ainda não gravou não consegue mais.</p>` : ''}
-          ${(() => { const semPlacar = S.jogos.filter((g) => g.jogador_b && !g.sets && !g.wo_de).length, agu = S.jogos.filter((g) => g.wo_status === 'aguardando').length; return semPlacar || agu ? `<p class="dica" style="margin:0 0 10px">${semPlacar ? `<b>${semPlacar}</b> jogo(s) sem placar vão ficar com 0 pontos pros dois (regra 2.4). ` : ''}${agu ? `<b>${agu}</b> WO sem resposta vão valer como WO (regra 2.6).` : ''}</p>` : ''; })()}
-          <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600;margin-bottom:10px"><input type="checkbox" id="abrirProx" ${mes.id.endsWith('-10') ? '' : 'checked'} style="width:20px;height:20px;accent-color:var(--roxo)">Já abrir ${nomeMes(proxMes(mes.id))} com os novos confrontos</label>
-          ${mes.id.endsWith('-10') ? '<p class="dica" style="margin:-4px 0 10px">Outubro é o último mês do ranking; depois vem o Finals (montado aqui embaixo).</p>' : ''}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="cancelarRodar">Segurar mês</button><button class="btn btn-roxo" data-acao="rodar">Confirmar</button></div></div>`
-        : `<button class="btn btn-roxo" data-acao="pedirRodar">Encerrar ${nomeMes(mes.id)} e calcular os pontos</button><span class="dica">Os jogos de ${nomeMes(mes.id)} estão valendo. Só encerre depois do prazo (último dia do mês): aí os pontos entram no ranking e você pode abrir o próximo mês. Nada encerra sozinho.</span>`}`
-      : `<label class="rot">Mês<input class="campo" id="novoMes" type="month" value="${sugestao}"></label><button class="btn btn-roxo" data-acao="abrirMes">Abrir mês e gerar confrontos</button>`}
-    </section>
+    ${painelMes()}
     ${cardReabrir()}
     ${cardTemporada()}
     ${adminProgramacao()}
@@ -1546,10 +1557,9 @@ function adminRespostasFinals() {
         ${bloco('✓ Vão jogar', 'var(--verde)', vao)}${bloco('? Ainda não responderam', '#7A3E0A', falta)}${bloco('✕ Não vão', 'var(--verm)', nao)}</div>`;
     }).join('')}</section>`;
 }
-function adminFinals() {
+// controles do Finals de um grupo (Admin e tela do Finals, só coordenação)
+function adminFinalsGrupo(gr) {
   const ano = anoRanking();
-  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Finals ${ano}</b>
-    ${['A', 'B', 'C'].map((gr) => {
       const { fz, js, semis, final } = dadosFinals(ano, gr);
       const cab = `<b style="font-size:15px">Grupo ${gr}</b>`;
       if (!fz) {
@@ -1572,7 +1582,11 @@ function adminFinals() {
           : `<button class="btn btn-roxo" data-acao="finPedir" data-v="${gr}" ${final && final.sets ? '' : 'disabled'}>Encerrar e lançar bônus no ranking</button>${final && final.sets ? '' : '<span class="dica">Falta o placar da final.</span>'}`)
         : '<span class="dica">Encerrado. Bônus lançado no ranking.</span>';
       return `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #F0EDF5;padding-top:8px">${cab}<span class="tag" style="align-self:flex-start;background:#EFEAF8;color:var(--roxo)">${FASES[fz.fase].toUpperCase()}</span>${botao}<a href="#/finals" data-acao="abaFin" data-v="${gr}" class="dica">Ver jogos e placares</a></div>`;
-    }).join('')}</section>`;
+}
+function adminFinals() {
+  const ano = anoRanking();
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Finals ${ano}</b>
+    ${['A', 'B', 'C'].map(adminFinalsGrupo).join('')}</section>`;
 }
 
 // ---------- ações ----------
