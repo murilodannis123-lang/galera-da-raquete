@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101204202';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101204202';
-import { REGULAMENTO } from './regulamento.js?v=20261101204202';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101204202';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101204202';
+import * as M from './motor.js?v=20261101205341';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101205341';
+import { REGULAMENTO } from './regulamento.js?v=20261101205341';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101205341';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101205341';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -902,10 +902,11 @@ function telaFinals(viaJogos) {
   const painelAdm = S.eu.admin && ano === anoRanking() ? `<div class="conteudo" style="padding-bottom:0">${!fz && S.mesAtual && /-(11|12)$/.test(S.mesAtual.id) ? painelMes(true) : ''}${!fz && S.mesAtual && !/-(11|12)$/.test(S.mesAtual.id) ? `<p class="erro" style="font-size:13px;margin:0"><b>${nomeMes(S.mesAtual.id)} ainda está aberto.</b> Dá pra sortear assim mesmo, mas os placares desse mês não entram na classificação. O ideal é encerrar antes:</p>${painelMes(true)}` : ''}<section class="card" style="display:flex;flex-direction:column;gap:6px;border:2px solid var(--roxo)"><b class="cond" style="font-size:18px">Coordenação · Finals ${ano}</b>${!fz ? '<span class="dica">Pode sortear mesmo com gente sem responder a confirmação: quem não respondeu conta como "vai".</span>' : ''}${adminFinalsGrupo(aba).replace(/<a href="#\/finals"[^>]*>Ver jogos e placares<\/a>/, '')}<span class="dica" style="font-size:11px">Só a coordenação vê este quadro. O resto fica em Admin.</span></section></div>` : '';
   const cab = voltar('Finals ' + ano, 'Grupo ' + aba + ' · ' + (fz ? FASES[fz.fase] : 'aguardando o sorteio'), '#/torneios') + abas
     + (viaJogos ? `<div class="conteudo" style="padding-bottom:0"><div class="card" style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="flex-grow:1">Agora é a vez do <b>Finals</b>: os jogos do ranking voltam em janeiro.</span><button type="button" class="btn btn-linha" style="height:40px;padding:0 12px;font-size:13px;white-space:nowrap" data-acao="verMeses" data-v="1">Ver outubro</button></div></div>` : '') + painelAdm;
-  const grupo = rankingVivo().filter((j) => j.grupo === aba);
+  let grupo = rankingVivo().filter((j) => j.grupo === aba);
 
   if (vista === 'class') {
-    const noFinals = new Set(fz ? vg.map((v) => v.jogador) : vagasFinals(grupo)), ultima = fz ? 7 : Math.max(...grupo.map((j, i) => (noFinals.has(j.id) ? i : -1)));
+    const noFinals = new Set(fz ? vg.map((v) => v.jogador) : vagasFinals(grupo)), ultima = 99;
+    grupo = grupo.filter((j) => noFinals.has(j.id));   // no Finals só importam os 8 de cada grupo
     return cab + `<div class="conteudo">
       ${grupo.length ? BUSCA('Buscar jogador…') + NADA : ''}
       <span class="dica">${fz ? 'Verde = está no Finals.' : perguntaFinals(aba) ? 'Verde = as 8 vagas: FINALS ✓ confirmou, FINALS ? ainda não respondeu. Quem não vai sai e o próximo entra.' : 'Verde = os 8 primeiros, que vão ao Finals se o ranking fechasse agora.'} TP pontos · V vitórias · D derrotas</span>
@@ -1586,8 +1587,8 @@ function adminFinalsGrupo(gr) {
         const conf = vagas.filter((id) => (respFinals(id) || {}).vai === true).length;
         return `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #F0EDF5;padding-top:8px">${cab}
           ${perg ? `<span class="dica"><b>Confirmação:</b> ${conf} de ${vagas.length} confirmaram${vagas.length - conf ? ', ' + (vagas.length - conf) + ' ainda sem resposta' : ''}. Quem avisa que não vai sai e o próximo entra sozinho. Pra marcar por alguém, toque no nome dele na Pontuação.</span>` : ''}
-          <span class="dica">Marcados vão ao Finals (${marc.length} de 8). Se um classificado não puder, desmarque e marque o próximo.</span>
-          ${lista.slice(0, 14).map((j, i) => `<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" data-fin="${gr}" value="${j.id}" ${marc.includes(j.id) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--roxo)">${i + 1}º ${esc(j.nome)}${perg ? tagFinals(j.id, vagas.includes(j.id)) : ''}</label>`).join('')}
+          <span class="dica">Os 8 do Finals (${marc.length} de 8). Se alguém não puder, marque "Não vai" tocando no nome dele na Pontuação: o próximo do ranking entra sozinho aqui.</span>
+          ${lista.filter((j) => vagas.includes(j.id) || marc.includes(j.id)).map((j, i) => `<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" data-fin="${gr}" value="${j.id}" ${marc.includes(j.id) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--roxo)">${lista.indexOf(j) + 1}º ${esc(j.nome)}${perg ? tagFinals(j.id, vagas.includes(j.id)) : ''}</label>`).join('')}
           ${S.admin.sorteio[gr] ? `<b style="font-size:14px;margin-top:4px">Resultado do sorteio</b>${fzColsSorteio(S.admin.sorteio[gr])}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finSortear" data-v="${gr}">Sortear de novo</button><button class="btn btn-roxo" data-acao="finMontar" data-v="${gr}">Confirmar e montar</button></div>`
           : `<button class="btn btn-roxo" data-acao="finSortear" data-v="${gr}" ${marc.length === 8 ? '' : 'disabled'}>Sortear as chaves do Grupo ${gr}</button><span class="dica">1º na Chave 1, 2º na Chave 2; 3º/4º, 5º/6º e 7º/8º sorteados (estilo ATP Finals). Você vê o resultado antes de confirmar.</span>`}</div>`;
