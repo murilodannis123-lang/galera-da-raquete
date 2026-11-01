@@ -3,7 +3,10 @@
 //   vencedor = 35 − games que perdeu · perdedor = 5 + games que ganhou · vale para 2×0 e 2×1
 //   ex.: 6/0 6/0 → 35 e 5 · 6/2 6/2 → 31 e 9 · 5/7 7/5 6/10 → 23 e 17
 //   o tie-break conta como set, mas os pontos dele não entram nos games
-// 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois · 2.6: WO = 35 (como 6/0 6/0) e 0 pra quem deu o WO
+// 2.2: standby (número ímpar) = 25 · 2.4: jogo sem placar = 0 pros dois
+// WO: vencedor 25 pontos (decisão da coordenação em 01/11/2026, vale a partir de 2027; em 2026 valia 35) e 0 pra quem deu o WO
+export const WO_PONTOS = 25, WO_PONTOS_ANTIGO = 35, WO_25_DESDE = '2027-01';
+export const pontosWO = (mes) => (mes && mes < WO_25_DESDE ? WO_PONTOS_ANTIGO : WO_PONTOS);
 // 7.1.4 desempate: pontos, vitórias, saldo de sets, saldo de games, average (games pró ÷ contra)
 // set normal: 6×0 a 6×4, 7×5 ou 7×6 · tie-break (só no 1×1): até 10, vencendo por 2 (10×8, 11×9, 12×10…)
 export const TB = 10;
@@ -62,14 +65,14 @@ export function confrontos(lista) {
   return { pares, standby };
 }
 // fecha o mês: soma o que tem placar; sem placar = 0 pros dois; standby +25
-export function rodarMes(lista, jogos, standbyIds, h2h) {
+export function rodarMes(lista, jogos, standbyIds, h2h, ptsWO = WO_PONTOS) {
   const porId = Object.fromEntries(lista.map((j) => [j.id, { ...j }]));
   for (const g of jogos) {
-    // WO (regra 2.6): vencedor 25 pts, 2 sets e 12 games a favor; quem deu WO não soma pontos, derrota com 2 sets e 12 games contra
+    // WO (regra 2.6): vencedor ganha os pontos do WO, 2 sets e 12 games a favor; quem deu WO não soma pontos, derrota com 2 sets e 12 games contra
     if (g.woDe) {
       const L = porId[g.woDe], W = porId[g.woDe === g.a ? g.b : g.a];
       if (!L || !W) continue;
-      W.tp += PONTOS.vitoria; W.vi++; W.sp += 2; W.gp += 12;   // conta como 6/0 6/0: 35 pontos (igual ao Ranking Online)
+      W.tp += ptsWO; W.vi++; W.sp += 2; W.gp += 12;
       L.de++; L.sc += 2; L.gc += 12;
       continue;
     }
@@ -90,9 +93,9 @@ export function iniciarTemporada(lista) {
   return lista.map((j, i) => ({ ...j, tp: n - i, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0, posicao: i + 1 }));
 }
 // reabrir mês encerrado: tira exatamente o que aquele mês somou (os pontos são só somas) e reordena
-export function desfazerMes(lista, jogos, standbyIds) {
+export function desfazerMes(lista, jogos, standbyIds, ptsWO = WO_PONTOS) {
   const zero = lista.map((j) => ({ ...j, tp: 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0 }));
-  const soma = Object.fromEntries(rodarMes(zero, jogos, standbyIds).map((j) => [j.id, j]));
+  const soma = Object.fromEntries(rodarMes(zero, jogos, standbyIds, null, ptsWO).map((j) => [j.id, j]));
   const K = ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc'];
   return ordenar(lista.map((j) => ({ ...j, ...Object.fromEntries(K.map((k) => [k, j[k] - soma[j.id][k]])) })));
 }

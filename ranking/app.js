@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101123323';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101123323';
-import { REGULAMENTO } from './regulamento.js?v=20261101123323';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101123323';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101123323';
+import * as M from './motor.js?v=20261101142401';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101142401';
+import { REGULAMENTO } from './regulamento.js?v=20261101142401';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101142401';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101142401';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,7 +66,7 @@ function rankingVivo() {
     const { vg, semis, final } = dadosFinals(fz.ano, fz.grupo);
     Object.assign(bonus, M.bonusParcial(vg.map((v) => v.jogador), semis.map(pg), final ? pg(final) : null));
   });
-  return M.rodarMes(listaGeral().map((j) => (bonus[j.id] ? { ...j, tp: j.tp + bonus[j.id] } : j)), jogos, []);
+  return M.rodarMes(listaGeral().map((j) => (bonus[j.id] ? { ...j, tp: j.tp + bonus[j.id] } : j)), jogos, [], null, M.pontosWO(S.mesAtual && S.mesAtual.id));
 }
 function posicoes() {
   const geral = {}, grupo = {};
@@ -300,7 +300,7 @@ function telaInicio() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="woResp" data-v="confirmado" data-id="${meu.id}">Aceitar</button><button class="btn btn-roxo" data-acao="woResp" data-v="anulado" data-id="${meu.id}">Contestar</button></div>
         <span class="dica" style="font-size:11px">Contestar = 0 pontos pros dois (regra 2.7). Sem resposta até o fim do mês, vale o WO.</span></div>`;
     } else if (meu.wo_de) {
-      corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">${esc(woTxt(meu))}</b><div class="dica">${meu.wo_status === 'aguardando' ? 'Esperando ' + esc(adv ? adv.nome : '?') + ' aceitar ou contestar.' : meu.wo_status === 'anulado' ? 'Contestado: zero pontos para os dois (regra 2.7).' : meu.wo_de === eu.id ? 'Você não soma pontos neste mês.' : 'Você ganha 35 pontos (regra 2.6).'}</div></div>
+      corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">${esc(woTxt(meu))}</b><div class="dica">${meu.wo_status === 'aguardando' ? 'Esperando ' + esc(adv ? adv.nome : '?') + ' aceitar ou contestar.' : meu.wo_status === 'anulado' ? 'Contestado: zero pontos para os dois (regra 2.7).' : meu.wo_de === eu.id ? 'Você não soma pontos neste mês.' : 'Você ganha ' + M.pontosWO(meu.mes) + ' pontos.'}</div></div>
         <a class="btn btn-linha" href="#/wo/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Ver</a></div>`;
     } else if (!meu.sets) {
       const link = adv && zap(adv.celular, 'E aí, bora marcar nosso jogo do ranking?');
@@ -313,7 +313,7 @@ function telaInicio() {
       corpo = `<div class="resultado">
         <div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:20px;color:${venci ? 'var(--verde)' : 'var(--verm)'}">${venci ? 'Parabéns, ' + esc(eu.nome) + '!' : 'Você perdeu, bracinho de dinossauro!'}</b>${venci ? '' : DINO}
         <div class="dica">${esc(venci ? FRASES_V[k] : FRASES_D[k])}</div>${venci && (S.curtidas[meu.id] || []).length ? `<div class="curtir" style="margin-top:6px"><span class="curtir-b on">${CORACAO} ${S.curtidas[meu.id].length}</span><small>curtiram sua vitória</small></div>` : ''}</div>
-        <a class="btn btn-linha" href="#/placar/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Corrigir</a></div>`;
+        ${gravadoPorOutro(meu) ? '' : `<a class="btn btn-linha" href="#/placar/${meu.id}" style="height:44px;padding:0 12px;font-size:13px">Corrigir</a>`}</div>`;
     }
   }
   const naoLidos = avisosNaoLidos();
@@ -458,9 +458,9 @@ function telaRanking() {
   <div class="conteudo">
     ${aba === S.eu.grupo ? cardFinals() : ''}
     ${lista.length ? BUSCA('Buscar jogador…') + NADA : ''}
-    <span class="dica">${geral ? '' : pergunta ? 'Faixa verde = as 8 vagas do Finals (FINALS ✓ confirmou · FINALS ? ainda não respondeu; quem não vai sai e o próximo entra) · ' : 'Faixa verde = top 8, vão ao Finals · '}${aba === 'A' || aba === 'B' ? 'Faixa vermelha = 2 últimos, descem de grupo em janeiro (regra 5.3) · ' : ''}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
-    ${lista.map((j, i) => { const fin = !geral && vagas.includes(j.id), cai = (aba === 'A' || aba === 'B') && lista.length > 10 && i >= lista.length - 2, sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
-      ${cai && i === lista.length - 2 ? '<div class="corte corte-cai" aria-hidden="true">ZONA DE DESCIDA · 2 ÚLTIMOS</div>' : ''}<div class="linha-rk${fin ? ' fin' : ''}${cai ? ' cai' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
+    <span class="dica">${geral ? '' : pergunta ? 'Faixa verde = as 8 vagas do Finals (FINALS ✓ confirmou · FINALS ? ainda não respondeu; quem não vai sai e o próximo entra) · ' : 'Faixa verde = top 8, vão ao Finals · '}TP pontos · VI vitórias · SP sets pró · DE derrotas · SG saldo de games${S.mesAtual ? ` · <span class="pt-jogo ok" aria-hidden="true"></span> já jogou no mês · <span class="pt-jogo falta" aria-hidden="true"></span> ainda não` : ''}</span>
+    ${lista.map((j, i) => { const fin = !geral && vagas.includes(j.id), sg = j.gp - j.gc, sj = situacaoMes(j.id); return `
+      <div class="linha-rk${fin ? ' fin' : ''}" ${dn(j.nome)}${S.eu.admin ? ` data-arrasta="${j.id}"` : ''}>
         <div style="display:flex;align-items:center;gap:10px">
           <b class="cond" style="font-size:20px;width:30px;color:${fin ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 40)}
           <div style="min-width:0;flex-grow:1"${S.eu.admin ? ` class="nome-adm" data-adm-jog="${j.id}" role="button" tabindex="0" aria-label="Opções da coordenação para ${esc(j.nome)}"` : ''}><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sj ? `<span class="pt-jogo ${sj}" role="img" aria-label="${sj === 'ok' ? 'já jogou no mês' : 'ainda não jogou no mês'}" title="${sj === 'ok' ? 'Já jogou no mês' : 'Ainda não jogou no mês'}"></span>` : ''}${esc(j.nome)}${geral && i === 0 ? ` <span title="1º do ranking" style="display:inline-flex;vertical-align:-5px">${TROFEU(26)}</span>` : ''}${j.id === S.eu.id ? ' <span class="tag" style="background:#EFEAF8;color:var(--roxo)">VOCÊ</span>' : ''}${j.standby ? ' <span class="tag" style="background:#5B5470;color:#fff">STANDBY</span>' : ''}${pergunta ? tagFinals(j.id, fin) : ''}</div><small class="dica">Grupo ${esc(j.grupo)}</small></div>
@@ -476,7 +476,7 @@ async function telaJogos() {
   const { geral } = posicoes();
   // ordem da barragem: pela posição do primeiro de cada par; standby no fim
   const jogos = (mes ? await jogosDoMes(mes.id) : []).slice().sort((x, y) => (!x.jogador_b) - (!y.jogador_b) || (geral[x.jogador_a] || 999) - (geral[y.jogador_a] || 999));
-  const pode = (g) => mes.status === 'aberto' && (S.eu.admin || g.jogador_a === S.eu.id || g.jogador_b === S.eu.id);
+  const pode = (g) => mes.status === 'aberto' && (S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && !gravadoPorOutro(g)));
   return voltar('Jogos do ranking', 'Pelo geral (Dynamics) · bolinha ao lado do nome = traz as bolinhas') + `
   <div style="background:#2A1650;padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff">
     <button class="ic-btn" data-acao="mesVer" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
@@ -501,6 +501,12 @@ async function telaJogos() {
   </div>`;
 }
 
+// um placar por jogo: depois que um dos dois grava, só ele (ou a coordenação) corrige
+function gravadoPorOutro(g) {
+  if (!g || !g.sets || !g.gravado_por || !S.eu || S.eu.admin || g.gravado_por === S.uid) return null;
+  const q = S.jogadores.find((j) => j.user_id === g.gravado_por);
+  return q ? q.nome : 'a coordenação';
+}
 async function telaPlacar(id, fin) {
   let g = (fin ? S.fjogos : S.jogos).find((x) => x.id === id);
   if (!g && !fin) { const r = await sb.from('jogos').select('*').eq('id', id).maybeSingle(); g = r.data; }
@@ -510,12 +516,13 @@ async function telaPlacar(id, fin) {
   const fz = fin && S.finals.find((x) => x.ano === g.ano && x.grupo === g.grupo);
   const participa = g.jogador_a === S.eu.id || g.jogador_b === S.eu.id;
   const p = fin ? null : prazo();
-  const fechado = fin ? !S.eu.admin && (!fz || fz.fase !== g.fase) : (!mes || mes.status !== 'aberto' || (!S.eu.admin && p && p.dias === 'Prazo encerrado'));
+  const outro = gravadoPorOutro(g);
+  const fechado = !!outro || (fin ? !S.eu.admin && (!fz || fz.fase !== g.fase) : (!mes || mes.status !== 'aberto' || (!S.eu.admin && p && p.dias === 'Prazo encerrado')));
   if (!participa && !S.eu.admin) return voltar('Gravar placar') + '<div class="conteudo"><p class="erro">Você só grava o placar do seu jogo.</p></div>';
   const sets = (g.sets || []).concat([[], [], []]).slice(0, 3);
   return voltar('Gravar placar', fin ? 'Finals · Grupo ' + g.grupo + ' · ' + FASES[g.fase] : nomeMes(g.mes)) + `
   <form class="conteudo" data-form="placar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">
-    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? (mes && mes.status !== 'aberto' ? 'Mês encerrado. Pra corrigir, a coordenação reabre o mês no Admin.' : 'Prazo encerrado. Agora só a coordenação pode alterar este placar.') : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Fica registrado quem gravou por último.'}</div>
+    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${outro ? `Placar gravado por ${esc(outro)}. Só quem gravou pode corrigir; se estiver errado, fale com a coordenação.` : fin ? (fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Pode gravar e corrigir enquanto esta fase do Finals estiver aberta.') : fechado ? (mes && mes.status !== 'aberto' ? 'Mês encerrado. Pra corrigir, a coordenação reabre o mês no Admin.' : 'Prazo encerrado. Agora só a coordenação pode alterar este placar.') : 'Pode gravar e corrigir até ' + (p ? p.texto : 'o fim do mês') + '. Fica registrado quem gravou por último.'}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="set"><span></span><b style="text-align:center;font-size:13px">${esc(a.nome)}</b><b style="text-align:center;font-size:13px">${esc(b.nome)}</b></div>
       ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
@@ -567,6 +574,7 @@ async function telaWo(id) {
   if (!participa && !S.eu.admin) return voltar('WO') + '<div class="conteudo"><p class="erro">Só os jogadores do jogo podem dar WO.</p></div>';
   const mes = S.meses.find((m) => m.id === g.mes), p = prazo();
   const fechado = !S.eu.admin && (!mes || mes.status !== 'aberto' || (p && p.dias === 'Prazo encerrado'));
+  if (!g.wo_de && gravadoPorOutro(g)) return voltar('WO') + `<div class="conteudo"><p class="erro">Esse jogo já tem placar gravado por ${esc(gravadoPorOutro(g))}. Se estiver errado, fale com a coordenação.</p></div>`;
   const a = porId(g.jogador_a), b = porId(g.jogador_b);
   const eu = participa ? S.eu.id : null, adv = participa ? (g.jogador_a === eu ? b : a) : null;
   if (g.wo_de) {
@@ -585,8 +593,8 @@ async function telaWo(id) {
   <form class="conteudo" data-form="wo" data-id="${g.id}">
     ${fechado ? '<p class="erro">Prazo encerrado. Só a coordenação registra WO agora.</p>' : ''}
     ${participa ? `
-    ${opc('eu-lesao', 'Estou lesionado', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 35 pontos (regra 2.6).', true)}
-    ${opc('eu-ausencia', 'Não vou poder comparecer', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha 35 pontos (regra 2.6).')}
+    ${opc('eu-lesao', 'Estou lesionado', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha ' + M.pontosWO(g.mes) + ' pontos.', true)}
+    ${opc('eu-ausencia', 'Não vou poder comparecer', 'Você dá o WO e não soma pontos. ' + esc(adv && adv.nome) + ' ganha ' + M.pontosWO(g.mes) + ' pontos.')}
     ${opc('ele-ausencia', 'Meu adversário não compareceu', 'Ele recebe no app e aceita ou contesta. Contestou = 0 pontos pros dois (regra 2.7). Sem resposta até o fim do mês, vale o WO. Explique abaixo (regra 2.5).')}`
     : `${opc('a-lesao', quem(a) + 'lesão', 'WO de ' + esc(a && a.nome), true)}${opc('a-ausencia', quem(a) + 'não compareceu', 'WO de ' + esc(a && a.nome))}
        ${opc('b-lesao', quem(b) + 'lesão', 'WO de ' + esc(b && b.nome))}${opc('b-ausencia', quem(b) + 'não compareceu', 'WO de ' + esc(b && b.nome))}`}
@@ -743,7 +751,7 @@ document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.t
 
 function linhaFinals(g, fz) {
   const a = porId(g.jogador_a), b = porId(g.jogador_b), v = g.sets ? (M.resultado(g.sets).aVenceu ? g.jogador_a : g.jogador_b) : null;
-  const pode = S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && fz.fase === g.fase);
+  const pode = S.eu.admin || ((g.jogador_a === S.eu.id || g.jogador_b === S.eu.id) && fz.fase === g.fase && !gravadoPorOutro(g));
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
     <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" role="img" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
@@ -973,18 +981,13 @@ function abrirOpcoesJogador(id) {
   d.className = 'folha-adm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Opções para ' + j.nome);
   const pintar = (confirmar) => {
     d.innerHTML = `<div class="folha-adm-c"><div style="display:flex;align-items:center;gap:10px">${avatar(j, 44)}<div style="min-width:0"><b class="cond" style="font-size:20px">${esc(j.nome)}</b><div class="dica">Grupo ${esc(j.grupo || '–')} · ${j.standby ? 'em standby' : 'jogando'}</div></div></div>
-      ${confirmar === 'grupo' ? `<p style="font-size:14px;margin:4px 0 0"><b>Mudar ${esc(j.nome)} de grupo</b> (regra 5.3: em janeiro os 2 últimos de A e B descem e os 2 primeiros de B e C sobem). Ele assume a linha de quem está na posição escolhida e essa pessoa desce uma.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Grupo<select class="campo" data-f-grupo>${['A', 'B', 'C'].map((x) => `<option ${x === j.grupo ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-        <label class="rot">Posição no grupo<input class="campo" data-f-pos type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" data-f="mudarGrupo">Mudar</button></div>`
-      : confirmar ? `<p style="font-size:14px;margin:4px 0 0"><b>Tirar ${esc(j.nome)} do ranking?</b> Ele some da Pontuação e dos próximos jogos. Dá pra voltar depois em Admin → Jogadores → "Voltar ao ranking".</p>
+      ${confirmar ? `<p style="font-size:14px;margin:4px 0 0"><b>Tirar ${esc(j.nome)} do ranking?</b> Ele some da Pontuação e dos próximos jogos. Dá pra voltar depois em Admin → Jogadores → "Voltar ao ranking".</p>
         ${comPlacar ? '<p class="erro" style="font-size:13px;margin:0">Ele já tem placar neste mês: tirando agora, esse jogo deixa de contar (inclusive pro adversário). O ideal é tirar depois de encerrar o mês.</p>' : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-f="voltar">Voltar</button><button class="btn btn-roxo" type="button" style="background:var(--verm)" data-f="tirar">Tirar do ranking</button></div>`
       : `${perguntaFinals(j.grupo) ? `<div class="fin-adm"><b style="font-size:14px">Finals ${anoRanking()}: ${(() => { const r = respFinals(j.id); return !r ? 'ainda não respondeu' : r.vai ? 'vai jogar' : 'não vai jogar'; })()}</b>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"><button class="btn btn-linha" type="button" data-f="finSim">Vai</button><button class="btn btn-linha" type="button" style="color:var(--verm)" data-f="finNao">Não vai</button><button class="btn btn-linha" type="button" data-f="finLimpa">Sem resposta</button></div></div>` : ''}
         <button class="btn btn-roxo" type="button" data-f="standby">${j.standby ? 'Tirar do standby' : 'Colocar em standby'}</button>
         <span class="dica" style="margin-top:-4px">${j.standby ? 'Volta a ter jogo a partir da próxima rodada.' : 'Fica sem jogo a partir da próxima rodada (regra 8.2).'}</span>
-        <button class="btn btn-linha" type="button" data-f="grupo">Mudar de grupo…</button>
         <button class="btn btn-linha" type="button" style="color:var(--verm)" data-f="pedir">Tirar do ranking…</button>
         <button class="btn btn-linha" type="button" data-f="fechar">Cancelar</button>`}</div>`;
     const b = d.querySelector('[data-f]'); if (b) b.focus();
@@ -995,12 +998,6 @@ function abrirOpcoesJogador(id) {
     const f = e.target.closest('[data-f]') && e.target.closest('[data-f]').dataset.f;
     if (e.target === d || f === 'fechar') return fechar();
     if (f === 'pedir') return pintar(true);
-    if (f === 'grupo') return pintar('grupo');
-    if (f === 'mudarGrupo') {
-      const gr = d.querySelector('[data-f-grupo]').value, pos = Number(d.querySelector('[data-f-pos]').value) || 0;
-      fechar(); comTrava('Mudando…', async () => { await entrarNoGrupo({ ...j }, gr, pos); const r = await sb.from('jogadores').update({ grupo: gr }).eq('id', j.id); if (r.error) throw r.error; }, j.nome + ' agora está no grupo ' + gr + '.');
-      return;
-    }
     if (f === 'voltar') return pintar(false);
     if (f === 'standby') { fechar(); comTrava('', async () => { const r = await sb.from('jogadores').update({ standby: !j.standby }).eq('id', j.id); if (r.error) throw r.error; }, j.standby ? j.nome + ' fora do standby: entra nos jogos da próxima rodada.' : j.nome + ' em standby.'); }
     if (f === 'finSim' || f === 'finNao') { fechar(); const vai = f === 'finSim'; comTrava('', async () => { const r = await sb.from('finals_resposta').upsert({ ano: anoRanking(), jogador: j.id, vai, respondido_em: new Date().toISOString(), marcado_por_admin: true }); if (r.error) throw r.error; }, j.nome + (vai ? ' vai jogar o Finals.' : ' não vai ao Finals: o próximo do ranking entra.')); }
@@ -1480,7 +1477,7 @@ async function reabrirMes(id) {
   const jogos = await jogosDoMes(id, true);
   const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
   const validos = jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de }));
-  const nova = M.desfazerMes(listaGeral(), validos, standby).map((j, i) => ({ ...j, posicao: i + 1 }));
+  const nova = M.desfazerMes(listaGeral(), validos, standby, M.pontosWO(id)).map((j, i) => ({ ...j, posicao: i + 1 }));
   for (const m of S.meses.filter((x) => x.id > id)) {
     let r = await sb.from('jogos').delete().eq('mes', m.id); if (r.error) throw r.error;
     r = await sb.from('meses').delete().eq('id', m.id); if (r.error) throw r.error;
@@ -1571,7 +1568,7 @@ async function rodarMes(abrirProx = true) {
   const { data: hist, error: eh } = await sb.from('jogos').select('mes,jogador_a,jogador_b,sets,wo_de,wo_status,criado_em').order('mes').order('criado_em');
   if (eh) throw eh;
   const h2h = M.confrontoDireto(hist.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })));
-  const nova = M.rodarMes(lista, validos, standby, h2h).map((j, i) => ({ ...j, posicao: i + 1 }));
+  const nova = M.rodarMes(lista, validos, standby, h2h, M.pontosWO(mes.id)).map((j, i) => ({ ...j, posicao: i + 1 }));
   await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
   const r = await sb.from('meses').update({ status: 'fechado', fechado_em: new Date().toISOString() }).eq('id', mes.id);
   if (r.error) throw r.error;
