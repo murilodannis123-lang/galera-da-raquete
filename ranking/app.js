@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101170232';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101170232';
-import { REGULAMENTO } from './regulamento.js?v=20261101170232';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101170232';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101170232';
+import * as M from './motor.js?v=20261101171642';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101171642';
+import { REGULAMENTO } from './regulamento.js?v=20261101171642';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101171642';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101171642';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -321,6 +321,8 @@ function telaInicio() {
   } else if (!S.mesAtual && minhaVaga() && (S.finals.find((x) => x.ano === anoFinals() && x.grupo === minhaVaga().grupo) || {}).fase !== 'encerrado') {
     const v = minhaVaga(), fz = S.finals.find((x) => x.ano === v.ano && x.grupo === v.grupo);
     corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">Você está no Finals!</b><div class="dica">Grupo ${esc(v.grupo)} · Chave ${v.chave} · ${esc(FASES[fz.fase])}</div></div><a class="btn btn-bola" href="#/finals" style="height:44px;padding:0 14px;font-size:13px">Ver jogos</a></div>`;
+  } else if (!S.mesAtual && campeoes()) {
+    corpo = cardCampeoes(campeoes());
   } else if (!S.mesAtual) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Aguardando a coordenação</b><div class="dica">Os jogos do mês aparecem aqui quando o mês for aberto.</div></div></div>`;
   } else if (meu && !meu.jogador_b) {
@@ -371,7 +373,7 @@ function telaInicio() {
     <p class="sub-ranking">RANKING</p>
   </header>
   <section class="jogo" aria-label="Seu jogo do mês">
-    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">JOGO DO MÊS</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : '—'}</span></div>
+    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">${!S.mesAtual && campeoes() ? 'FIM DE TEMPORADA' : 'JOGO DO MÊS'}</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : '—'}</span></div>
     ${vs}
     ${p && meu && meu.jogador_b ? `<div style="padding:0 14px 8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.75)"><span>Prazo: até ${p.texto}</span><b style="color:var(--bola)">${p.dias}</b></div>
       <div class="barra" aria-hidden="true"><i style="width:${p.pct}%"></i><svg style="left:${p.pct}%" width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#D8F145" stroke="#1A0D33" stroke-width="1.5"/><path d="M3 4.5c4 1.5 6 3.5 6 5.5s-2 4-6 5.5M17 4.5c-4 1.5-6 3.5-6 5.5s2 4 6 5.5" fill="none" stroke="#1A0D33" stroke-width="1.5" stroke-linecap="round"/></svg></div></div>` : '<div style="height:8px"></div>'}
@@ -463,6 +465,7 @@ function slides() {
   while (tops[t]) out.push(tops[t++]);
   // Anuncie aqui abre o carrossel e volta a cada 4 slides
   const mix = [{ tipo: 'anuncie' }];
+  const cont = contagemRanking(); if (cont) mix.unshift({ tipo: 'contagem', ...cont });
   out.forEach((x, i) => { mix.push(x); if (i % 4 === 3 && i < out.length - 1) mix.push({ tipo: 'anuncie' }); });
   return mix;
 }
@@ -472,7 +475,9 @@ function renderCarrossel() {
   const i = S.slide % sl.length, s = sl[i];
   const linkAnuncio = zap(S.config.anuncie || S.config.fale_conosco || '5519997781210', 'Olá! Quero anunciar no app da Galera da Raquete.');
   // de dia uma arte, de noite a outra
-  const corpo = s.tipo === 'anuncie'
+  const corpo = s.tipo === 'contagem'
+    ? `<div class="patro contagem" role="img" aria-label="Faltam ${s.dias} dias pro Ranking ${s.ano}"><span class="cont-n cond">${s.dias}</span><span class="cont-t"><small>${s.dias === 1 ? 'FALTA' : 'FALTAM'}</small><b class="cond">${s.dias === 1 ? 'dia' : 'dias'} pro Ranking ${s.ano}</b><small>começa em ${dataBR(s.data.toISOString().slice(0, 10))} 🎾</small></span></div>`
+    : s.tipo === 'anuncie'
     ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/${ehNoite() ? 'anuncie-noite-4.jpg' : 'anuncie-dia-4.jpg'}" alt="Anuncie aqui" width="900" height="327"></a>`
     : s.tipo === 'anuncie-velho'
     ? `<a class="patro anuncie" href="${esc(linkAnuncio)}" target="_blank" rel="noopener"><span class="anuncie-ic" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="currentColor" fill-opacity=".25"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span class="anuncie-tx"><b class="cond">ANUNCIE AQUI</b><small>Sua marca pra toda a Galera</small></span></a>`
@@ -2106,6 +2111,78 @@ function fogos(texto) {
   setTimeout(() => { el.remove(); v.remove(); }, 3500);
 }
 
+// ---------- fim de ano: campeões, Natal, Ano Novo e contagem pro próximo ranking ----------
+// campeões aparecem depois de 06/12, com o Finals encerrado nos 3 grupos, até começar o 1º mês da temporada nova
+function campeoes() {
+  const ano = anoFinals(), fzs = ['A', 'B', 'C'].map((g) => S.finals.find((f) => f.ano === ano && f.grupo === g));
+  if (fzs.some((f) => !f || f.fase !== 'encerrado') || new Date() < new Date(ano, 11, 6) || S.meses.some((m) => m.id > ano + '-12')) return null;
+  const grupos = ['A', 'B', 'C'].map((g) => { const { final } = dadosFinals(ano, g); return { g, j: final && final.sets ? porId(vencedor(final)) : null }; }).filter((x) => x.j);
+  return { ano, grupos, geral: listaGeral()[0] || null };
+}
+function cardCampeoes(c) {
+  const linha = (rot, j) => j ? `<div class="camp-l"><span>${rot}</span><b>${esc(j.nome)}</b></div>` : '';
+  return `<div class="campeoes"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex">${TROFEU(30)}</span><b class="cond" style="font-size:20px">Campeões ${c.ano}</b></div>
+    ${linha('Ranking ' + c.ano + ' · Dynamics', c.geral)}${c.grupos.map((x) => linha('Finals · Grupo ' + x.g, x.j)).join('')}
+    <span class="dica">Parabéns a todos! O ranking ${c.ano + 1} vem aí.</span></div>`;
+}
+// espera as outras janelas (abertura, aniversário, tour…) saírem antes de mostrar
+function quandoLivre(fn, ms = 900) {
+  let n = 0;
+  const tenta = () => (document.querySelector('.intro, .niver, .zoom, .tour') && n++ < 240 ? setTimeout(tenta, 500) : fn());
+  setTimeout(tenta, ms);
+}
+function janela(rotulo, html, efeito) {
+  const d = document.createElement('div'); d.className = 'niver'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', rotulo);
+  d.innerHTML = `<div class="niver-c">${html}</div>`;
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('button')) { d.remove(); const n = document.querySelector('.neve'); if (n) n.remove(); } });
+  if (efeito === 'fogos') fogos('');
+  if (efeito === 'neve' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const n = document.createElement('div'); n.className = 'neve'; n.setAttribute('aria-hidden', 'true');
+    n.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 9) * 0.6}s;animation-duration:${6 + (i % 5)}s;font-size:${10 + (i % 4) * 5}px">❄</i>`).join('');
+    document.body.appendChild(n); setTimeout(() => n.remove(), 15000);
+  }
+  document.body.appendChild(d); const b = d.querySelector('button'); if (b) b.focus();
+}
+const umaVez = (chave) => { try { if (localStorage.getItem(chave)) return false; localStorage.setItem(chave, '1'); } catch (e) { /* mostra mesmo */ } return true; };
+function mensagensFimDeAno() {
+  if (!S.eu || S.eu.pendente) return;
+  const hoje = new Date(), m = hoje.getMonth() + 1, d = hoje.getDate(), y = hoje.getFullYear(), nome = esc(S.eu.nome.split(' ')[0]);
+  // Natal (24 e 25/12)
+  if (m === 12 && (d === 24 || d === 25) && umaVez('natal-' + y)) {
+    quandoLivre(() => janela('Feliz Natal', `<div class="niver-bolo" aria-hidden="true">🎄</div><small>FELIZ NATAL</small><b class="cond" style="font-size:28px">Feliz Natal, ${nome}!</b>
+      <p>A Galera da Raquete deseja a você e à sua família um Natal cheio de paz, saúde e alegria. Obrigado por fazer parte do nosso ranking em ${y}! 🎾</p>
+      <button class="btn btn-bola" type="button">Feliz Natal, galera! 🎅</button>`, 'neve'));
+  }
+  // Ano Novo (31/12 e 01/01)
+  const novo = m === 12 ? y + 1 : y;
+  if (((m === 12 && d === 31) || (m === 1 && d === 1)) && umaVez('anonovo-' + novo)) {
+    quandoLivre(() => janela('Feliz Ano Novo', `<div class="niver-bolo" aria-hidden="true">🥂</div><small>FELIZ ${novo}</small><b class="cond" style="font-size:30px">Feliz ${novo}, ${nome}!</b>
+      <p>Que ${novo} venha com muitos jogos, vitórias e amizade dentro e fora da quadra. Bora pro Ranking ${novo}!</p>
+      <button class="btn btn-bola" type="button">Bora, ${novo}! 🎾</button>`, 'fogos'));
+  }
+  // campeões: uma vez por aparelho; o próprio campeão ganha uma mensagem só dele
+  const c = campeoes();
+  if (c && umaVez('campeoes-' + c.ano + '-' + S.eu.id)) {
+    const meus = [c.geral && c.geral.id === S.eu.id ? 'do Ranking ' + c.ano + ' (Dynamics)' : null, ...c.grupos.filter((x) => x.j.id === S.eu.id).map((x) => 'do Finals ' + c.ano + ' · Grupo ' + x.g)].filter(Boolean);
+    quandoLivre(() => (meus.length
+      ? janela('Você é campeão', `<div class="niver-bolo" aria-hidden="true">🏆</div><small>CAMPEÃO ${c.ano}</small><b class="cond" style="font-size:26px">Parabéns, ${nome}!</b>
+        <span style="font-size:15px;font-weight:700;color:var(--bola)">Campeão ${meus.join(' e ')}</span>
+        <p>Parabéns pelo seu esforço e garra, valeu a pena! Bora para o próximo ano de novos desafios. 🎾</p>
+        <button class="btn btn-bola" type="button">Valeu, galera!</button>`, 'fogos')
+      : janela('Campeões ' + c.ano, `<div class="niver-bolo" aria-hidden="true">🏆</div><small>CAMPEÕES ${c.ano}</small>
+        ${cardCampeoes(c).replace('class="campeoes"', 'class="campeoes campeoes-j"')}
+        <button class="btn btn-bola" type="button">Parabéns, campeões! 👏</button>`, 'fogos')), 1100);
+  }
+}
+// contagem regressiva pro ranking do ano que vem (primeiro slide do carrossel), de novembro até a 1ª data da programação nova
+function contagemRanking() {
+  const ano = anoRanking(), prox = ano + 1, hoje = new Date();
+  if (hoje < new Date(ano, 10, 1) || S.meses.some((m) => m.id > ano + '-12')) return null;
+  const ini = (progDoAno(prox)[0] || {}).ini, alvo = ini ? new Date(ini + 'T00:00:00') : new Date(prox, 0, 1);
+  const dias = Math.ceil((alvo - hoje) / 864e5);
+  return dias > 0 ? { ano: prox, dias, data: alvo } : null;
+}
+
 // aniversário: quem faz aniversário hoje ganha os parabéns ao abrir o app (uma vez por dia)
 function parabens() {
   if (!S.eu || S.eu.pendente) return;
@@ -2299,6 +2376,7 @@ async function entrar() {
   render();
   tourPrimeiraVez();
   parabens();
+  mensagensFimDeAno();
   lembrarCobranca();
   lembrarFinals();
   ligarPresenca();
