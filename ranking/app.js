@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101152701';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101152701';
-import { REGULAMENTO } from './regulamento.js?v=20261101152701';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101152701';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101152701';
+import * as M from './motor.js?v=20261101161003';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101161003';
+import { REGULAMENTO } from './regulamento.js?v=20261101161003';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101161003';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101161003';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -932,9 +932,12 @@ function telaFinals() {
   if (fz.fase === 'encerrado' && final && final.sets) { const c = porId(M.resultado(final.sets).aVenceu ? final.jogador_a : final.jogador_b); campeao = `<div class="card" style="background:var(--noite);color:#fff;border:0;text-align:center"><div style="display:flex;justify-content:center">${TROFEU(44)}</div><small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÃO DO GRUPO ${aba}</small><div class="cond" style="font-size:28px;font-weight:800">${esc(c && c.nome)}</div><small style="color:rgba(255,255,255,.75)">Bônus no ranking: campeão 30 · vice 25 · semifinal 20 · fase de grupos 15</small></div>`; }
   const cols = tit('Fase de grupos') + fzCols(col(1), col(2)) + `<span class="dica">Número = pontos na chave · verde = vai pra semifinal. Jogo sem placar vale 0 pros dois.</span>`;
   const grupos = tit('Jogos da Chave 1') + jogosChave(1) + tit('Jogos da Chave 2') + jogosChave(2);
+  const faltam = js.filter((g) => g.fase === 'grupos' && !g.sets).length;
+  const semisAgora = tit('Semifinais · como está agora') + fzProj('1º CHAVE 1', ld(1, 0), '2º CHAVE 2', ld(2, 1)) + fzProj('1º CHAVE 2', ld(2, 0), '2º CHAVE 1', ld(1, 1))
+    + `<span class="dica">${faltam ? `Faltam <b>${faltam}</b> placar(es) nas chaves. ` : ''}Quando todos os jogos das chaves tiverem placar, as semifinais são criadas sozinhas, cruzando 1º de uma chave com o 2º da outra. A final também sai sozinha depois das semis.</span>`;
   return cab + `<div class="conteudo">
     ${campeao}
-    ${fz.fase === 'grupos' ? cols + chaveT + grupos : chaveT + mata + cols + grupos}
+    ${fz.fase === 'grupos' ? cols + chaveT + grupos + semisAgora : chaveT + mata + cols + grupos}
   </div>`;
 }
 
@@ -1576,8 +1579,8 @@ function adminFinalsGrupo(gr) {
       }
       const feitos = js.filter((g) => g.fase === 'grupos' && g.sets).length, total = js.filter((g) => g.fase === 'grupos').length;
       const conf = S.admin.finConf === gr;
-      const botao = fz.fase === 'grupos' ? `<span class="dica">${feitos} de ${total} placares. Jogo sem placar conta 0 pros dois.</span><button class="btn btn-roxo" data-acao="finSemi" data-v="${gr}">Fechar grupos e gerar semifinais</button>${feitos ? '' : `<button class="btn btn-linha" data-acao="finApagar" data-v="${gr}">Apagar e montar de novo</button>`}`
-        : fz.fase === 'semi' ? `<button class="btn btn-roxo" data-acao="finFinal" data-v="${gr}" ${semis.every((g) => g.sets) ? '' : 'disabled'}>Gerar a final</button>${semis.every((g) => g.sets) ? '' : '<span class="dica">Falta placar de semifinal.</span>'}`
+      const botao = fz.fase === 'grupos' ? `<span class="dica">${feitos} de ${total} placares. <b>As semifinais saem sozinhas</b> quando o último placar das chaves for gravado. Só use o botão se algum jogo não for acontecer (jogo sem placar conta 0 pros dois).</span><button class="btn btn-linha" data-acao="finSemi" data-v="${gr}">Fechar grupos agora e gerar semifinais</button>${feitos ? '' : `<button class="btn btn-linha" data-acao="finApagar" data-v="${gr}">Apagar e montar de novo</button>`}`
+        : fz.fase === 'semi' ? `<span class="dica"><b>A final sai sozinha</b> quando as duas semifinais tiverem placar.</span><button class="btn btn-linha" data-acao="finFinal" data-v="${gr}" ${semis.every((g) => g.sets) ? '' : 'disabled'}>Gerar a final agora</button>`
         : fz.fase === 'final' ? (conf ? `<span class="dica">Lança no ranking: campeão +30 · vice +25 · semifinal +20 · fase de grupos +15, e reordena as posições.</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finCancelar">Voltar</button><button class="btn btn-roxo" data-acao="finEncerrar" data-v="${gr}">Confirmar</button></div>`
           : `<button class="btn btn-roxo" data-acao="finPedir" data-v="${gr}" ${final && final.sets ? '' : 'disabled'}>Encerrar e lançar bônus no ranking</button>${final && final.sets ? '' : '<span class="dica">Falta o placar da final.</span>'}`)
         : '<span class="dica">Encerrado. Bônus lançado no ranking.</span>';
