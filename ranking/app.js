@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102102425';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102102425';
-import { REGULAMENTO } from './regulamento.js?v=20261102102425';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102102425';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102102425';
+import * as M from './motor.js?v=20261102103944';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102103944';
+import { REGULAMENTO } from './regulamento.js?v=20261102103944';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102103944';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102103944';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -529,9 +529,31 @@ function faixa() {
   }
   S.jogos.filter((g) => g.jogador_b && Math.max(geral[g.jogador_a] || 99, geral[g.jogador_b] || 99) <= 6)
     .forEach((g) => itens.push(['JOGÃO DO MÊS', (porId(g.jogador_a) || {}).nome + ' x ' + (porId(g.jogador_b) || {}).nome + (g.sets ? ' · ' + placarTxt(g.sets) : '')]));
+  // FINALS: em vermelho, na frente de tudo, com cada resultado assim que é gravado (mais recente primeiro)
+  const fin = noticiasFinals();
+  itens.unshift(...fin);
   if (online) itens.unshift(online);   // pra coordenação, quem está online vem primeiro
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
-  return itens.map(([t, x]) => `<span><b>${esc(t)}</b>${esc(x)}</span>`).join('');
+  return itens.map(([t, x, cls]) => `<span${cls ? ` class="${cls}"` : ''}><b>${esc(t)}</b>${esc(x)}</span>`).join('');
+}
+// notícias do Finals pra faixa: chamada, resultados (do último gravado pro primeiro), próximos jogos decisivos e campeões
+function noticiasFinals() {
+  const ano = anoFinals(), fzs = S.finals.filter((f) => f.ano === ano);
+  if (!fzs.length || S.mesAtual) return [];
+  const nome = (id) => (porId(id) || {}).nome || '?', R = 'faixa-fin', out = [];
+  const fase = (g) => (g.fase === 'final' ? 'FINAL' : g.fase === 'semi' ? 'SEMIFINAL' : 'FASE DE GRUPOS');
+  const andamento = fzs.filter((f) => f.fase !== 'encerrado');
+  if (andamento.length) out.push(['🔥 FINALS ' + ano, andamento.map((f) => 'Grupo ' + f.grupo + ': ' + FASES[f.fase].toLowerCase()).join(' · '), R]);
+  // campeões
+  fzs.forEach((f) => { const { final } = dadosFinals(ano, f.grupo); if (final && final.sets) out.push(['🏆 CAMPEÃO FINALS ' + ano + ' · GRUPO ' + f.grupo, nome(vencedor(final)) + ' venceu ' + nome(vencedor(final) === final.jogador_a ? final.jogador_b : final.jogador_a) + ' ' + placarTxt(vencedor(final) === final.jogador_a ? final.sets : final.sets.map(([x, y]) => [y, x])), R]); });
+  // resultados, do mais recente pro mais antigo
+  S.fjogos.filter((g) => g.ano === ano && g.sets && g.fase !== 'final')
+    .sort((x, y) => String(y.gravado_em || y.criado_em).localeCompare(String(x.gravado_em || x.criado_em))).slice(0, 12)
+    .forEach((g) => { const v = vencedor(g), a = v === g.jogador_a; out.push(['FINALS · ' + fase(g) + ' · GRUPO ' + g.grupo, nome(v) + ' venceu ' + nome(a ? g.jogador_b : g.jogador_a) + ' ' + placarTxt(a ? g.sets : g.sets.map(([x, y]) => [y, x])), R]); });
+  // semifinais e finais marcadas (ainda sem placar)
+  S.fjogos.filter((g) => g.ano === ano && !g.sets && g.fase !== 'grupos')
+    .forEach((g) => out.push(['FINALS · ' + fase(g) + ' · GRUPO ' + g.grupo, nome(g.jogador_a) + ' x ' + nome(g.jogador_b), R]));
+  return out;
 }
 
 function slides() {
@@ -2420,7 +2442,7 @@ async function render() {
   } catch (e) { console.error(e); html = voltar('Ops') + `<div class="conteudo"><p class="erro">Não consegui carregar: ${esc(e.message || e)}</p></div>`; }
   $app.innerHTML = html;
   if (rota === 'avisos') marcarAvisosVistos();
-  if (!rota) { renderCarrossel(); timerCarrossel = setInterval(() => { const c = document.getElementById('carrossel'); if (c && c.matches(':hover, :focus-within')) return; S.slide++; renderCarrossel(); }, 5000); }
+  if (!rota) { renderCarrossel(); encherFaixa(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const tk = document.querySelector('.faixa .tk'); if (tk && !tk.dataset.cheia) { tk.dataset.cheia = '1'; atualizarFaixa(); } }); timerCarrossel = setInterval(() => { const c = document.getElementById('carrossel'); if (c && c.matches(':hover, :focus-within')) return; S.slide++; renderCarrossel(); }, 5000); }
   const f = document.querySelector('form[data-form="placar"]'); if (f) previaPlacar(f);
   aplicarBusca();
   desenharQRs();
@@ -2579,6 +2601,17 @@ function ligarPresenca() {
 function atualizarFaixa() {
   const tk = document.querySelector('.faixa .tk'); if (!tk) return;
   tk.innerHTML = `${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span>`;
+  encherFaixa();
+}
+// com pouca notícia a faixa ficava com buraco preto: repete as notícias até passar da largura da tela; velocidade sempre igual
+function encherFaixa() {
+  const tk = document.querySelector('.faixa .tk'); if (!tk) return;
+  const tk2 = tk.querySelector('.tk2'), um = [...tk.children].filter((c) => c !== tk2);
+  const w = um.reduce((s, c) => s + c.getBoundingClientRect().width, 0), larg = tk.parentElement.clientWidth;
+  if (!w || !larg) return;
+  const vezes = Math.min(20, Math.max(1, Math.ceil((larg + 60) / w)));
+  if (vezes > 1) { const html = um.map((c) => c.outerHTML).join('').repeat(vezes); tk.innerHTML = html + `<span class="tk2" aria-hidden="true">${html}</span>`; }
+  tk.style.animationDuration = Math.max(12, Math.round((w * vezes) / 45)) + 's';   // ~45 px por segundo
 }
 
 async function iniciar() {

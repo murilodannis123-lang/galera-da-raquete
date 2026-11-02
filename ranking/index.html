@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261102102425"></script>
+<script src="redireciona.js?v=20261102103944"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -278,6 +278,10 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .faixa .tk>span:not(.tk2),.faixa .tk2>span{padding-right:32px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff}
 .faixa .tk b{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;letter-spacing:1px;color:var(--bola)}
 @keyframes tk{to{transform:translateX(-50%)}}
+.faixa .tk .faixa-fin b{color:#FF2B2B;text-shadow:0 0 8px rgba(255,43,43,.9),0 0 2px #fff;animation:fin-pisca .9s steps(1,end) infinite}
+.faixa .tk .faixa-fin{color:#fff}
+@keyframes fin-pisca{50%{color:#fff;text-shadow:0 0 10px rgba(255,43,43,1)}}
+@media (prefers-reduced-motion:reduce){.faixa .tk .faixa-fin b{animation:none}}
 /* listas */
 .linha-rk{background:#fff;border:1.5px solid var(--linha);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .linha-rk.fin{background:#F1F9D6;border-color:#C9E36B}
@@ -328,6 +332,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261102102425"></script>
+<script type="module" src="app.js?v=20261102103944"></script>
 </body>
 </html>
