@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102124534';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102124534';
-import { REGULAMENTO } from './regulamento.js?v=20261102124534';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102124534';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102124534';
+import * as M from './motor.js?v=20261102125025';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102125025';
+import { REGULAMENTO } from './regulamento.js?v=20261102125025';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102125025';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102125025';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -983,6 +983,17 @@ const inscricoes = () => (S.tinsc || []).filter((x) => x.torneio === TORNEIO);
 const minhaInscricao = () => S.eu && inscricoes().find((x) => x.jogador === S.eu.id);
 const CAMISETA = { masculina: 'Masculina', babylook: 'Feminina baby look', outro: 'Outro tamanho' };
 const camisetaTxt = (x) => (x.camiseta === 'outro' ? 'Outro: ' + (x.outro || '') : CAMISETA[x.camiseta] + ' ' + (x.tamanho || ''));
+// camisetas a mais: [{ modelo, tam, n }] (o texto livre vem com n = 1 e tam = o que a pessoa escreveu)
+const TAMS = ['P', 'M', 'G', 'GG'];
+function extrasDe(x) {
+  const e = (x && x.extras) || {}, out = [];
+  ['masculina', 'babylook'].forEach((m) => TAMS.forEach((t) => { const n = Number(e[m + ':' + t]) || 0; if (n > 0) out.push({ modelo: CAMISETA[m], tam: t, n }); }));
+  if (e.outro) out.push({ modelo: 'Outro', tam: e.outro, n: 1, livre: true });
+  return out;
+}
+const qtdExtras = (x) => extrasDe(x).filter((y) => !y.livre).reduce((s, y) => s + y.n, 0);
+const extrasTxt = (x) => extrasDe(x).map((y) => (y.livre ? 'outro: ' + y.tam : y.modelo + ' ' + y.tam + (y.n > 1 ? ' (' + y.n + ')' : ''))).join(' · ');
+const valorInscricao = (cfg, x) => (Number(cfg.valor) || 0) + qtdExtras(x) * (Number(cfg.valor_camiseta) || 0);
 function telaTorneios() {
   const ano = anoFinals(), fases = ['A', 'B', 'C'].map((g) => (S.finals.find((x) => x.ano === ano && x.grupo === g) || {}).fase).filter(Boolean);
   const stFin = !fases.length ? 'Os 8 melhores de cada grupo · aguardando o sorteio' : fases.every((f) => f === 'encerrado') ? 'Encerrado · veja os campeões' : 'Em andamento · ' + FASES[fases.find((f) => f !== 'encerrado')];
@@ -1015,18 +1026,21 @@ function telaDuplas() {
         <fieldset class="grupo-op"><legend class="rot">Camiseta feminina (baby look)</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamF', v)).join('')}</div></fieldset>
         <label class="rot">Outro tamanho (não está na lista)<input class="campo" name="outro" maxlength="60" placeholder="Ex.: XGG, infantil 12" value="${esc(m.camiseta === 'outro' ? m.outro || '' : '')}"></label>
         <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho.</span>
+        <details class="extras"${m.extras && Object.keys(m.extras).length ? ' open' : ''}><summary><b>Quer mais camisetas?</b> <span class="dica">(opcional${Number(cfg.valor_camiseta) ? ' · ' + real(cfg.valor_camiseta) + ' cada' : ''})</span></summary>
+          <div class="extras-grade">${['masculina', 'babylook'].map((mod) => `<span class="rot" style="grid-column:1/-1">${mod === 'masculina' ? 'Masculina' : 'Feminina baby look'}</span>${TAMS.map((t) => `<label class="extra-q"><span>${t}</span><input class="campo" type="number" name="x-${mod}:${t}" min="0" max="10" inputmode="numeric" value="${(m.extras || {})[mod + ':' + t] || ''}" placeholder="0" aria-label="Quantas ${mod === 'masculina' ? 'masculinas' : 'baby look'} ${t} a mais"></label>`).join('')}`).join('')}</div>
+          <label class="rot">Outro tamanho a mais<input class="campo" name="x-outro" maxlength="80" placeholder="Ex.: 1 infantil 10" value="${esc((m.extras || {}).outro || '')}"></label></details>
         <p id="tor-msg" role="status"></p>
         <div style="display:grid;grid-template-columns:${minha ? '1fr 1fr' : '1fr'};gap:8px">${minha ? '<button class="btn btn-linha" type="button" data-acao="torEditar" data-v="0">Voltar</button>' : ''}<button class="btn btn-roxo" type="submit">${minha ? 'Salvar' : 'Fazer minha inscrição'}</button></div></form>`;
     }
   }
   if (minha && !editar) {
-    const px = pixDe(cfg), st = minha.status, valor = Number(cfg.valor) || 0;
+    const px = pixDe(cfg), st = minha.status, valor = Number(cfg.valor) ? valorInscricao(cfg, minha) : 0, ext = extrasTxt(minha);
     const cc = valor ? pixCopiaCola(valor, cfg.nome + ' ' + eu.nome, ('TD' + eu.id.replace(/-/g, '')).slice(0, 25).toUpperCase(), px) : '';
     corpo = `<section class="card" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Classe ${esc(minha.classe)} · camiseta ${esc(camisetaTxt(minha))}</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Classe ${esc(minha.classe)} · camiseta ${esc(camisetaTxt(minha))}${ext ? '<br>Camisetas a mais: ' + esc(ext) : ''}</div></div>
         ${st === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : st === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : '<span class="tag" style="background:#FDECEC;color:var(--verm)">FALTA PAGAR</span>'}</div>
       ${st === 'pago' ? '<p class="dica">Pagamento confirmado pela coordenação. Bom torneio!</p>'
-        : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>
+        : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>${qtdExtras(minha) && Number(cfg.valor_camiseta) ? `<span class="dica">${real(cfg.valor)} da inscrição + ${qtdExtras(minha)} camiseta(s) a mais × ${real(cfg.valor_camiseta)}${extrasDe(minha).some((y) => y.livre) ? ' (o "outro tamanho" a coordenação combina com você)' : ''}</span>` : ''}
         <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(valor))}"><span class="dica">Carregando QR Code…</span></div>
         <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
         <button class="btn btn-linha" type="button" data-acao="copiarPix" data-cc="${esc(px.chave)}" data-ok="Chave Pix copiada.">Copiar chave Pix (${esc(px.tipo)})</button>
@@ -1048,9 +1062,9 @@ function telaDuplas() {
 function adminTorneio() {
   if (!S.tinsc) return '';
   const cfg = torneioCfg(), lista = inscricoes(), ver = S.admin.torVer;
-  const conta = {}; lista.forEach((x) => { const k = camisetaTxt(x); conta[k] = (conta[k] || 0) + 1; });
+  const conta = {}; lista.forEach((x) => { const k = camisetaTxt(x); conta[k] = (conta[k] || 0) + 1; extrasDe(x).forEach((y) => { const kk = y.livre ? 'Outro: ' + y.tam : y.modelo + ' ' + y.tam; conta[kk] = (conta[kk] || 0) + y.n; }); });
   const linha = (x) => { const j = porId(x.jogador) || { nome: '?' };
-    return `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.cabeca ? '⭐ ' : ''}${esc(j.nome)}</b><small class="dica">Classe ${esc(x.classe)} · ${esc(camisetaTxt(x))}</small></span>
+    return `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.cabeca ? '⭐ ' : ''}${esc(j.nome)}</b><small class="dica">Classe ${esc(x.classe)} · ${esc(camisetaTxt(x))}${extrasTxt(x) ? ' · + ' + esc(extrasTxt(x)) : ''}</small></span>
       <button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torCabeca" data-j="${x.jogador}" aria-pressed="${x.cabeca}" aria-label="Cabeça de chave: ${esc(j.nome)}">${x.cabeca ? '⭐ Cabeça' : '☆ Cabeça'}</button>
       ${x.status === 'pago' ? `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torPago" data-j="${x.jogador}" data-v="pendente">Pago ✓</button>`
         : `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px;background:var(--verde);color:#fff;border-color:var(--verde)" data-acao="torPago" data-j="${x.jogador}" data-v="pago">${x.status === 'informado' ? 'Avisou · Confirmar' : 'Confirmar'}</button>`}
@@ -1062,6 +1076,7 @@ function adminTorneio() {
       <fieldset class="grupo-op"><legend class="rot">Classes</legend><div class="op-linha">${['A', 'B', 'C'].map((c) => `<label class="tam"><input type="checkbox" name="cl${c}"${cfg.classes.includes(c) ? ' checked' : ''}><span>${c}</span></label>`).join('')}</div></fieldset>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Valor da inscrição (R$)<input class="campo" name="valor" inputmode="decimal" placeholder="a definir" value="${cfg.valor ? String(cfg.valor).replace('.', ',') : ''}"></label>
       <label class="rot">Data (texto livre)<input class="campo" name="data" maxlength="60" placeholder="Ex.: 20 e 21/03/2027" value="${esc(cfg.data || '')}"></label></div>
+      <label class="rot">Valor de cada camiseta a mais (R$)<input class="campo" name="valorCam" inputmode="decimal" placeholder="a definir" value="${cfg.valor_camiseta ? String(cfg.valor_camiseta).replace('.', ',') : ''}"></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Chave Pix<input class="campo" name="pix" maxlength="77" value="${esc(cfg.pix_chave || '')}"></label>
       <label class="rot">Nome de quem recebe<input class="campo" name="pixNome" maxlength="60" value="${esc(cfg.pix_nome || '')}"></label></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">WhatsApp do comprovante<input class="campo" name="zap" inputmode="tel" maxlength="20" value="${esc(cfg.zap || '')}"></label>
@@ -2048,17 +2063,20 @@ const ACOES = {
   // lista pra gráfica: nome, modelo e tamanho, em ordem de modelo/tamanho, com o total de cada no fim
   torGrafica: () => {
     const cfg = torneioCfg(), cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', ordT = { P: 1, M: 2, G: 3, GG: 4 }, ordM = { masculina: 1, babylook: 2, outro: 3 };
-    const xs = inscricoes().map((x) => ({ nome: (porId(x.jogador) || {}).nome || '?', modelo: CAMISETA[x.camiseta], tam: x.camiseta === 'outro' ? x.outro : x.tamanho, k: ordM[x.camiseta] * 10 + (ordT[x.tamanho] || 9), pago: x.status === 'pago' ? 'Sim' : 'Não' }))
+    const ordX = { Masculina: 1, 'Feminina baby look': 2, Outro: 3 };
+    const xs = inscricoes().flatMap((x) => { const nome = (porId(x.jogador) || {}).nome || '?', pago = x.status === 'pago' ? 'Sim' : 'Não';
+      return [{ nome, modelo: CAMISETA[x.camiseta], tam: x.camiseta === 'outro' ? x.outro : x.tamanho, k: ordM[x.camiseta] * 10 + (ordT[x.tamanho] || 9), pago, qtd: 1, obs: '' }]
+        .concat(extrasDe(x).map((y) => ({ nome, modelo: y.modelo, tam: y.tam, k: ordX[y.modelo] * 10 + (ordT[y.tam] || 9), pago, qtd: y.n, obs: 'a mais' }))); })
       .sort((a, b) => a.k - b.k || a.nome.localeCompare(b.nome));
-    const tot = {}; xs.forEach((x) => { const k = x.modelo + ' ' + x.tam; tot[k] = (tot[k] || 0) + 1; });
-    const linhas = [[cfg.nome + ' — camisetas'], [], ['Nome', 'Modelo', 'Tamanho', 'Pago']].concat(xs.map((x) => [x.nome, x.modelo, x.tam, x.pago]))
-      .concat([[], ['Totais'], ['Modelo e tamanho', 'Quantidade']], Object.entries(tot).map(([k, n]) => [k, n]), [['Total de camisetas', xs.length]]);
+    const tot = {}; xs.forEach((x) => { const k = x.modelo + ' ' + x.tam; tot[k] = (tot[k] || 0) + x.qtd; });
+    const linhas = [[cfg.nome + ' — camisetas'], [], ['Nome', 'Modelo', 'Tamanho', 'Quantidade', 'Obs.', 'Pago']].concat(xs.map((x) => [x.nome, x.modelo, x.tam, x.qtd, x.obs, x.pago]))
+      .concat([[], ['Totais'], ['Modelo e tamanho', 'Quantidade']], Object.entries(tot).map(([k, n]) => [k, n]), [['Total de camisetas', xs.reduce((s, x) => s + x.qtd, 0)]]);
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map((l) => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = 'camisetas-' + ascii(cfg.nome).replace(/\s+/g, '-').toLowerCase() + '-' + hojeISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   },
   torPlanilha: () => {
     const cfg = torneioCfg(), cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', sit = { pago: 'Pago', informado: 'Avisou que pagou', pendente: 'Pendente' };
-    const linhas = [['Nome', 'Classe', 'Cabeça de chave', 'Camiseta', 'Tamanho', 'Celular', 'Pagamento']].concat(inscricoes().map((x) => { const j = porId(x.jogador) || {}; return [j.nome, x.classe, x.cabeca ? 'Sim' : '', CAMISETA[x.camiseta], x.camiseta === 'outro' ? x.outro : x.tamanho, j.celular || '', sit[x.status]]; }));
+    const linhas = [['Nome', 'Classe', 'Cabeça de chave', 'Camiseta', 'Tamanho', 'Camisetas a mais', 'Valor', 'Celular', 'Pagamento']].concat(inscricoes().map((x) => { const j = porId(x.jogador) || {}; return [j.nome, x.classe, x.cabeca ? 'Sim' : '', CAMISETA[x.camiseta], x.camiseta === 'outro' ? x.outro : x.tamanho, extrasTxt(x), cfg.valor ? valorInscricao(cfg, x).toFixed(2).replace('.', ',') : '', j.celular || '', sit[x.status]]; }));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map((l) => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = ascii(cfg.nome).replace(/\s+/g, '-').toLowerCase() + '-' + hojeISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   },
@@ -2232,7 +2250,9 @@ const FORMS = {
     if (!classe) { msg.className = 'erro'; msg.textContent = 'Escolha a classe.'; return; }
     if (!t && !outro) { msg.className = 'erro'; msg.textContent = 'Escolha o tamanho da camiseta.'; return; }
     const [camiseta, tamanho] = outro ? ['outro', null] : t.value.split(':');
-    const { error } = await sb.rpc('inscrever_torneio', { p_torneio: TORNEIO, p_classe: classe, p_camiseta: camiseta, p_tamanho: tamanho, p_outro: outro || null });
+    const extras = {};
+    f.querySelectorAll('input[name^="x-"]').forEach((i) => { const k = i.name.slice(2), v = i.value.trim(); if (!v) return; if (k === 'outro') extras.outro = v; else { const n = Math.floor(Number(v)); if (n > 0) extras[k] = Math.min(n, 10); } });
+    const { error } = await sb.rpc('inscrever_torneio', { p_torneio: TORNEIO, p_classe: classe, p_camiseta: camiseta, p_tamanho: tamanho, p_outro: outro || null, p_extras: extras });
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
     S.torEditar = false; await carregar(); render(); toast('Inscrição feita! Agora é só pagar e mandar o comprovante.');
   },
@@ -2241,7 +2261,9 @@ const FORMS = {
     if (!classes.length) throw new Error('Marque pelo menos uma classe.');
     const v = String(f.valor.value).trim(), valor = v ? Number(v.replace(/\./g, '').replace(',', '.')) : null;
     if (v && !(valor > 0)) throw new Error('Valor inválido.');
-    await salvarTorneio({ nome: f.nome.value.trim() || TORNEIO_PADRAO.nome, classes, valor, data: f.data.value.trim(), pix_chave: f.pix.value.trim(), pix_nome: f.pixNome.value.trim(), zap: soDigitos(f.zap.value), zap_nome: f.zapNome.value.trim(), obs: f.obs.value.trim() });
+    const vc = String(f.valorCam.value).trim(), valor_camiseta = vc ? Number(vc.replace(/\./g, '').replace(',', '.')) : null;
+    if (vc && !(valor_camiseta > 0)) throw new Error('Valor da camiseta inválido.');
+    await salvarTorneio({ nome: f.nome.value.trim() || TORNEIO_PADRAO.nome, classes, valor, valor_camiseta, data: f.data.value.trim(), pix_chave: f.pix.value.trim(), pix_nome: f.pixNome.value.trim(), zap: soDigitos(f.zap.value), zap_nome: f.zapNome.value.trim(), obs: f.obs.value.trim() });
   }, 'Torneio salvo.'),
   cobNova: (f) => comTrava('', async () => {
     const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
