@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102110258';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102110258';
-import { REGULAMENTO } from './regulamento.js?v=20261102110258';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102110258';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102110258';
+import * as M from './motor.js?v=20261102114125';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102114125';
+import { REGULAMENTO } from './regulamento.js?v=20261102114125';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102114125';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102114125';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -132,7 +132,7 @@ const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   // tudo que não depende de nada vai junto (menos idas e voltas = abre mais rápido)
-  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('temporada_resposta').select('*').order('ano').order('jogador'))]);
+  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('temporada_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('torneio_inscricao').select('*').order('torneio').order('jogador'))]);
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
     todas(() => sb.from('jogadores').select(COLS).order('id')),
     sb.from('meses').select('*').order('id', { ascending: false }),
@@ -152,10 +152,11 @@ async function carregar() {
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
   const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
   S.backups = backups;
-  const [cb, pg, fr, tr] = await extras;
+  const [cb, pg, fr, tr, ti] = await extras;
   S.cobrancas = cb.error ? [] : cb.data; S.pagamentos = pg.error ? [] : pg.data;
   S.fresp = fr.error ? null : fr.data;   // null = tabela ainda não existe: a pergunta não aparece
-  S.tresp = tr.error ? null : tr.data;   // respostas "vou continuar no ranking do ano que vem" (null = ainda não ativado no banco)
+  S.tresp = tr.error ? null : tr.data;
+  S.tinsc = ti.error ? null : ti.data;   // inscrições dos torneios (null = ainda não ativado no banco)   // respostas "vou continuar no ranking do ano que vem" (null = ainda não ativado no banco)
   aquecerFotos();
   S.jogos = jogos;
   if (!S.eu) return;
@@ -501,7 +502,7 @@ const MENU = [
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Preciso falar com a coordenação do ranking.') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
-  { nome: 'Torneios', href: () => '#/torneios', ic: TROFEU(26) },
+  { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : torneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
 ];
 
@@ -968,27 +969,126 @@ function chaveSVG({ chaves, sf, fin, campeao, titulo, ano }) {
 }
 
 // lista de torneios: cada um abre a sua tela
+// Finals acontecendo: da montagem até o fim (some quando os 3 grupos encerram ou em 06/12)
+function finalsAgora() {
+  const ano = anoFinals(), fz = S.finals.filter((f) => f.ano === ano);
+  return fz.length > 0 && !S.mesAtual && new Date() < new Date(ano, 11, 6) && !(fz.length === 3 && fz.every((f) => f.fase === 'encerrado'));
+}
+// ---------- torneio de duplas (a coordenação monta tudo: classes, valor, Pix, cabeças de chave e sorteio) ----------
+const TORNEIO = 'duplas-10';
+const TORNEIO_PADRAO = { nome: '10º Torneio de Duplas', classes: ['A', 'B', 'C'], inscricoes: false, valor: null, pix_chave: '19997635743', pix_nome: 'Daniella Gesualdo', zap: '19996194094', zap_nome: 'Daniella', data: '', obs: '' };
+const torneioCfg = () => ({ ...TORNEIO_PADRAO, ...(S.config['torneio_' + TORNEIO] || {}) });
+const torneioAberto = () => !!S.tinsc && torneioCfg().inscricoes === true;
+const inscricoes = () => (S.tinsc || []).filter((x) => x.torneio === TORNEIO);
+const minhaInscricao = () => S.eu && inscricoes().find((x) => x.jogador === S.eu.id);
+const CAMISETA = { masculina: 'Masculina', babylook: 'Feminina baby look', outro: 'Outro tamanho' };
+const camisetaTxt = (x) => (x.camiseta === 'outro' ? 'Outro: ' + (x.outro || '') : CAMISETA[x.camiseta] + ' ' + (x.tamanho || ''));
 function telaTorneios() {
   const ano = anoFinals(), fases = ['A', 'B', 'C'].map((g) => (S.finals.find((x) => x.ano === ano && x.grupo === g) || {}).fase).filter(Boolean);
   const stFin = !fases.length ? 'Os 8 melhores de cada grupo · aguardando o sorteio' : fases.every((f) => f === 'encerrado') ? 'Encerrado · veja os campeões' : 'Em andamento · ' + FASES[fases.find((f) => f !== 'encerrado')];
-  const cartao = (href, tit, sub, tag, fundo) => `<a class="card tor" href="${href}">${fundo || ''}<span class="tor-ic">${TROFEU(46)}</span><span class="tor-tx"><b class="cond">${tit}</b><small>${sub}</small>${tag ? `<span class="tag" style="background:var(--bola);color:var(--noite);align-self:flex-start;margin-top:4px">${tag}</span>` : ''}</span><span class="tor-seta" aria-hidden="true">›</span></a>`;
+  const cartao = (href, tit, sub, tag, fundo, verm) => `<a class="card tor" href="${href}">${fundo || ''}<span class="tor-ic">${TROFEU(46)}</span><span class="tor-tx"><b class="cond">${tit}</b><small>${sub}</small>${tag ? `<span class="tag${verm ? ' tag-pisca' : ''}" style="background:${verm ? 'var(--verm)' : 'var(--bola)'};color:${verm ? '#fff' : 'var(--noite)'};align-self:flex-start;margin-top:4px">${tag}</span>` : ''}</span><span class="tor-seta" aria-hidden="true">›</span></a>`;
+  const cfg = torneioCfg(), duplas = cfg.duplas && Object.keys(cfg.duplas).length;
   return voltar('Torneios', 'Portal do Lago Open de Tênis') + `<div class="conteudo">
-    ${cartao('#/finals', 'Finals ' + ano, esc(stFin), '')}
-    ${cartao('#/duplas', '10º Torneio de Duplas', 'Portal do Lago Open de Tênis', 'EM BREVE', '<img class="tor-logo" src="icones/logo.png" alt="" aria-hidden="true">')}
+    ${cartao('#/finals', 'Finals ' + ano, esc(stFin), finalsAgora() ? 'FINALS ROLANDO' : '', '', finalsAgora())}
+    ${cartao('#/duplas', esc(cfg.nome), 'Portal do Lago Open de Tênis', torneioAberto() ? 'INSCRIÇÕES ABERTAS' : duplas ? 'DUPLAS SORTEADAS' : 'EM BREVE', '<img class="tor-logo" src="icones/logo.png" alt="" aria-hidden="true">', torneioAberto())}
   </div>`;
 }
 function telaDuplas() {
-  return voltar('10º Torneio de Duplas', 'Portal do Lago Open de Tênis', '#/torneios') + `<div class="conteudo">
-    <section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
+  const cfg = torneioCfg(), eu = S.eu, minha = minhaInscricao(), abertas = torneioAberto(), editar = S.torEditar || !minha;
+  const lista = inscricoes(), porClasse = (c) => lista.filter((x) => x.classe === c).map((x) => porId(x.jogador)).filter(Boolean);
+  const topo = `<section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
       <img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">
       ${TROFEU(56)}
       <small style="color:var(--bola);font-weight:700;letter-spacing:2px">TORNEIO DE DUPLAS</small>
-      <b class="cond" style="font-size:30px;line-height:1.1">10ª edição</b>
-      <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis</span>
-      <span class="tag" style="background:var(--bola);color:var(--noite);margin-top:6px">EM BREVE MAIS INFORMAÇÕES</span>
-    </section>
-    <p class="dica">Datas, inscrição e regulamento aparecem aqui e no sino de avisos assim que a coordenação divulgar.</p>
-  </div>`;
+      <b class="cond" style="font-size:30px;line-height:1.1">${esc(cfg.nome)}</b>
+      <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis · classes ${cfg.classes.join(', ')}</span>
+      ${cfg.data ? `<span style="font-size:14px;color:#fff">📅 ${esc(cfg.data)}</span>` : ''}
+      <span class="tag${abertas ? ' tag-pisca' : ''}" style="background:${abertas ? 'var(--verm)' : 'var(--bola)'};color:${abertas ? '#fff' : 'var(--noite)'};margin-top:6px">${abertas ? 'INSCRIÇÕES ABERTAS' : 'EM BREVE MAIS INFORMAÇÕES'}</span>
+    </section>${cfg.obs ? `<p class="dica" style="white-space:pre-line">${esc(cfg.obs)}</p>` : ''}`;
+  let corpo = '';
+  if (abertas && eu && eu.ativo && !eu.pendente) {
+    if (editar) {
+      const m = minha || {}, tam = (n, v) => { const mod = n === 'tamM' ? 'masculina' : 'babylook'; return `<label class="tam"><input type="radio" name="tam" value="${mod}:${v}"${m.camiseta === mod && m.tamanho === v ? ' checked' : ''}><span>${v}</span></label>`; };
+      corpo = `<form class="card" data-form="torInscrever" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">${minha ? 'Mudar minha inscrição' : 'Minha inscrição'}</b>
+        <fieldset class="grupo-op"><legend class="rot">Classe</legend><div class="op-linha">${cfg.classes.map((c) => `<label class="tam"><input type="radio" name="classe" value="${c}" required${(m.classe || eu.grupo) === c ? ' checked' : ''}><span>${c}</span></label>`).join('')}</div></fieldset>
+        <fieldset class="grupo-op"><legend class="rot">Camiseta masculina</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamM', v)).join('')}</div></fieldset>
+        <fieldset class="grupo-op"><legend class="rot">Camiseta feminina (baby look)</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamF', v)).join('')}</div></fieldset>
+        <label class="rot">Outro tamanho (não está na lista)<input class="campo" name="outro" maxlength="60" placeholder="Ex.: XGG, infantil 12" value="${esc(m.camiseta === 'outro' ? m.outro || '' : '')}"></label>
+        <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho.</span>
+        <p id="tor-msg" role="status"></p>
+        <div style="display:grid;grid-template-columns:${minha ? '1fr 1fr' : '1fr'};gap:8px">${minha ? '<button class="btn btn-linha" type="button" data-acao="torEditar" data-v="0">Voltar</button>' : ''}<button class="btn btn-roxo" type="submit">${minha ? 'Salvar' : 'Fazer minha inscrição'}</button></div></form>`;
+    }
+  }
+  if (minha && !editar) {
+    const px = pixDe(cfg), st = minha.status, valor = Number(cfg.valor) || 0;
+    const cc = valor ? pixCopiaCola(valor, cfg.nome + ' ' + eu.nome, ('TD' + eu.id.replace(/-/g, '')).slice(0, 25).toUpperCase(), px) : '';
+    corpo = `<section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Classe ${esc(minha.classe)} · camiseta ${esc(camisetaTxt(minha))}</div></div>
+        ${st === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : st === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : '<span class="tag" style="background:#FDECEC;color:var(--verm)">FALTA PAGAR</span>'}</div>
+      ${st === 'pago' ? '<p class="dica">Pagamento confirmado pela coordenação. Bom torneio!</p>'
+        : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>
+        <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(valor))}"><span class="dica">Carregando QR Code…</span></div>
+        <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
+        <button class="btn btn-linha" type="button" data-acao="copiarPix" data-cc="${esc(px.chave)}" data-ok="Chave Pix copiada.">Copiar chave Pix (${esc(px.tipo)})</button>
+        <span class="dica">Chave ${esc(px.tipo)} <b>${esc(px.mostra)}</b> em nome de <b>${esc(px.nome)}</b>. Depois de pagar, mande o comprovante:</span>
+        ${botaoComprovante(cfg.zap, 'Aqui está o comprovante da minha inscrição no ' + cfg.nome + ' (classe ' + minha.classe + ')', cfg.zap_nome)}
+        ${st === 'pendente' ? '<button class="btn btn-linha" type="button" data-acao="torPaguei">Já paguei</button>' : '<p class="dica">Você avisou que pagou. A coordenação confere e confirma aqui.</p>'}`
+        : '<p class="dica">O valor da inscrição ainda vai ser definido pela coordenação. Assim que sair, o Pix aparece aqui.</p>'}
+      ${abertas ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="torEditar" data-v="1">Mudar classe/camiseta</button>${st === 'pago' ? '' : '<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="torDesistir">Desistir</button>'}</div>` : ''}
+    </section>`;
+  }
+  const inscritos = lista.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Inscritos (${lista.length})</b>
+      ${cfg.classes.map((c) => { const ps = porClasse(c); return `<div><b style="font-size:13px;color:var(--roxo)">Classe ${c} (${ps.length})</b><div class="dica" style="line-height:1.6">${ps.map((j) => esc(j.nome)).join(' · ') || 'ninguém ainda'}</div></div>`; }).join('')}</section>` : '';
+  const duplas = cfg.duplas && Object.keys(cfg.duplas).length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Duplas sorteadas</b>
+      ${Object.entries(cfg.duplas).map(([c, ds]) => `<div><b style="font-size:13px;color:var(--roxo)">Classe ${c}</b>${ds.map((d, i) => `<div style="font-size:14px">${i + 1}. ${d.map((id) => esc((porId(id) || {}).nome || '?')).join(' <b style="color:var(--roxo)">+</b> ')}</div>`).join('')}</div>`).join('')}</section>` : '';
+  return voltar(cfg.nome, 'Portal do Lago Open de Tênis', '#/torneios') + `<div class="conteudo">${topo}${corpo}${duplas}${inscritos}
+    ${!abertas && !lista.length ? '<p class="dica">Datas, inscrição e regulamento aparecem aqui e no sino de avisos assim que a coordenação divulgar.</p>' : ''}</div>`;
+}
+// Admin: a coordenação monta o torneio do jeito que quiser
+function adminTorneio() {
+  if (!S.tinsc) return '';
+  const cfg = torneioCfg(), lista = inscricoes(), ver = S.admin.torVer;
+  const conta = {}; lista.forEach((x) => { const k = camisetaTxt(x); conta[k] = (conta[k] || 0) + 1; });
+  const linha = (x) => { const j = porId(x.jogador) || { nome: '?' };
+    return `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.cabeca ? '⭐ ' : ''}${esc(j.nome)}</b><small class="dica">Classe ${esc(x.classe)} · ${esc(camisetaTxt(x))}</small></span>
+      <button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torCabeca" data-j="${x.jogador}" aria-pressed="${x.cabeca}" aria-label="Cabeça de chave: ${esc(j.nome)}">${x.cabeca ? '⭐ Cabeça' : '☆ Cabeça'}</button>
+      ${x.status === 'pago' ? `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torPago" data-j="${x.jogador}" data-v="pendente">Pago ✓</button>`
+        : `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px;background:var(--verde);color:#fff;border-color:var(--verde)" data-acao="torPago" data-j="${x.jogador}" data-v="pago">${x.status === 'informado' ? 'Avisou · Confirmar' : 'Confirmar'}</button>`}
+      <button type="button" class="ic-mini" data-acao="torTirar" data-j="${x.jogador}" aria-label="Tirar ${esc(j.nome)} do torneio">✕</button></div>`; };
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">${esc(cfg.nome)}</b>
+    <span class="dica">Monte do jeito que quiser: classes, valor, Pix e quando abrir as inscrições. Depois marque os cabeças de chave (⭐) e sorteie as duplas de cada classe.</span>
+    <form data-form="torConfig" style="display:flex;flex-direction:column;gap:8px">
+      <label class="rot">Nome do torneio<input class="campo" name="nome" maxlength="60" value="${esc(cfg.nome)}" required></label>
+      <fieldset class="grupo-op"><legend class="rot">Classes</legend><div class="op-linha">${['A', 'B', 'C'].map((c) => `<label class="tam"><input type="checkbox" name="cl${c}"${cfg.classes.includes(c) ? ' checked' : ''}><span>${c}</span></label>`).join('')}</div></fieldset>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Valor da inscrição (R$)<input class="campo" name="valor" inputmode="decimal" placeholder="a definir" value="${cfg.valor ? String(cfg.valor).replace('.', ',') : ''}"></label>
+      <label class="rot">Data (texto livre)<input class="campo" name="data" maxlength="60" placeholder="Ex.: 20 e 21/03/2027" value="${esc(cfg.data || '')}"></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Chave Pix<input class="campo" name="pix" maxlength="77" value="${esc(cfg.pix_chave || '')}"></label>
+      <label class="rot">Nome de quem recebe<input class="campo" name="pixNome" maxlength="60" value="${esc(cfg.pix_nome || '')}"></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">WhatsApp do comprovante<input class="campo" name="zap" inputmode="tel" maxlength="20" value="${esc(cfg.zap || '')}"></label>
+      <label class="rot">Nome (no botão)<input class="campo" name="zapNome" maxlength="30" value="${esc(cfg.zap_nome || '')}"></label></div>
+      <label class="rot">Recado pros jogadores (opcional)<textarea class="campo" name="obs" rows="2" maxlength="400">${esc(cfg.obs || '')}</textarea></label>
+      <button class="btn btn-linha" type="submit">Salvar configuração</button></form>
+    <button class="btn ${cfg.inscricoes ? 'btn-linha' : 'btn-roxo'}" data-acao="torAbrir" data-v="${cfg.inscricoes ? '0' : '1'}">${cfg.inscricoes ? 'Fechar inscrições' : 'Abrir inscrições'}</button>
+    <div class="cob-cont"><span><b>${lista.length}</b> inscritos</span><span><b style="color:var(--verde)">${lista.filter((x) => x.status === 'pago').length}</b> pagos</span><span><b style="color:#6B4A00">${lista.filter((x) => x.status === 'informado').length}</b> avisaram</span></div>
+    ${Object.keys(conta).length ? `<div class="dica"><b>Camisetas:</b> ${Object.entries(conta).sort().map(([k, n]) => esc(k) + ' (' + n + ')').join(' · ')}</div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="torVer" aria-expanded="${!!ver}">${ver ? 'Fechar lista' : 'Ver inscritos'}</button><button type="button" class="btn btn-linha" data-acao="torPlanilha"${lista.length ? '' : ' disabled'}>Baixar planilha</button></div>
+    ${ver ? cfg.classes.map((c) => { const xs = lista.filter((x) => x.classe === c); return `<div><b style="font-size:14px">Classe ${c} (${xs.length}) · ${xs.filter((x) => x.cabeca).length} cabeças de chave</b><div class="cob-lista">${xs.map(linha).join('') || '<p class="dica">Ninguém ainda.</p>'}</div>
+      <button type="button" class="btn btn-roxo" style="margin-top:8px;width:100%" data-acao="torSortear" data-v="${c}"${xs.length < 2 ? ' disabled' : ''}>${cfg.duplas && cfg.duplas[c] ? 'Sortear de novo as duplas da classe ' + c : 'Sortear as duplas da classe ' + c}</button></div>`; }).join('') : ''}
+    <span class="dica">Sorteio: cada cabeça de chave (⭐) recebe um parceiro sorteado entre os outros da classe; quem sobrar forma dupla entre si, também por sorteio. As duplas aparecem pra todo mundo na tela do torneio.</span>
+  </section>`;
+}
+// sorteio das duplas: cabeça de chave + parceiro sorteado; o resto em duplas sorteadas
+function sortearDuplas(ids, cabecas, rnd = Math.random) {
+  const emb = (xs) => { const a = xs.slice(); for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(rnd() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
+  const cab = emb(ids.filter((id) => cabecas.has(id))), resto = emb(ids.filter((id) => !cabecas.has(id))), duplas = [];
+  while (cab.length) { const c = cab.shift(); const p = resto.shift() || cab.shift(); duplas.push(p ? [c, p] : [c]); }
+  while (resto.length) duplas.push(resto.splice(0, 2));
+  return duplas;
+}
+async function salvarTorneio(muda) {
+  const novo = { ...torneioCfg(), ...muda };
+  let r = await sb.from('config').delete().eq('chave', 'torneio_' + TORNEIO); if (r.error) throw r.error;
+  r = await sb.from('config').insert({ chave: 'torneio_' + TORNEIO, valor: novo }); if (r.error) throw r.error;
 }
 // novembro/dezembro: sem jogos do ranking, a tela de Jogos mostra o Finals (dá pra voltar pros meses anteriores)
 function finalsNosJogos() {
@@ -1115,6 +1215,8 @@ function telaAdmin() {
     ${adminRespostasTemporada()}
     ${adminRespostasFinals()}
     ${adminFinals()}
+    ${adminTorneio()}
+    <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Testar o botão do ranking ${anoRanking() + 1}</b><span class="dica">Toca o som e os fogos do "SIM, VAMOS!!!!" sem salvar nada. O botão de verdade aparece pra todo mundo quando o Finals acabar (ou em 10/12).</span><button type="button" class="btn btn-bola btn-vamos" data-acao="testarVamos">SIM, VAMOS!!!!</button></section>
     <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo e essa pessoa desce uma. Em branco = último do grupo.</span>
       <label class="rot">Nome<input class="campo" name="nome" required maxlength="40"></label>
       <label class="rot">E-mail (é o login dele)<input class="campo" name="email" type="email" required></label>
@@ -1394,14 +1496,33 @@ function crc16(s) {
   return c.toString(16).toUpperCase().padStart(4, '0');
 }
 // "Pix copia e cola" (BR Code estático do Banco Central) com valor e mensagem
-function pixCopiaCola(valor, msg, txid) {
+function pixCopiaCola(valor, msg, txid, pix = PIX) {
   const f = (id, v) => id + String(v.length).padStart(2, '0') + v;
   const m = ascii(msg).slice(0, 40).trim();
-  const conta = f('00', 'br.gov.bcb.pix') + f('01', PIX.chave) + (m ? f('02', m) : '');
-  const corpo = f('00', '01') + f('26', conta) + f('52', '0000') + f('53', '986') + f('54', Number(valor).toFixed(2)) + f('58', 'BR')
-    + f('59', ascii(PIX.nome).toUpperCase().slice(0, 25)) + f('60', ascii(PIX.cidade).toUpperCase().slice(0, 15))
+  const conta = f('00', 'br.gov.bcb.pix') + f('01', pix.chave) + (m ? f('02', m) : '');
+  const corpo = f('00', '01') + f('26', conta) + f('52', '0000') + f('53', '986') + (valor ? f('54', Number(valor).toFixed(2)) : '') + f('58', 'BR')
+    + f('59', ascii(pix.nome || 'Galera da Raquete').toUpperCase().slice(0, 25)) + f('60', ascii(pix.cidade || 'SUMARE').toUpperCase().slice(0, 15))
     + f('62', f('05', (String(txid || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 25)) || '***')) + '6304';
   return corpo + crc16(corpo);
+}
+// chave Pix de uma cobrança/torneio (celular vira +55...; e-mail, CPF e chave aleatória ficam como estão)
+function chavePix(k) {
+  const t = String(k || '').trim(); if (!t) return null;
+  if (t.includes('@')) return { chave: t.toLowerCase(), mostra: t.toLowerCase(), tipo: 'e-mail' };
+  const d = soDigitos(t);
+  if (/^[0-9a-f-]{32,36}$/i.test(t) && t.includes('-')) return { chave: t.toLowerCase(), mostra: t.toLowerCase(), tipo: 'aleatória' };
+  if (d.length === 10 || d.length === 11) {
+    if (d.length === 11 && !/^\d{2}9/.test(d)) return { chave: d, mostra: d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), tipo: 'CPF' };
+    return { chave: '+55' + d, mostra: '(' + d.slice(0, 2) + ') ' + d.slice(2, -4) + '-' + d.slice(-4), tipo: 'celular' };
+  }
+  if (d.length === 13 && d.startsWith('55')) return { chave: '+' + d, mostra: '(' + d.slice(2, 4) + ') ' + d.slice(4, -4) + '-' + d.slice(-4), tipo: 'celular' };
+  return { chave: t, mostra: t, tipo: 'chave' };
+}
+const pixDe = (o) => { const k = chavePix(o && o.pix_chave); return k ? { ...k, nome: (o.pix_nome || 'Galera da Raquete'), cidade: 'SUMARE' } : PIX; };
+// botão verde de WhatsApp pra mandar o comprovante já com a frase
+function botaoComprovante(zapNum, frase, quem) {
+  const l = zap(zapNum, frase + (S.eu ? ' — ' + S.eu.nome : '')); if (!l) return '';
+  return `<a class="btn btn-zap" href="${esc(l)}" target="_blank" rel="noopener">Enviar comprovante${quem ? ' (' + esc(quem) + ')' : ''}</a>`;
 }
 const txidDe = (c, j) => ('GR' + c.id.replace(/-/g, '').slice(0, 6) + j.id.replace(/-/g, '').slice(0, 10)).toUpperCase();
 // pendências do jogador logado nas cobranças que já começaram
@@ -1464,12 +1585,14 @@ function telaPagamentos() {
         ${status === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : status === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : status === 'pendente' ? '<span class="tag" style="background:#FDECEC;color:var(--verm)">PENDENTE</span>' : '<span class="tag" style="background:#EFEAF8;color:var(--roxo)">INSCRIÇÕES ABERTAS</span>'}</div>`;
       if (status === 'pago') return `<section class="card">${cab}<p class="dica" style="margin-top:6px">✓ Pagamento confirmado pela coordenação${pg && pg.pago_em ? ' em ' + dataBR(pg.pago_em) : ''}. Obrigado!</p></section>`;
       if (status === 'inscricao') return `<section class="card" style="display:flex;flex-direction:column;gap:10px">${cab}<button class="btn btn-roxo" data-acao="inscrever" data-id="${c.id}">Quero me inscrever</button><span class="dica">Depois de inscrito aparece o Pix da inscrição.</span></section>`;
-      const cc = pixCopiaCola(c.valor, c.titulo + ' ' + S.eu.nome, txidDe(c, S.eu));
+      const px = pixDe(c), cc = pixCopiaCola(c.valor, c.titulo + ' ' + S.eu.nome, txidDe(c, S.eu), px);
       return `<section class="card" style="display:flex;flex-direction:column;gap:10px">${cab}
         ${status === 'informado' ? `<p class="dica">Você avisou que pagou${pg && pg.informado_em ? ' em ' + dataBR(pg.informado_em) : ''}. A coordenação confere no extrato e confirma aqui. Se ainda não pagou, use o Pix abaixo.</p>` : ''}
         <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(c.valor))}"><span class="dica">Carregando QR Code…</span></div>
         <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
-        <span class="dica">No app do banco: Pix → Pagar com QR Code ou Pix copia e cola. O valor (${real(c.valor)}) já vem preenchido.<br>Ou pela chave ${PIX.tipo} <b>${PIX.mostra}</b> em nome de <b>${esc(PIX.nome)}</b>.</span>
+        <button class="btn btn-linha" type="button" data-acao="copiarPix" data-cc="${esc(px.chave)}" data-ok="Chave Pix copiada.">Copiar chave Pix (${esc(px.tipo)})</button>
+        <span class="dica">No app do banco: Pix → Pagar com QR Code ou Pix copia e cola. O valor (${real(c.valor)}) já vem preenchido.<br>Ou pela chave ${esc(px.tipo)} <b>${esc(px.mostra)}</b> em nome de <b>${esc(px.nome)}</b>.</span>
+        ${c.zap_comprovante ? botaoComprovante(c.zap_comprovante, c.zap_msg || 'Aqui está o comprovante do pagamento: ' + c.titulo, '') : ''}
         ${status === 'pendente' ? `<button class="btn btn-linha" type="button" data-acao="jaPaguei" data-id="${c.id}">Já paguei</button>` : ''}
       </section>`;
     }).join('') : '<p class="dica">Nenhum pagamento pra você agora. 👍</p>'}
@@ -1511,6 +1634,10 @@ function adminCobrancas() {
       <label class="rot">Vencimento<input class="campo" name="vence" type="date"></label></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Quem paga<select class="campo" name="tipo"><option value="todos">Todos do ranking</option><option value="inscricao">Quem se inscrever (torneio)</option></select></label>
       <label class="rot">Aparece a partir de<input class="campo" name="inicio" type="date" value="${hojeISO()}"></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Chave Pix (vazio = ${esc(PIX.mostra)})<input class="campo" name="pix" maxlength="77" placeholder="e-mail, celular ou CPF"></label>
+      <label class="rot">Nome de quem recebe<input class="campo" name="pixNome" maxlength="60"></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">WhatsApp do comprovante<input class="campo" name="zapC" inputmode="tel" maxlength="20" placeholder="19 99999-9999"></label>
+      <label class="rot">Frase da mensagem<input class="campo" name="zapM" maxlength="200" placeholder="Aqui está a minha inscrição…"></label></div>
       <button type="submit" class="btn btn-roxo">Criar cobrança</button>
     </form></section>`;
 }
@@ -1903,6 +2030,26 @@ const ACOES = {
   reabrir: (el) => comTrava('Reabrindo…', async () => { S.admin.reabrir = null; await reabrirMes(el.dataset.v); }, 'Mês reaberto: corrija o placar e encerre de novo.'),
   finNaoVou: () => { S.finConfirma = true; render(); },
   tempNao: () => { S.tempConfirma = true; render(); },
+  testarVamos: () => { tocarVamos(); fogos(''); toast('VAMOS!!!! (teste: nada foi salvo)'); },
+  torEditar: (el) => { S.torEditar = el.dataset.v === '1'; render(); },
+  torPaguei: () => comTrava('', async () => { const r = await sb.rpc('informar_pagamento_torneio', { p_torneio: TORNEIO }); if (r.error) throw r.error; }, 'Valeu! A coordenação vai conferir e confirmar.'),
+  torDesistir: () => comTrava('', async () => { const r = await sb.rpc('cancelar_inscricao_torneio', { p_torneio: TORNEIO }); if (r.error) throw r.error; }, 'Inscrição cancelada.'),
+  torAbrir: (el) => comTrava('', () => salvarTorneio({ inscricoes: el.dataset.v === '1' }), el.dataset.v === '1' ? 'Inscrições abertas: já aparece pra todo mundo.' : 'Inscrições fechadas.'),
+  torVer: () => { S.admin.torVer = !S.admin.torVer; render(); },
+  torCabeca: (el) => { const x = inscricoes().find((y) => y.jogador === el.dataset.j); if (!x) return; comTrava('', async () => { const r = await sb.from('torneio_inscricao').update({ cabeca: !x.cabeca }).eq('torneio', TORNEIO).eq('jogador', x.jogador); if (r.error) throw r.error; }, x.cabeca ? 'Tirado dos cabeças de chave.' : 'Marcado como cabeça de chave ⭐'); },
+  torPago: (el) => comTrava('', async () => { const pago = el.dataset.v === 'pago'; const r = await sb.from('torneio_inscricao').update({ status: pago ? 'pago' : 'pendente', pago_em: pago ? new Date().toISOString() : null }).eq('torneio', TORNEIO).eq('jogador', el.dataset.j); if (r.error) throw r.error; }, el.dataset.v === 'pago' ? 'Pagamento confirmado.' : 'Pagamento desfeito.'),
+  torTirar: (el) => comTrava('', async () => { const r = await sb.from('torneio_inscricao').delete().eq('torneio', TORNEIO).eq('jogador', el.dataset.j); if (r.error) throw r.error; }, 'Tirado do torneio.'),
+  torSortear: (el) => comTrava('Sorteando…', async () => {
+    const c = el.dataset.v, xs = inscricoes().filter((x) => x.classe === c);
+    const duplas = sortearDuplas(xs.map((x) => x.jogador), new Set(xs.filter((x) => x.cabeca).map((x) => x.jogador)));
+    await salvarTorneio({ duplas: { ...(torneioCfg().duplas || {}), [c]: duplas } });
+  }, 'Duplas sorteadas! Já aparecem na tela do torneio.'),
+  torPlanilha: () => {
+    const cfg = torneioCfg(), cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', sit = { pago: 'Pago', informado: 'Avisou que pagou', pendente: 'Pendente' };
+    const linhas = [['Nome', 'Classe', 'Cabeça de chave', 'Camiseta', 'Tamanho', 'Celular', 'Pagamento']].concat(inscricoes().map((x) => { const j = porId(x.jogador) || {}; return [j.nome, x.classe, x.cabeca ? 'Sim' : '', CAMISETA[x.camiseta], x.camiseta === 'outro' ? x.outro : x.tamanho, j.celular || '', sit[x.status]]; }));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map((l) => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = ascii(cfg.nome).replace(/\s+/g, '-').toLowerCase() + '-' + hojeISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
   tempVoltar: () => { S.tempConfirma = false; render(); },
   tempResp: (el) => responderTemporada(el.dataset.v === 'sim'),
   tempMarca: (el) => { const T = anoRanking() + 1, id = el.dataset.id, v = el.dataset.v, j = porId(id) || {};
@@ -1989,7 +2136,7 @@ const ACOES = {
   }, 'Programação salva.'),
   copiarPix: async (el) => {
     const t = el.dataset.cc;
-    try { await navigator.clipboard.writeText(t); toast('Pix copia e cola copiado. Cole no app do seu banco.'); }
+    try { await navigator.clipboard.writeText(t); toast(el.dataset.ok || 'Pix copia e cola copiado. Cole no app do seu banco.'); }
     catch (e) { const x = document.createElement('textarea'); x.value = t; x.setAttribute('readonly', ''); x.style.position = 'fixed'; x.style.opacity = '0'; document.body.appendChild(x); x.select(); try { document.execCommand('copy'); toast('Pix copia e cola copiado.'); } catch (e2) { toast('Não consegui copiar. Use o QR Code.'); } x.remove(); }
   },
   jaPaguei: (el) => comTrava('', async () => { const r = await sb.rpc('informar_pagamento', { p_cobranca: el.dataset.id }); if (r.error) throw r.error; }, 'Valeu! A coordenação vai conferir e confirmar.'),
@@ -2067,10 +2214,28 @@ const FORMS = {
     let r = await sb.from('config').delete().eq('chave', 'desafio_' + ano); if (r.error) throw r.error;
     r = await sb.from('config').insert({ chave: 'desafio_' + ano, valor: { qtd, img, titulo: f.titulo.value.trim() || null } }); if (r.error) throw r.error;
   }, 'Desafio salvo.'),
+  torInscrever: async (f) => {
+    const msg = document.getElementById('tor-msg'), t = f.querySelector('input[name=tam]:checked'), outro = f.outro.value.trim();
+    const classe = (f.querySelector('input[name=classe]:checked') || {}).value;
+    if (!classe) { msg.className = 'erro'; msg.textContent = 'Escolha a classe.'; return; }
+    if (!t && !outro) { msg.className = 'erro'; msg.textContent = 'Escolha o tamanho da camiseta.'; return; }
+    const [camiseta, tamanho] = outro ? ['outro', null] : t.value.split(':');
+    const { error } = await sb.rpc('inscrever_torneio', { p_torneio: TORNEIO, p_classe: classe, p_camiseta: camiseta, p_tamanho: tamanho, p_outro: outro || null });
+    if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
+    S.torEditar = false; await carregar(); render(); toast('Inscrição feita! Agora é só pagar e mandar o comprovante.');
+  },
+  torConfig: (f) => comTrava('', async () => {
+    const classes = ['A', 'B', 'C'].filter((c) => f['cl' + c].checked);
+    if (!classes.length) throw new Error('Marque pelo menos uma classe.');
+    const v = String(f.valor.value).trim(), valor = v ? Number(v.replace(/\./g, '').replace(',', '.')) : null;
+    if (v && !(valor > 0)) throw new Error('Valor inválido.');
+    await salvarTorneio({ nome: f.nome.value.trim() || TORNEIO_PADRAO.nome, classes, valor, data: f.data.value.trim(), pix_chave: f.pix.value.trim(), pix_nome: f.pixNome.value.trim(), zap: soDigitos(f.zap.value), zap_nome: f.zapNome.value.trim(), obs: f.obs.value.trim() });
+  }, 'Torneio salvo.'),
   cobNova: (f) => comTrava('', async () => {
     const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
     if (!(valor > 0)) throw new Error('Valor inválido.');
-    const r = await sb.from('cobrancas').insert({ titulo: f.titulo.value.trim(), valor, vence: f.vence.value || null, tipo: f.tipo.value, inicio: f.inicio.value || hojeISO(), aberta: true });
+    const extra = f.pix.value.trim() || f.zapC.value.trim() ? { pix_chave: f.pix.value.trim() || null, pix_nome: f.pixNome.value.trim() || null, zap_comprovante: soDigitos(f.zapC.value) || null, zap_msg: f.zapM.value.trim() || null } : {};
+    const r = await sb.from('cobrancas').insert({ titulo: f.titulo.value.trim(), valor, vence: f.vence.value || null, tipo: f.tipo.value, inicio: f.inicio.value || hojeISO(), aberta: true, ...extra });
     if (r.error) throw r.error;
   }, 'Cobrança criada.'),
   patroSalvar: (f) => comTrava('', async () => {
@@ -2565,6 +2730,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_resposta' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'temporada_resposta' }, recarregarDepois)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneio_inscricao' }, recarregarDepois)
     .subscribe();
   render();
   // no primeiro acesso, os avisos (tour, parabéns, cobrança, Finals...) esperam a pessoa criar a senha
