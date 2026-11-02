@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101224142';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101224142';
-import { REGULAMENTO } from './regulamento.js?v=20261101224142';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101224142';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101224142';
+import * as M from './motor.js?v=20261101231936';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101231936';
+import { REGULAMENTO } from './regulamento.js?v=20261101231936';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101231936';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101231936';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -132,7 +132,7 @@ const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   // tudo que não depende de nada vai junto (menos idas e voltas = abre mais rápido)
-  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador'))]);
+  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('temporada_resposta').select('*').order('ano').order('jogador'))]);
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
     todas(() => sb.from('jogadores').select(COLS).order('id')),
     sb.from('meses').select('*').order('id', { ascending: false }),
@@ -152,9 +152,10 @@ async function carregar() {
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
   const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
   S.backups = backups;
-  const [cb, pg, fr] = await extras;
+  const [cb, pg, fr, tr] = await extras;
   S.cobrancas = cb.error ? [] : cb.data; S.pagamentos = pg.error ? [] : pg.data;
   S.fresp = fr.error ? null : fr.data;   // null = tabela ainda não existe: a pergunta não aparece
+  S.tresp = tr.error ? null : tr.data;   // respostas "vou continuar no ranking do ano que vem" (null = ainda não ativado no banco)
   aquecerFotos();
   S.jogos = jogos;
   if (!S.eu) return;
@@ -207,6 +208,56 @@ function tagFinals(id, naVaga) {
   if (r && r.vai === false) return ' <span class="tag tag-fin nao" title="Avisou que não vai jogar o Finals">NÃO VAI</span>';
   if (!naVaga) return '';
   return r && r.vai ? ' <span class="tag tag-fin ok" title="Confirmou que vai jogar o Finals">FINALS ✓</span>' : ' <span class="tag tag-fin falta" title="Ainda não respondeu se vai jogar o Finals">FINALS ?</span>';
+}
+// Ranking do ano que vem: quando o Finals acaba (ou a partir de 10/12), cada um diz se continua ("SIM, VAMOS!!!!").
+// Quem não vai fica em standby; ao iniciar a temporada só entram os que confirmaram (e os novos aprovados).
+function perguntaTemporada() {
+  if (!S.tresp || S.mesAtual) return false;
+  const a = anoRanking(), T = a + 1;
+  if (Number(S.config.temporada) >= T || S.meses.some((m) => m.id >= T + '-01')) return false;
+  const acabou = ['A', 'B', 'C'].every((g) => (S.finals.find((f) => f.ano === a && f.grupo === g) || {}).fase === 'encerrado');
+  return acabou || new Date() >= new Date(a, 11, 10);
+}
+const respTemp = (id, T = anoRanking() + 1) => (S.tresp || []).find((r) => r.ano === T && r.jogador === id);
+function tocarVamos() { try { const a = new Audio('vamos.mp3'); a.volume = 1; a.play().catch(() => {}); } catch (e) { /* sem som */ } }
+function responderTemporada(vai) {
+  const T = anoRanking() + 1; S.tempConfirma = false;
+  if (vai) { tocarVamos(); fogos(''); }
+  comTrava('', async () => { const r = await sb.rpc('responder_temporada', { p_ano: T, p_vai: vai }); if (r.error) throw r.error; },
+    vai ? 'VAMOS!!!! Você está no ranking ' + T + '.' : 'Pronto: você fica em standby e não entra no ranking ' + T + '.');
+}
+// cartão do início: eu (com foto) VS 2027 · pergunta ou "aguardando rodar o ranking"
+function blocoTemporada(eu, geral) {
+  const T = anoRanking() + 1, r = respTemp(eu.id);
+  const vs = `<div class="vs">
+      <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º em ${T - 1}</small></div>
+      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${r && r.vai ? 'brilho' : ''}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${r && r.vai ? 'AGUARDANDO' : r ? 'STANDBY' : 'VAI CONTINUAR?'}</small></div>
+      <div class="lado"><span class="vs-ano" aria-hidden="true">${T}</span><b>Ranking ${T}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${r && r.vai ? 'confirmado ✓' : 'temporada nova'}</small></div>
+    </div>`;
+  let corpo;
+  if (r && r.vai) corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px;color:var(--verde)">✓ Você está no ranking ${T}!</b><div class="dica">Aguardando rodar o ranking ${T}. Os confrontos de janeiro aparecem aqui.</div>
+      <div class="dica" style="margin-top:4px">Não vai mais poder? <button type="button" class="link-btn" data-acao="tempNao">Avisar que não vou</button></div></div></div>`;
+  else if (S.tempConfirma) corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><b class="cond" style="font-size:18px;color:var(--verm)">Não vai continuar no ranking ${T}?</b>
+      <span class="dica">Você fica em standby e sai do ranking quando a temporada ${T} começar. Se mudar de ideia antes disso, é só voltar aqui.</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="tempVoltar">Voltar</button><button class="btn btn-roxo" style="background:var(--verm)" data-acao="tempResp" data-v="nao">Não vou</button></div></div>`;
+  else if (r) corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:18px">Você avisou que não vai continuar em ${T}</b><div class="dica">Está em standby e sai do ranking quando a temporada ${T} começar.</div></div>
+      <button class="btn btn-bola btn-vamos" data-acao="tempResp" data-v="sim">Mudei de ideia: SIM, VAMOS!!!!</button></div>`;
+  else corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:19px">Bora pro ranking ${T}?</b><div class="dica">O Finals acabou! Confirme se você continua no ranking ${T}. Só entra quem confirmar.</div></div>
+      <button class="btn btn-bola btn-vamos" data-acao="tempResp" data-v="sim">SIM, VAMOS!!!!</button>
+      <button type="button" class="link-btn" data-acao="tempNao" style="align-self:center">Não vou continuar</button></div>`;
+  return { vs, corpo };
+}
+// lembrete ao abrir o app (uma vez por sessão) pra quem ainda não respondeu
+function lembrarTemporada() {
+  quandoLivre(() => {
+    const eu = S.eu, T = anoRanking() + 1;
+    if (!eu || !eu.ativo || !eu.joga || eu.pendente || !perguntaTemporada() || respTemp(eu.id)) return;
+    try { if (sessionStorage.getItem('temporada-lembrada-' + T)) return; sessionStorage.setItem('temporada-lembrada-' + T, '1'); } catch (e) { /* mostra mesmo */ }
+    janela('Ranking ' + T, `<div class="niver-bolo" aria-hidden="true">🎾</div><small>RANKING ${T}</small><b class="cond" style="font-size:26px">Bora pro ranking ${T}?</b>
+      <span style="font-size:15px">O Finals acabou! Confirme se você continua no ranking ${T}. Só entra quem confirmar.</span>
+      <button class="btn btn-bola btn-vamos" type="button" data-acao="tempResp" data-v="sim" style="width:100%;margin-top:8px">SIM, VAMOS!!!!</button>
+      <button class="link-btn" type="button" style="color:inherit;opacity:.8">Responder depois</button>`);
+  }, 1500);
 }
 // Lembrete ao abrir o app (uma vez por sessão) pra quem está nas 8 vagas e ainda não respondeu,
 // inclusive quem subiu (9º, 10º...) porque alguém dos 8 não vai
@@ -345,6 +396,9 @@ function telaInicio() {
   } else if (!S.mesAtual && minhaVaga() && (S.finals.find((x) => x.ano === anoFinals() && x.grupo === minhaVaga().grupo) || {}).fase !== 'encerrado') {
     const v = minhaVaga(), fz = S.finals.find((x) => x.ano === v.ano && x.grupo === v.grupo);
     corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">Você está no Finals!</b><div class="dica">Grupo ${esc(v.grupo)} · Chave ${v.chave} · ${esc(FASES[fz.fase])}</div></div><a class="btn btn-bola" href="#/finals" style="height:44px;padding:0 14px;font-size:13px">Ver jogos</a></div>`;
+  } else if (perguntaTemporada()) {
+    const t = blocoTemporada(eu, geral); var vsTemp = t.vs;
+    corpo = t.corpo + (campeoes() ? `<div style="padding:0 14px 14px">${cardCampeoes(campeoes())}</div>` : '');
   } else if (!S.mesAtual && campeoes()) {
     corpo = cardCampeoes(campeoes());
   } else if (!S.mesAtual) {
@@ -354,7 +408,7 @@ function telaInicio() {
   } else if (!meu) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">${eu.standby ? 'Você está em standby' : 'Sem jogo neste mês'}</b><div class="dica">${eu.standby ? 'Desligue o standby no seu perfil para voltar na próxima rodada.' : 'Fale com a coordenação se achar que é um erro.'}</div></div></div>`;
   }
-  let vs = '';
+  let vs = typeof vsTemp === 'string' ? vsTemp : '';
   if (meu && meu.jogador_b) {
     const adv = porId(meu.jogador_a === eu.id ? meu.jogador_b : meu.jogador_a);
     const v = vencedor(meu);
@@ -397,7 +451,7 @@ function telaInicio() {
     <p class="sub-ranking">RANKING</p>
   </header>
   <section class="jogo" aria-label="Seu jogo do mês">
-    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">${!S.mesAtual && campeoes() ? 'FIM DE TEMPORADA' : 'JOGO DO MÊS'}</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : '—'}</span></div>
+    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">${perguntaTemporada() && eu.ativo && eu.joga ? 'RANKING ' + (anoRanking() + 1) : !S.mesAtual && campeoes() ? 'FIM DE TEMPORADA' : 'JOGO DO MÊS'}</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : '—'}</span></div>
     ${vs}
     ${p && meu && meu.jogador_b ? `<div style="padding:0 14px 8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.75)"><span>Prazo: até ${p.texto}</span><b style="color:var(--bola)">${p.dias}</b></div>
       <div class="barra" aria-hidden="true"><i style="width:${p.pct}%"></i><svg style="left:${p.pct}%" width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#D8F145" stroke="#1A0D33" stroke-width="1.5"/><path d="M3 4.5c4 1.5 6 3.5 6 5.5s-2 4-6 5.5M17 4.5c-4 1.5-6 3.5-6 5.5s2 4 6 5.5" fill="none" stroke="#1A0D33" stroke-width="1.5" stroke-linecap="round"/></svg></div></div>` : '<div style="height:8px"></div>'}
@@ -1035,6 +1089,7 @@ function telaAdmin() {
       <label class="rot">Jogador 1<select class="campo" name="a" required><option value="">Escolher…</option>${opcoes}</select></label>
       <label class="rot">Jogador 2<select class="campo" name="b" required><option value="">Escolher…</option>${opcoes}</select></label>
       <button class="btn btn-roxo" type="submit">Adicionar</button></form>` : ''}
+    ${adminRespostasTemporada()}
     ${adminRespostasFinals()}
     ${adminFinals()}
     <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo e essa pessoa desce uma. Em branco = último do grupo.</span>
@@ -1533,13 +1588,15 @@ function cardTemporada() {
   if (S.mesAtual) return '';
   const T = proxTemporada(), feita = Number(S.config.temporada) >= T, ult = S.meses.map((m) => m.id).sort().pop();
   if (feita || (ult && Number(ult.slice(5)) < 10)) return '';
-  const lista = listaGeral(), n = lista.length, conf = S.admin.temporada;
+  const confT = confirmadosTemporada(T), todosT = listaGeral();
+  const lista = confT ? todosT.filter((j) => confT.has(j.id)) : todosT, n = lista.length, conf = S.admin.temporada, saemT = todosT.length - n;
   const falta = ['A', 'B', 'C'].filter((g) => (S.finals.find((fz) => fz.ano === T - 1 && fz.grupo === g) || {}).fase !== 'encerrado');
   // só libera depois da final do Finals (5/12)
   if (new Date() >= new Date(T - 1, 11, 6) && !progDoAno(T).length) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">Pra liberar o botão de iniciar a temporada ${T}, cadastre a <b>Programação ${T}</b> aqui embaixo (dá pra copiar a de ${T - 1} e ajustar as datas). Lembre também das subidas e descidas de grupo (regra 5.3) em Jogadores.</span></section>`;
   if (new Date() < new Date(T - 1, 11, 6)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">O botão de iniciar a temporada ${T} libera depois da final do Finals, a partir de 06/12/${T - 1}.</span></section>`;
   return `<section class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Temporada ${T}</b>
-    ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas):</span>
+    ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas${confT ? ' que confirmaram' : ''}):</span>
+      ${saemT ? `<span class="erro" style="font-size:13px">${saemT} ${saemT === 1 ? 'jogador sai' : 'jogadores saem'} do ranking (não vão ou não responderam). Confira a lista "Ranking ${T} · quem continua".</span>` : ''}
       <div style="font-size:13px;line-height:1.6">${lista.slice(0, 3).map((j, i) => `${i + 1}º ${esc(j.nome)} → <b>${n - i} pts</b>`).join('<br>')}${n > 4 ? '<br>…' : ''}${n > 3 ? `<br>${n}º ${esc(lista[n - 1].nome)} → <b>1 pt</b>` : ''}</div>
       ${falta.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${falta.join(', ')}: encerre antes, senão o bônus não entra.</span>` : ''}
       <span class="dica">Uma cópia dos pontos de agora fica guardada no banco.</span>
@@ -1547,13 +1604,23 @@ function cardTemporada() {
       : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Antes, confira as subidas e descidas de grupo (regra 5.3) em Jogadores. Depois é só abrir janeiro e gerar os confrontos.</span>`}
   </section>`;
 }
+// quem confirmou o ranking T (null = confirmação ainda não ativada no banco: entra todo mundo, como antes)
+function confirmadosTemporada(T) {
+  if (!S.tresp) return null;
+  return new Set(S.tresp.filter((r) => r.ano === T && r.vai).map((r) => r.jogador));
+}
 async function iniciarTemporada(T) {
   await backup('antes da temporada ' + T);
-  const lista = listaGeral();
-  const copia = lista.map(({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }) => ({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }));
+  const todos = listaGeral(), conf = confirmadosTemporada(T);
+  // só entra quem confirmou "SIM, VAMOS!!!!" (e os novos aprovados); quem não vai ou não respondeu sai do ranking
+  const lista = conf ? todos.filter((j) => conf.has(j.id)) : todos, saem = conf ? todos.filter((j) => !conf.has(j.id)) : [];
+  if (!lista.length) throw new Error('Ninguém confirmou o ranking ' + T + ' ainda.');
+  const copia = todos.map(({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }) => ({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }));
   let r = await sb.from('config').delete().eq('chave', 'backup_temporada_' + (T - 1)); if (r.error) throw r.error;
   r = await sb.from('config').insert({ chave: 'backup_temporada_' + (T - 1), valor: copia }); if (r.error) throw r.error;
-  await salvarJogadores(M.iniciarTemporada(lista), ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
+  const fora = new Set(saem.map((j) => j.id));
+  await salvarPontos([...M.iniciarTemporada(lista), ...saem.map((j) => ({ ...j, tp: 0, vi: 0, de: 0, sp: 0, sc: 0, gp: 0, gc: 0, posicao: null }))],
+    { extras: (j) => (fora.has(j.id) ? { ativo: false, standby: false } : { standby: false }) });
   r = await sb.from('config').delete().eq('chave', 'temporada'); if (r.error) throw r.error;
   r = await sb.from('config').insert({ chave: 'temporada', valor: T }); if (r.error) throw r.error;
 }
@@ -1572,6 +1639,7 @@ function cardReabrir() {
   </section>`;
 }
 async function reabrirMes(id) {
+  await mesEsta(id, 'fechado');
   await backup('antes de reabrir ' + nomeMes(id));
   const jogos = await jogosDoMes(id, true);
   const standby = jogos.filter((g) => !g.jogador_b).map((g) => g.jogador_a);
@@ -1581,11 +1649,26 @@ async function reabrirMes(id) {
     let r = await sb.from('jogos').delete().eq('mes', m.id); if (r.error) throw r.error;
     r = await sb.from('meses').delete().eq('id', m.id); if (r.error) throw r.error;
   }
-  await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
-  const r = await sb.from('meses').update({ status: 'aberto', fechado_em: null }).eq('id', id); if (r.error) throw r.error;
+  await salvarPontos(nova, { mes: id, de: 'fechado', para: 'aberto' });
   S.jogosPorMes = {};
 }
 // Respostas do Finals: só a coordenação vê (fica no Admin)
+// Ranking do ano que vem: quem vai, quem não vai e quem não respondeu (só a coordenação vê; dá pra marcar por alguém)
+function adminRespostasTemporada() {
+  if (!perguntaTemporada()) return '';
+  const T = anoRanking() + 1, lista = listaGeral().filter((j) => !j.pendente);
+  const vao = [], nao = [], falta = [];
+  lista.forEach((j) => { const r = respTemp(j.id); (r ? (r.vai ? vao : nao) : falta).push(j); });
+  const item = (j, botoes) => `<li style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)} <small class="dica">${esc(j.grupo || '')}</small></span><span style="display:flex;gap:4px;flex-shrink:0">${botoes}</span></li>`;
+  const bt = (j, v, t, cor) => `<button type="button" class="fin-q${cor ? ' ' + cor : ''}" data-acao="tempMarca" data-id="${j.id}" data-v="${v}">${t}</button>`;
+  const bloco = (tit, cor, xs, botoes) => `<div><b style="font-size:13px;color:${cor}">${tit} (${xs.length})</b>${xs.length ? `<ul style="list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px">${xs.map((j) => item(j, botoes(j))).join('')}</ul>` : '<div class="dica">ninguém</div>'}</div>`;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Ranking ${T} · quem continua</b>
+    <span class="dica">Só a coordenação vê esta lista. Ao iniciar a temporada ${T}, só entram os que confirmaram; quem não vai ou não respondeu sai do ranking (pode pedir pra voltar depois). Os novos que você aprovar agora já entram como confirmados.</span>
+    ${bloco('✓ Vão continuar', 'var(--verde)', vao, (j) => bt(j, 'nao', 'Não vai', 'nao'))}
+    ${bloco('? Ainda não responderam', '#7A3E0A', falta, (j) => bt(j, 'sim', 'Vai', 'sim') + bt(j, 'nao', 'Não', 'nao'))}
+    ${bloco('✕ Não vão (standby)', 'var(--verm)', nao, (j) => bt(j, 'sim', 'Vai', 'sim'))}
+  </section>`;
+}
 function adminRespostasFinals() {
   const ano = anoRanking(), grupos = ['A', 'B', 'C'].filter((g) => perguntaFinals(g));
   if (!S.fresp && new Date() >= new Date(ano, 9, 31)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:20px">Respostas do Finals ${ano}</b><span class="erro" style="font-size:13px">Falta ativar no banco de dados: as respostas ainda não estão sendo salvas.</span></section>`;
@@ -1636,6 +1719,25 @@ function adminFinals() {
 }
 
 // ---------- ações ----------
+// salva os pontos de todo mundo de uma vez no banco (tudo ou nada) e já muda o mês / encerra o Finals junto,
+// conferindo antes se o mês ainda está como esperado (clique duplo ou repetição não soma/tira duas vezes).
+// Se o banco ainda não tiver a função, usa o jeito antigo (de 10 em 10).
+const CAMPOS_PONTOS = ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao'];
+async function salvarPontos(lista, { mes, de, para, finAno, finGrupo, extras } = {}) {
+  const linhas = lista.map((j) => ({ ...Object.fromEntries(CAMPOS_PONTOS.map((c) => [c, j[c] ?? null])), id: j.id, ...(extras ? extras(j) : {}) }));
+  const r = await sb.rpc('salvar_pontos', { p_lista: linhas, p_mes: mes || null, p_de: de || null, p_para: para || null, p_fin_ano: finAno || null, p_fin_grupo: finGrupo || null });
+  if (!r.error) return;
+  if (!(r.error.code === 'PGRST202' || /could not find the function/i.test(r.error.message || ''))) throw r.error;
+  await salvarJogadores(linhas, Object.keys(linhas[0] || { tp: 1 }).filter((c) => c !== 'id'));
+  if (mes) { const m = await sb.from('meses').update({ status: para, fechado_em: para === 'fechado' ? new Date().toISOString() : null }).eq('id', mes); if (m.error) throw m.error; }
+  if (finAno) { const f = await sb.from('finals').update({ fase: 'encerrado' }).eq('ano', finAno).eq('grupo', finGrupo); if (f.error) throw f.error; }
+}
+// confere no banco (não na tela) a situação do mês antes de encerrar/reabrir
+async function mesEsta(id, status) {
+  const { data, error } = await sb.from('meses').select('status').eq('id', id).maybeSingle();
+  if (error) throw error;
+  if (!data || data.status !== status) throw new Error(nomeMes(id) + ' já está ' + (data ? data.status : 'apagado') + '. Atualize a tela (nada foi alterado).');
+}
 async function salvarJogadores(lista, campos) {
   // atualiza em lotes pequenos pra não estourar o limite de chamadas
   for (let i = 0; i < lista.length; i += 10) {
@@ -1661,6 +1763,7 @@ async function abrirMes(id) {
 }
 async function rodarMes(abrirProx = true) {
   const mes = S.mesAtual;
+  await mesEsta(mes.id, 'aberto');
   await backup('antes de encerrar ' + nomeMes(mes.id));
   const jogos = await jogosDoMes(mes.id, true);
   const lista = listaGeral();
@@ -1672,9 +1775,7 @@ async function rodarMes(abrirProx = true) {
   if (eh) throw eh;
   const h2h = M.confrontoDireto(hist.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })));
   const nova = M.rodarMes(lista, validos, standby, h2h, M.pontosWO(mes.id)).map((j, i) => ({ ...j, posicao: i + 1 }));
-  await salvarJogadores(nova, ['tp', 'vi', 'de', 'sp', 'sc', 'gp', 'gc', 'posicao']);
-  const r = await sb.from('meses').update({ status: 'fechado', fechado_em: new Date().toISOString() }).eq('id', mes.id);
-  if (r.error) throw r.error;
+  await salvarPontos(nova, { mes: mes.id, de: 'aberto', para: 'fechado' });
   await carregar();
   if (abrirProx) await abrirMes(proxMes(mes.id));
 }
@@ -1706,8 +1807,7 @@ async function finEncerrar(gr) {
   const bonus = M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));
   // regra 7.2.5: bônus somado ao ranking; 7.2.4: classificação final só depois do Finals
   const nova = M.ordenar(listaGeral().map((j) => ({ ...j, tp: j.tp + (bonus[j.id] || 0) }))).map((j, i) => ({ ...j, posicao: i + 1 }));
-  await salvarJogadores(nova, ['tp', 'posicao']);
-  const r = await sb.from('finals').update({ fase: 'encerrado' }).eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error;
+  await salvarPontos(nova, { finAno: ano, finGrupo: gr });
 }
 async function finApagar(gr) {
   await backup('antes de apagar o Finals ' + gr);
@@ -1719,6 +1819,7 @@ async function aprovar(f) {
   if (!f.grupo.value) throw new Error('Escolha o grupo.');
   let r = await sb.from('jogadores').update({ grupo: f.grupo.value, pendente: false, ativo: true }).eq('id', j.id); if (r.error) throw r.error;
   await entrarNoGrupo({ ...j, ativo: true, pendente: false }, f.grupo.value, Number(f.pos.value) || 0);
+  if (perguntaTemporada()) { r = await sb.from('temporada_resposta').upsert({ ano: anoRanking() + 1, jogador: j.id, vai: true, respondido_em: new Date().toISOString(), marcado_por_admin: true }); if (r.error) throw r.error; }
 }
 // regra 5.1 (a coordenação define colocação e categoria): o novo entra na posição N do grupo copiando a linha
 // de quem está hoje nessa posição (pontos, vitórias, derrotas, sets e games, ao vivo); empatado em tudo, fica à frente
@@ -1776,6 +1877,16 @@ const ACOES = {
   reabrirCancelar: () => { S.admin.reabrir = null; render(); },
   reabrir: (el) => comTrava('Reabrindo…', async () => { S.admin.reabrir = null; await reabrirMes(el.dataset.v); }, 'Mês reaberto: corrija o placar e encerre de novo.'),
   finNaoVou: () => { S.finConfirma = true; render(); },
+  tempNao: () => { S.tempConfirma = true; render(); },
+  tempVoltar: () => { S.tempConfirma = false; render(); },
+  tempResp: (el) => responderTemporada(el.dataset.v === 'sim'),
+  tempMarca: (el) => { const T = anoRanking() + 1, id = el.dataset.id, v = el.dataset.v, j = porId(id) || {};
+    comTrava('', async () => {
+      const r = v === 'limpa' ? await sb.from('temporada_resposta').delete().eq('ano', T).eq('jogador', id)
+        : await sb.from('temporada_resposta').upsert({ ano: T, jogador: id, vai: v === 'sim', respondido_em: new Date().toISOString(), marcado_por_admin: true });
+      if (r.error) throw r.error;
+      if (v !== 'limpa') { const r2 = await sb.from('jogadores').update({ standby: v !== 'sim' }).eq('id', id); if (r2.error) throw r2.error; }
+    }, v === 'limpa' ? 'Resposta apagada.' : j.nome + (v === 'sim' ? ' vai continuar em ' + T + '.' : ' não vai continuar em ' + T + ' (standby).')); },
   finVoltar: () => { S.finConfirma = false; render(); },
   finResp: (el) => { const vai = el.dataset.v === 'sim'; S.finConfirma = false; comTrava('Salvando…', async () => { const r = await sb.rpc('responder_finals', { p_ano: anoRanking(), p_vai: vai }); if (r.error) throw r.error; }, vai ? 'Presença no Finals confirmada!' : 'Pronto: sua vaga passou pro próximo do ranking.'); },
   finSortear: (el) => { try { S.admin.sorteio[el.dataset.v] = M.sortearChaves(idsFinals(el.dataset.v)); render(); } catch (e) { toast(e.message); } },
@@ -2428,6 +2539,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_jogos' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'curtidas' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_resposta' }, recarregarDepois)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'temporada_resposta' }, recarregarDepois)
     .subscribe();
   render();
   // no primeiro acesso, os avisos (tour, parabéns, cobrança, Finals...) esperam a pessoa criar a senha
@@ -2440,6 +2552,7 @@ function avisosDeEntrada() {
   mensagensFimDeAno();
   lembrarCobranca();
   lembrarFinals();
+  lembrarTemporada();
 }
 
 // "online": o app avisa o banco a cada minuto enquanto está aberto na tela; a coordenação consulta quem apareceu nos últimos 2,5 min
