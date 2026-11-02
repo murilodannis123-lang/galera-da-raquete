@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101205341';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101205341';
-import { REGULAMENTO } from './regulamento.js?v=20261101205341';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101205341';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101205341';
+import * as M from './motor.js?v=20261101212124';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101212124';
+import { REGULAMENTO } from './regulamento.js?v=20261101212124';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101212124';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101212124';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -118,6 +118,8 @@ function abrirFoto(id) {
 const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,avisos_visto_em,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
+  // tudo que não depende de nada vai junto (menos idas e voltas = abre mais rápido)
+  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), sb.from('pagamentos').select('*'), sb.from('finals_resposta').select('*')]);
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
     sb.from('jogadores').select(COLS),
     sb.from('meses').select('*').order('id', { ascending: false }),
@@ -137,9 +139,8 @@ async function carregar() {
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
   const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
   S.backups = backups;
-  const [cb, pg] = await Promise.all([sb.from('cobrancas').select('*').order('criado_em'), sb.from('pagamentos').select('*')]);
+  const [cb, pg, fr] = await extras;
   S.cobrancas = cb.error ? [] : cb.data; S.pagamentos = pg.error ? [] : pg.data;
-  const fr = await sb.from('finals_resposta').select('*');
   S.fresp = fr.error ? null : fr.data;   // null = tabela ainda não existe: a pergunta não aparece
   aquecerFotos();
   S.jogos = jogos;
@@ -263,7 +264,7 @@ function dadosFinals(ano, grupo) {
 let recarregando = null;
 function recarregarDepois() {
   clearTimeout(recarregando);
-  recarregando = setTimeout(async () => { try { await carregar(); render(); lembrarFinals(); } catch (e) { console.error(e); } }, 600);
+  recarregando = setTimeout(async () => { try { await carregar(); render(); lembrarFinals(); } catch (e) { console.error(e); } }, 600 + Math.floor(Math.random() * 2400));   // espalha: com 100 pessoas abertas, não recarregam todas no mesmo instante
 }
 
 // ---------- regras de exibição ----------
