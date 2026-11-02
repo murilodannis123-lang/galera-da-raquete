@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102124319';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102124319';
-import { REGULAMENTO } from './regulamento.js?v=20261102124319';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102124319';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102124319';
+import * as M from './motor.js?v=20261102124534';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102124534';
+import { REGULAMENTO } from './regulamento.js?v=20261102124534';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102124534';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102124534';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1145,7 +1145,7 @@ function telaFinals(viaJogos) {
   let campeao = '';
   if (fz.fase === 'encerrado' && final && final.sets) { const c = porId(M.resultado(final.sets).aVenceu ? final.jogador_a : final.jogador_b); campeao = `<div class="card" style="background:var(--noite);color:#fff;border:0;text-align:center"><div style="display:flex;justify-content:center">${TROFEU(44)}</div><small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÃO DO GRUPO ${aba}</small><div class="cond" style="font-size:28px;font-weight:800">${esc(c && c.nome)}</div><small style="color:rgba(255,255,255,.75)">Bônus no ranking: campeão 30 · vice 25 · semifinal 20</small></div>`; }
   const cols = tit('Pontuação do Finals') + fzCols(col(1), col(2)) + `<span class="dica">Número = pontos do Finals na chave · verde = vai pra semifinal. Jogo sem placar vale 0 pros dois.</span>
-    <div class="card" style="font-size:13px;line-height:1.5"><b>Pontuação separada.</b> Os pontos dos jogos do Finals valem só aqui, pra classificar nas chaves: não entram no Dynamics nem nos grupos A, B e C. No ranking anual entra só a bonificação, conforme o Finals anda: chegou na semifinal <b>+20</b> · chegou na final <b>+25</b> · campeão <b>+30</b>.</div>`;
+${S.eu && S.eu.admin ? `<div class="card" style="font-size:13px;line-height:1.5"><b>Pontuação separada.</b> Os pontos dos jogos do Finals valem só aqui, pra classificar nas chaves: não entram no Dynamics nem nos grupos A, B e C. No ranking anual entra só a bonificação, conforme o Finals anda: chegou na semifinal <b>+20</b> · chegou na final <b>+25</b> · campeão <b>+30</b>.</div>` : ''}`;
   const grupos = tit('Jogos da Chave 1') + jogosChave(1) + tit('Jogos da Chave 2') + jogosChave(2);
   const faltam = js.filter((g) => g.fase === 'grupos' && !g.sets).length;
   const semisAgora = tit('Semifinais') + fzProj('1º CHAVE 1', null, '2º CHAVE 2', null) + fzProj('1º CHAVE 2', null, '2º CHAVE 1', null)
