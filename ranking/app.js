@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102114125';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102114125';
-import { REGULAMENTO } from './regulamento.js?v=20261102114125';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102114125';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102114125';
+import * as M from './motor.js?v=20261102124319';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102124319';
+import { REGULAMENTO } from './regulamento.js?v=20261102124319';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102124319';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102124319';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1072,6 +1072,7 @@ function adminTorneio() {
     <div class="cob-cont"><span><b>${lista.length}</b> inscritos</span><span><b style="color:var(--verde)">${lista.filter((x) => x.status === 'pago').length}</b> pagos</span><span><b style="color:#6B4A00">${lista.filter((x) => x.status === 'informado').length}</b> avisaram</span></div>
     ${Object.keys(conta).length ? `<div class="dica"><b>Camisetas:</b> ${Object.entries(conta).sort().map(([k, n]) => esc(k) + ' (' + n + ')').join(' · ')}</div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="torVer" aria-expanded="${!!ver}">${ver ? 'Fechar lista' : 'Ver inscritos'}</button><button type="button" class="btn btn-linha" data-acao="torPlanilha"${lista.length ? '' : ' disabled'}>Baixar planilha</button></div>
+    <button type="button" class="btn btn-roxo" data-acao="torGrafica"${lista.length ? '' : ' disabled'}>👕 Lista das camisetas pra gráfica</button>
     ${ver ? cfg.classes.map((c) => { const xs = lista.filter((x) => x.classe === c); return `<div><b style="font-size:14px">Classe ${c} (${xs.length}) · ${xs.filter((x) => x.cabeca).length} cabeças de chave</b><div class="cob-lista">${xs.map(linha).join('') || '<p class="dica">Ninguém ainda.</p>'}</div>
       <button type="button" class="btn btn-roxo" style="margin-top:8px;width:100%" data-acao="torSortear" data-v="${c}"${xs.length < 2 ? ' disabled' : ''}>${cfg.duplas && cfg.duplas[c] ? 'Sortear de novo as duplas da classe ' + c : 'Sortear as duplas da classe ' + c}</button></div>`; }).join('') : ''}
     <span class="dica">Sorteio: cada cabeça de chave (⭐) recebe um parceiro sorteado entre os outros da classe; quem sobrar forma dupla entre si, também por sorteio. As duplas aparecem pra todo mundo na tela do torneio.</span>
@@ -2044,6 +2045,17 @@ const ACOES = {
     const duplas = sortearDuplas(xs.map((x) => x.jogador), new Set(xs.filter((x) => x.cabeca).map((x) => x.jogador)));
     await salvarTorneio({ duplas: { ...(torneioCfg().duplas || {}), [c]: duplas } });
   }, 'Duplas sorteadas! Já aparecem na tela do torneio.'),
+  // lista pra gráfica: nome, modelo e tamanho, em ordem de modelo/tamanho, com o total de cada no fim
+  torGrafica: () => {
+    const cfg = torneioCfg(), cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', ordT = { P: 1, M: 2, G: 3, GG: 4 }, ordM = { masculina: 1, babylook: 2, outro: 3 };
+    const xs = inscricoes().map((x) => ({ nome: (porId(x.jogador) || {}).nome || '?', modelo: CAMISETA[x.camiseta], tam: x.camiseta === 'outro' ? x.outro : x.tamanho, k: ordM[x.camiseta] * 10 + (ordT[x.tamanho] || 9), pago: x.status === 'pago' ? 'Sim' : 'Não' }))
+      .sort((a, b) => a.k - b.k || a.nome.localeCompare(b.nome));
+    const tot = {}; xs.forEach((x) => { const k = x.modelo + ' ' + x.tam; tot[k] = (tot[k] || 0) + 1; });
+    const linhas = [[cfg.nome + ' — camisetas'], [], ['Nome', 'Modelo', 'Tamanho', 'Pago']].concat(xs.map((x) => [x.nome, x.modelo, x.tam, x.pago]))
+      .concat([[], ['Totais'], ['Modelo e tamanho', 'Quantidade']], Object.entries(tot).map(([k, n]) => [k, n]), [['Total de camisetas', xs.length]]);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map((l) => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'camisetas-' + ascii(cfg.nome).replace(/\s+/g, '-').toLowerCase() + '-' + hojeISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
   torPlanilha: () => {
     const cfg = torneioCfg(), cel = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', sit = { pago: 'Pago', informado: 'Avisou que pagou', pendente: 'Pendente' };
     const linhas = [['Nome', 'Classe', 'Cabeça de chave', 'Camiseta', 'Tamanho', 'Celular', 'Pagamento']].concat(inscricoes().map((x) => { const j = porId(x.jogador) || {}; return [j.nome, x.classe, x.cabeca ? 'Sim' : '', CAMISETA[x.camiseta], x.camiseta === 'outro' ? x.outro : x.tamanho, j.celular || '', sit[x.status]]; }));
