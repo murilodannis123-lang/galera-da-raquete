@@ -122,8 +122,8 @@ export function sortearSets(rnd, favoritoA) {
 }
 
 // ---------- FINALS ----------
-// bônus da regra 7.2.2 somado ao ranking (7.2.5): campeão 30, vice 25, semifinal 20, fase de grupos 15
-export const BONUS = { campeao: 30, vice: 25, semi: 20, grupos: 15 };
+// bônus da regra 7.2.2 somado ao ranking (7.2.5): campeão 30, vice 25, semifinal 20 (sem bônus pra fase de grupos: decisão da coordenação, 02/11/2026)
+export const BONUS = { campeao: 30, vice: 25, semi: 20, grupos: 0 };
 // ids na ordem do ranking do grupo (1º ao 8º) → chave 1 = 1º, 3º, 6º, 8º · chave 2 = 2º, 4º, 5º, 7º
 export function chavesFinals(ids) {
   if (ids.length !== 8) throw new Error('O Finals precisa de 8 jogadores por grupo.');
@@ -163,10 +163,12 @@ export function semifinais(t1, t2) { return [[t1[0].id, t2[1].id], [t2[0].id, t1
 export function vencedorDe(g) { return resultado(g.sets).aVenceu ? g.a : g.b; }
 // bônus por jogador depois da final
 // bônus ao vivo durante o Finals: quem está nos grupos 15, semifinalista 20; vice/campeão quando a final tiver placar
+// vai entrando conforme o Finals anda: chegou na semifinal +20; chegou na final +25 (vice garantido); campeão +30
 export function bonusParcial(ids8, semis, final) {
   if (final && final.sets) return bonusFinals(ids8, semis, final);
   const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
   semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });
+  if (final) { b[final.a] = BONUS.vice; b[final.b] = BONUS.vice; }
   return b;
 }
 export function bonusFinals(ids8, semis, final) {
