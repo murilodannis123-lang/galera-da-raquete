@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101220656';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101220656';
-import { REGULAMENTO } from './regulamento.js?v=20261101220656';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101220656';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101220656';
+import * as M from './motor.js?v=20261101224142';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101224142';
+import { REGULAMENTO } from './regulamento.js?v=20261101224142';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101224142';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101224142';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -844,7 +844,9 @@ const fzProj = (rotA, a, rotB, b) => `<div class="card fz-proj"><span><small>${r
 // chaveamento desenhado (semis → final → troféu), no estilo de chave de campeonato
 const nomeCurto = (j) => { if (!j) return ''; const n = j.nome.trim().split(/\s+/)[0]; return n.length > 11 ? n.slice(0, 10) + '…' : n; };
 // chaves[c] = linhas da chave: { j, txt, pts, ok }; sf[k] = [a, b, jogo, rotA, rotB, projeção]; fin = [f1, f2, final]
-function chaveSVG({ chaves, sf, fin, campeao, titulo }) {
+// dia da final do Finals de cada ano (aparece em amarelo em cima do troféu)
+const DATA_FINAL = { 2026: '5/12', 2027: '4/12' };
+function chaveSVG({ chaves, sf, fin, campeao, titulo, ano }) {
   const W = 660, OURO = '#E8B923', VERDE = '#4ADE80';
   const box = (x, y, w, rot, j, ven, proj) => {
     const cor = ven ? OURO : '#fff';
@@ -884,6 +886,7 @@ function chaveSVG({ chaves, sf, fin, campeao, titulo }) {
   });
   o += `<rect x="${C}" y="${YF - 12}" width="52" height="64" rx="8" fill="rgba(232,185,35,.08)" stroke="${OURO}" stroke-width="1.6"/>
     <g transform="translate(${C + 6} ${YF - 6}) scale(.84)">${TROFEU(48).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</g>`;
+  if (DATA_FINAL[ano]) o += `<text x="${W / 2}" y="${YF - 20}" text-anchor="middle" font-family="'Barlow Semi Condensed',sans-serif" font-size="16" font-weight="800" letter-spacing=".5" fill="#FFD60A">${DATA_FINAL[ano]}</text>`;
   o += campeao ? `<text x="${W / 2}" y="${YF + 72}" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.5" fill="${OURO}">CAMPEÃO</text><text x="${W / 2}" y="${YF + 88}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">${esc(nomeCurto(campeao))}</text>` : placar(W / 2, YF + 70, fin[2]);
   return `<div class="chave-svg"><div class="chave-scroll" tabindex="0" role="region" aria-label="Chaveamento (arraste pro lado)"><svg viewBox="0 0 ${W} 250" width="${W}" height="250" font-family="Inter,system-ui,sans-serif" role="img" aria-label="Chaveamento: ${esc(sf.map((x, k) => 'semifinal ' + (k + 1) + ', ' + (x[0] ? x[0].nome : 'a definir') + ' contra ' + (x[1] ? x[1].nome : 'a definir')).join('; '))}">${o}</svg></div><small class="chave-dica">← arraste pro lado pra ver as chaves →</small></div>`;
 }
@@ -946,7 +949,7 @@ function telaFinals(viaJogos) {
     return cab + `<div class="conteudo">
       <div class="card" style="font-size:13px;line-height:1.45"><b>Sorteio no estilo ATP Finals.</b> O 1º do grupo vai pra Chave 1 e o 2º pra Chave 2. Os pares 3º/4º, 5º/6º e 7º/8º são sorteados: um de cada par pra cada chave. Todos contra todos dentro da chave; os 2 melhores cruzam na semifinal (1º de uma chave x 2º da outra) e os vencedores fazem a final.</div>
       <p class="dica" style="font-size:14px">As chaves aparecem aqui assim que a coordenação fizer o sorteio dos 8 classificados.</p>
-      ${tit('Chaveamento')}${chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: [0, 1].map((c) => [{ txt: (c + 1) + 'º do grupo' }, { txt: 'sorteio 3º/4º' }, { txt: 'sorteio 5º/6º' }, { txt: 'sorteio 7º/8º' }]), sf: [[null, null, null, '1º CHAVE 1', '2º CHAVE 2'], [null, null, null, '1º CHAVE 2', '2º CHAVE 1']], fin: [null, null, null] })}
+      ${tit('Chaveamento')}${chaveSVG({ ano, titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: [0, 1].map((c) => [{ txt: (c + 1) + 'º do grupo' }, { txt: 'sorteio 3º/4º' }, { txt: 'sorteio 5º/6º' }, { txt: 'sorteio 7º/8º' }]), sf: [[null, null, null, '1º CHAVE 1', '2º CHAVE 2'], [null, null, null, '1º CHAVE 2', '2º CHAVE 1']], fin: [null, null, null] })}
     </div>`;
   }
 
@@ -958,7 +961,7 @@ function telaFinals(viaJogos) {
   const sv = semis.map((g) => (g.sets ? porId(vencedor(g)) : null));
   const fins = final ? [porId(final.jogador_a), porId(final.jogador_b), final] : [sv[0] || null, sv[1] || null, null];
   const camp = final && final.sets ? porId(vencedor(final)) : null;
-  const desenho = chaveSVG({ titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: t.map((tc) => tc.map((x, i) => ({ j: porId(x.id), pts: x.tp, ok: i < 2 }))), sf: sfs, fin: fins, campeao: camp });
+  const desenho = chaveSVG({ ano, titulo: 'FINALS ' + ano + ' · GRUPO ' + aba, chaves: t.map((tc) => tc.map((x, i) => ({ j: porId(x.id), pts: x.tp, ok: i < 2 }))), sf: sfs, fin: fins, campeao: camp });
   const chaveT = tit('Chaveamento') + desenho;
   const mata = (semis.length || final ? tit('Jogos do mata-mata') : '') + (semis.length ? semis.map((g, k) => `<small class="dica">Semifinal ${k + 1}</small>` + linhaFinals(g, fz)).join('')
       : '') + (final ? `<small class="dica">Final</small>` + linhaFinals(final, fz) : '');
@@ -2000,6 +2003,7 @@ const FORMS = {
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
     await sb.from('jogadores').update({ senha_trocada: true }).eq('id', S.eu.id);
     await carregar(); toast('Senha trocada.'); location.hash = '#/'; render();
+    if (S.avisosDepoisDaSenha) { S.avisosDepoisDaSenha = false; avisosDeEntrada(); }
   },
   aprovar: (f) => comTrava('Aprovando…', () => aprovar(f), 'Jogador aprovado. Já entra no ranking.'),
   novoJogador: (f) => comTrava('Cadastrando…', () => cadastrarJogador(f), 'Jogador cadastrado. Ele entra com esse e-mail.'),
@@ -2266,7 +2270,12 @@ let hashAnterior = null;
 async function render() {
   if (!S.eu) return;
   if (S.eu.pendente) { document.body.classList.remove('noite'); $app.innerHTML = telaEspera(); return; }
-  if (S.eu.admin && !S.eu.senha_trocada) { document.body.classList.remove('noite'); $app.innerHTML = telaSenha(true); return; }
+  // primeiro acesso: todo mundo troca a senha inicial antes de usar o app (quem entrou com uma senha própria passa direto)
+  if (!S.eu.senha_trocada) {
+    let propria = false; try { propria = sessionStorage.getItem('senha-propria') === '1'; } catch (e) { /* sem armazenamento */ }
+    if (propria) { S.eu.senha_trocada = true; sb.from('jogadores').update({ senha_trocada: true }).eq('id', S.eu.id).then(() => {}, () => {}); }
+    else { document.body.classList.remove('noite'); $app.innerHTML = telaSenha(true); return; }
+  }
   document.body.classList.toggle('noite', ehNoite());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
@@ -2341,8 +2350,11 @@ function telaInscricao(email, erro) {
   f.querySelector('[data-outro]').onclick = async () => { await sb.auth.signOut(); telaLogin('entrar'); };
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
-    const { error } = await sb.rpc('cadastrar_me', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim(), p_nascimento: f.nascimento.value || null });
+    const { data: novoId, error } = await sb.rpc('cadastrar_me', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim(), p_nascimento: f.nascimento.value || null });
     if (error) return telaInscricao(email, error.message);
+    // quem acabou de criar o acesso já escolheu a própria senha: não pede de novo no primeiro acesso
+    let propria = false; try { propria = sessionStorage.getItem('senha-propria') === '1'; } catch (e) { /* sem armazenamento */ }
+    if (propria && novoId) await sb.from('jogadores').update({ senha_trocada: true }).eq('id', novoId);
     await entrar();
   };
 }
@@ -2361,7 +2373,7 @@ function telaLogin(etapa, email, erro) {
     ${novo ? '<label class="rot">Repita a senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>' : ''}
     <button class="btn btn-roxo" type="submit">${novo ? 'Criar acesso' : 'Entrar'}</button>
     ${novo ? '<button class="btn btn-linha" type="button" data-ir="entrar">Já tenho acesso</button>'
-      : `<p class="dica">Já está no ranking? Entre com o seu e-mail e a senha inicial que a coordenação passou no grupo; depois troque em Meu perfil. Você fica conectado.</p>
+      : `<p class="dica">Já está no ranking? Entre com o seu e-mail e a senha inicial que a coordenação passou no grupo; no primeiro acesso o app pede pra você criar a sua senha. Você fica conectado.</p>
       <button class="btn btn-linha" type="button" data-ir="inscrever">Primeira vez? Fazer inscrição</button>
       <a class="btn btn-linha" style="height:40px;font-size:13px" href="${esc(zap('5519997781210', 'Olá! Esqueci minha senha do app do ranking.'))}" target="_blank" rel="noopener">Esqueci a senha</a>`}
     ${typeof novo !== 'undefined' && novo ? '<p class="dica" style="font-size:12px">Ao criar o acesso, você concorda com os Termos de uso e declara ter lido a Política de privacidade.</p>' : ''}
@@ -2376,20 +2388,22 @@ function telaLogin(etapa, email, erro) {
     try {
       if (novo) {
         if (senha !== f.senha2.value) throw new Error('As duas senhas não são iguais.');
+        if (senha === SENHA_INICIAL) throw new Error('Escolha uma senha diferente de ' + SENHA_INICIAL + '.');
         const { error } = await sb.auth.signUp({ email: em, password: senha });
         if (error) throw new Error(/registered|already/i.test(error.message) ? 'Esse e-mail já tem acesso. Entre com ele (com a senha inicial que a coordenação passou ou com a sua).' : error.message);
       } else {
         const { error } = await sb.auth.signInWithPassword({ email: em, password: senha });
         if (error) throw new Error(/invalid/i.test(error.message) ? 'E-mail ou senha errados. Se você ainda não está no ranking, faça a inscrição.' : error.message);
       }
+      try { sessionStorage.setItem('senha-propria', senha === SENHA_INICIAL ? '0' : '1'); } catch (e) { /* sem armazenamento */ }
       await entrar();
     } catch (e) { telaLogin(etapa, em, e.message || String(e)); }
   };
 }
 function telaSenha(obrigatorio) {
-  return (obrigatorio ? `<header class="topo" style="padding-bottom:20px"><h1 class="titulo" style="margin-top:20px">Troque sua senha</h1><p class="sub-ranking">ADMIN</p></header>` : voltar('Trocar senha')) + `
+  return (obrigatorio ? `<header class="topo" style="padding-bottom:20px"><h1 class="titulo" style="margin-top:20px">Crie sua senha</h1><p class="sub-ranking">PRIMEIRO ACESSO</p></header>` : voltar('Trocar senha')) + `
   <form class="conteudo" data-form="senha" style="max-width:420px;width:100%;margin:0 auto">
-    ${obrigatorio ? '<p class="dica">Você é da coordenação. Com a senha inicial, qualquer um que souber seu e-mail entraria como admin. Escolha uma senha sua.</p>' : ''}
+    ${obrigatorio ? `<p class="dica">${S.eu && S.eu.admin ? 'Você é da coordenação. Com a senha inicial, qualquer um que souber seu e-mail entraria como admin.' : 'Por segurança, troque a senha inicial (' + SENHA_INICIAL + ') por uma só sua: com ela, qualquer um que souber seu e-mail entraria na sua conta.'} É só uma vez.</p>` : ''}
     <label class="rot">Nova senha (mínimo 6)<input class="campo" name="senha" type="password" autocomplete="new-password" minlength="6" required></label>
     <label class="rot">Repita a nova senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>
     <button class="btn btn-roxo" type="submit">Salvar senha</button>
@@ -2416,12 +2430,16 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_resposta' }, recarregarDepois)
     .subscribe();
   render();
+  // no primeiro acesso, os avisos (tour, parabéns, cobrança, Finals...) esperam a pessoa criar a senha
+  if (document.querySelector('form[data-form="senha"]')) S.avisosDepoisDaSenha = true; else avisosDeEntrada();
+  ligarPresenca();
+}
+function avisosDeEntrada() {
   tourPrimeiraVez();
   parabens();
   mensagensFimDeAno();
   lembrarCobranca();
   lembrarFinals();
-  ligarPresenca();
 }
 
 // "online": o app avisa o banco a cada minuto enquanto está aberto na tela; a coordenação consulta quem apareceu nos últimos 2,5 min
