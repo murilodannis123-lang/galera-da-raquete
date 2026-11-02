@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102125025';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102125025';
-import { REGULAMENTO } from './regulamento.js?v=20261102125025';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102125025';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102125025';
+import * as M from './motor.js?v=20261102125808';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102125808';
+import { REGULAMENTO } from './regulamento.js?v=20261102125808';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102125808';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102125808';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1025,8 +1025,8 @@ function telaDuplas() {
         <fieldset class="grupo-op"><legend class="rot">Camiseta masculina</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamM', v)).join('')}</div></fieldset>
         <fieldset class="grupo-op"><legend class="rot">Camiseta feminina (baby look)</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamF', v)).join('')}</div></fieldset>
         <label class="rot">Outro tamanho (não está na lista)<input class="campo" name="outro" maxlength="60" placeholder="Ex.: XGG, infantil 12" value="${esc(m.camiseta === 'outro' ? m.outro || '' : '')}"></label>
-        <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho.</span>
-        <details class="extras"${m.extras && Object.keys(m.extras).length ? ' open' : ''}><summary><b>Quer mais camisetas?</b> <span class="dica">(opcional${Number(cfg.valor_camiseta) ? ' · ' + real(cfg.valor_camiseta) + ' cada' : ''})</span></summary>
+        <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho. <b>A sua camiseta já está incluída na inscrição.</b></span>
+        <details class="extras"${m.extras && Object.keys(m.extras).length ? ' open' : ''}><summary><b>Quer mais camisetas?</b> <span class="dica">(opcional · só as camisetas a mais são cobradas${Number(cfg.valor_camiseta) ? ', ' + real(cfg.valor_camiseta) + ' cada' : ''})</span></summary>
           <div class="extras-grade">${['masculina', 'babylook'].map((mod) => `<span class="rot" style="grid-column:1/-1">${mod === 'masculina' ? 'Masculina' : 'Feminina baby look'}</span>${TAMS.map((t) => `<label class="extra-q"><span>${t}</span><input class="campo" type="number" name="x-${mod}:${t}" min="0" max="10" inputmode="numeric" value="${(m.extras || {})[mod + ':' + t] || ''}" placeholder="0" aria-label="Quantas ${mod === 'masculina' ? 'masculinas' : 'baby look'} ${t} a mais"></label>`).join('')}`).join('')}</div>
           <label class="rot">Outro tamanho a mais<input class="campo" name="x-outro" maxlength="80" placeholder="Ex.: 1 infantil 10" value="${esc((m.extras || {}).outro || '')}"></label></details>
         <p id="tor-msg" role="status"></p>
@@ -1040,7 +1040,7 @@ function telaDuplas() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Classe ${esc(minha.classe)} · camiseta ${esc(camisetaTxt(minha))}${ext ? '<br>Camisetas a mais: ' + esc(ext) : ''}</div></div>
         ${st === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : st === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : '<span class="tag" style="background:#FDECEC;color:var(--verm)">FALTA PAGAR</span>'}</div>
       ${st === 'pago' ? '<p class="dica">Pagamento confirmado pela coordenação. Bom torneio!</p>'
-        : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>${qtdExtras(minha) && Number(cfg.valor_camiseta) ? `<span class="dica">${real(cfg.valor)} da inscrição + ${qtdExtras(minha)} camiseta(s) a mais × ${real(cfg.valor_camiseta)}${extrasDe(minha).some((y) => y.livre) ? ' (o "outro tamanho" a coordenação combina com você)' : ''}</span>` : ''}
+        : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>${qtdExtras(minha) && Number(cfg.valor_camiseta) ? `<span class="dica">${real(cfg.valor)} da inscrição (com a sua camiseta) + ${qtdExtras(minha)} camiseta(s) a mais × ${real(cfg.valor_camiseta)}${extrasDe(minha).some((y) => y.livre) ? ' (o "outro tamanho" a coordenação combina com você)' : ''}</span>` : ''}
         <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(valor))}"><span class="dica">Carregando QR Code…</span></div>
         <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
         <button class="btn btn-linha" type="button" data-acao="copiarPix" data-cc="${esc(px.chave)}" data-ok="Chave Pix copiada.">Copiar chave Pix (${esc(px.tipo)})</button>
