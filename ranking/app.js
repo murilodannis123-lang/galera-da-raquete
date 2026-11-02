@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101231936';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101231936';
-import { REGULAMENTO } from './regulamento.js?v=20261101231936';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101231936';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101231936';
+import * as M from './motor.js?v=20261102102425';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102102425';
+import { REGULAMENTO } from './regulamento.js?v=20261102102425';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102102425';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102102425';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -242,7 +242,7 @@ function blocoTemporada(eu, geral) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="tempVoltar">Voltar</button><button class="btn btn-roxo" style="background:var(--verm)" data-acao="tempResp" data-v="nao">Não vou</button></div></div>`;
   else if (r) corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:18px">Você avisou que não vai continuar em ${T}</b><div class="dica">Está em standby e sai do ranking quando a temporada ${T} começar.</div></div>
       <button class="btn btn-bola btn-vamos" data-acao="tempResp" data-v="sim">Mudei de ideia: SIM, VAMOS!!!!</button></div>`;
-  else corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:19px">Bora pro ranking ${T}?</b><div class="dica">O Finals acabou! Confirme se você continua no ranking ${T}. Só entra quem confirmar.</div></div>
+  else corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:19px">Bora pro ranking ${T}?</b><div class="dica">O Finals acabou! Confirme se você continua no ranking ${T}.</div></div>
       <button class="btn btn-bola btn-vamos" data-acao="tempResp" data-v="sim">SIM, VAMOS!!!!</button>
       <button type="button" class="link-btn" data-acao="tempNao" style="align-self:center">Não vou continuar</button></div>`;
   return { vs, corpo };
@@ -254,7 +254,7 @@ function lembrarTemporada() {
     if (!eu || !eu.ativo || !eu.joga || eu.pendente || !perguntaTemporada() || respTemp(eu.id)) return;
     try { if (sessionStorage.getItem('temporada-lembrada-' + T)) return; sessionStorage.setItem('temporada-lembrada-' + T, '1'); } catch (e) { /* mostra mesmo */ }
     janela('Ranking ' + T, `<div class="niver-bolo" aria-hidden="true">🎾</div><small>RANKING ${T}</small><b class="cond" style="font-size:26px">Bora pro ranking ${T}?</b>
-      <span style="font-size:15px">O Finals acabou! Confirme se você continua no ranking ${T}. Só entra quem confirmar.</span>
+      <span style="font-size:15px">O Finals acabou! Confirme se você continua no ranking ${T}.</span>
       <button class="btn btn-bola btn-vamos" type="button" data-acao="tempResp" data-v="sim" style="width:100%;margin-top:8px">SIM, VAMOS!!!!</button>
       <button class="link-btn" type="button" style="color:inherit;opacity:.8">Responder depois</button>`);
   }, 1500);
@@ -1588,15 +1588,17 @@ function cardTemporada() {
   if (S.mesAtual) return '';
   const T = proxTemporada(), feita = Number(S.config.temporada) >= T, ult = S.meses.map((m) => m.id).sort().pop();
   if (feita || (ult && Number(ult.slice(5)) < 10)) return '';
-  const confT = confirmadosTemporada(T), todosT = listaGeral();
-  const lista = confT ? todosT.filter((j) => confT.has(j.id)) : todosT, n = lista.length, conf = S.admin.temporada, saemT = todosT.length - n;
+  const naoT = naoVaoTemporada(T), todosT = listaGeral();
+  const lista = todosT.filter((j) => !naoT.has(j.id)), n = lista.length, conf = S.admin.temporada, saemT = todosT.length - n;
+  const semResp = S.tresp ? lista.filter((j) => !respTemp(j.id, T)).length : 0;
   const falta = ['A', 'B', 'C'].filter((g) => (S.finals.find((fz) => fz.ano === T - 1 && fz.grupo === g) || {}).fase !== 'encerrado');
   // só libera depois da final do Finals (5/12)
   if (new Date() >= new Date(T - 1, 11, 6) && !progDoAno(T).length) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">Pra liberar o botão de iniciar a temporada ${T}, cadastre a <b>Programação ${T}</b> aqui embaixo (dá pra copiar a de ${T - 1} e ajustar as datas). Lembre também das subidas e descidas de grupo (regra 5.3) em Jogadores.</span></section>`;
   if (new Date() < new Date(T - 1, 11, 6)) return `<section class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">Temporada ${T}</b><span class="dica">O botão de iniciar a temporada ${T} libera depois da final do Finals, a partir de 06/12/${T - 1}.</span></section>`;
   return `<section class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--roxo)"><b class="cond" style="font-size:20px">Temporada ${T}</b>
-    ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas${confT ? ' que confirmaram' : ''}):</span>
-      ${saemT ? `<span class="erro" style="font-size:13px">${saemT} ${saemT === 1 ? 'jogador sai' : 'jogadores saem'} do ranking (não vão ou não responderam). Confira a lista "Ranking ${T} · quem continua".</span>` : ''}
+    ${conf ? `<span class="dica">Zera vitórias, derrotas, sets e games de todo mundo e mantém as colocações. Pontos de partida pela posição (${n} tenistas):</span>
+      ${saemT ? `<span class="erro" style="font-size:13px">${saemT} ${saemT === 1 ? 'jogador disse que não vai e sai' : 'jogadores disseram que não vão e saem'} do ranking.</span>` : ''}
+      ${semResp ? `<span class="erro" style="font-size:13px;color:#7A3E0A">${semResp} ainda não ${semResp === 1 ? 'respondeu e entra' : 'responderam e entram'} no ranking ${T}. Confira a lista "Ranking ${T} · quem continua".</span>` : ''}
       <div style="font-size:13px;line-height:1.6">${lista.slice(0, 3).map((j, i) => `${i + 1}º ${esc(j.nome)} → <b>${n - i} pts</b>`).join('<br>')}${n > 4 ? '<br>…' : ''}${n > 3 ? `<br>${n}º ${esc(lista[n - 1].nome)} → <b>1 pt</b>` : ''}</div>
       ${falta.length ? `<span class="erro" style="font-size:13px">Finals ${T - 1} ainda não encerrado no grupo ${falta.join(', ')}: encerre antes, senão o bônus não entra.</span>` : ''}
       <span class="dica">Uma cópia dos pontos de agora fica guardada no banco.</span>
@@ -1604,17 +1606,17 @@ function cardTemporada() {
       : `<button class="btn btn-roxo" data-acao="temporadaPedir">Iniciar temporada ${T}</button><span class="dica">Antes, confira as subidas e descidas de grupo (regra 5.3) em Jogadores. Depois é só abrir janeiro e gerar os confrontos.</span>`}
   </section>`;
 }
-// quem confirmou o ranking T (null = confirmação ainda não ativada no banco: entra todo mundo, como antes)
-function confirmadosTemporada(T) {
-  if (!S.tresp) return null;
-  return new Set(S.tresp.filter((r) => r.ano === T && r.vai).map((r) => r.jogador));
+// quem disse que NÃO vai no ranking T (sai ao iniciar a temporada); quem não respondeu continua (a coordenação vai atrás)
+function naoVaoTemporada(T) {
+  if (!S.tresp) return new Set();
+  return new Set(S.tresp.filter((r) => r.ano === T && r.vai === false).map((r) => r.jogador));
 }
 async function iniciarTemporada(T) {
   await backup('antes da temporada ' + T);
-  const todos = listaGeral(), conf = confirmadosTemporada(T);
-  // só entra quem confirmou "SIM, VAMOS!!!!" (e os novos aprovados); quem não vai ou não respondeu sai do ranking
-  const lista = conf ? todos.filter((j) => conf.has(j.id)) : todos, saem = conf ? todos.filter((j) => !conf.has(j.id)) : [];
-  if (!lista.length) throw new Error('Ninguém confirmou o ranking ' + T + ' ainda.');
+  const todos = listaGeral(), nao = naoVaoTemporada(T);
+  // quem disse que não vai sai do ranking; o resto (confirmou ou ainda não respondeu) começa a temporada
+  const lista = todos.filter((j) => !nao.has(j.id)), saem = todos.filter((j) => nao.has(j.id));
+  if (!lista.length) throw new Error('Ninguém no ranking ' + T + '.');
   const copia = todos.map(({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }) => ({ id, nome, tp, vi, de, sp, sc, gp, gc, posicao }));
   let r = await sb.from('config').delete().eq('chave', 'backup_temporada_' + (T - 1)); if (r.error) throw r.error;
   r = await sb.from('config').insert({ chave: 'backup_temporada_' + (T - 1), valor: copia }); if (r.error) throw r.error;
@@ -1663,9 +1665,9 @@ function adminRespostasTemporada() {
   const bt = (j, v, t, cor) => `<button type="button" class="fin-q${cor ? ' ' + cor : ''}" data-acao="tempMarca" data-id="${j.id}" data-v="${v}">${t}</button>`;
   const bloco = (tit, cor, xs, botoes) => `<div><b style="font-size:13px;color:${cor}">${tit} (${xs.length})</b>${xs.length ? `<ul style="list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px">${xs.map((j) => item(j, botoes(j))).join('')}</ul>` : '<div class="dica">ninguém</div>'}</div>`;
   return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">Ranking ${T} · quem continua</b>
-    <span class="dica">Só a coordenação vê esta lista. Ao iniciar a temporada ${T}, só entram os que confirmaram; quem não vai ou não respondeu sai do ranking (pode pedir pra voltar depois). Os novos que você aprovar agora já entram como confirmados.</span>
+    <span class="dica">Só a coordenação vê esta lista. Ao iniciar a temporada ${T}, só sai quem disse que não vai (pode pedir pra voltar depois); quem não respondeu continua no ranking. Use o WhatsApp pra cobrar a resposta. Os novos que você aprovar agora já entram como confirmados.</span>
     ${bloco('✓ Vão continuar', 'var(--verde)', vao, (j) => bt(j, 'nao', 'Não vai', 'nao'))}
-    ${bloco('? Ainda não responderam', '#7A3E0A', falta, (j) => bt(j, 'sim', 'Vai', 'sim') + bt(j, 'nao', 'Não', 'nao'))}
+    ${bloco('? Ainda não responderam', '#7A3E0A', falta, (j) => { const z = j.celular && zap(j.celular, 'Fala, ' + j.nome.split(' ')[0] + '! Você vai continuar no ranking ' + T + '? Responde lá no app do ranking: é só tocar em SIM, VAMOS!!!!'); return (z ? `<a class="fin-q" href="${esc(z)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${esc(j.nome)}">WhatsApp</a>` : '') + bt(j, 'sim', 'Vai', 'sim') + bt(j, 'nao', 'Não', 'nao'); })}
     ${bloco('✕ Não vão (standby)', 'var(--verm)', nao, (j) => bt(j, 'sim', 'Vai', 'sim'))}
   </section>`;
 }
