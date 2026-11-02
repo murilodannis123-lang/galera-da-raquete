@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261101212124';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101212124';
-import { REGULAMENTO } from './regulamento.js?v=20261101212124';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101212124';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101212124';
+import * as M from './motor.js?v=20261101220656';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261101220656';
+import { REGULAMENTO } from './regulamento.js?v=20261101220656';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261101220656';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261101220656';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -74,10 +74,20 @@ function posicoes() {
   ['A', 'B', 'C'].forEach((g) => listaGeral().filter((j) => j.grupo === g).forEach((j, i) => { grupo[j.id] = i + 1; }));
   return { geral, grupo };
 }
+// o Supabase devolve no máximo 1000 linhas por consulta: busca de 1000 em 1000 até acabar (a consulta precisa ter ordem fixa)
+async function todas(consulta) {
+  const out = [];
+  for (let de = 0; ; de += 1000) {
+    const { data, error } = await consulta().range(de, de + 999);
+    if (error) return { data: null, error };
+    out.push(...data);
+    if (data.length < 1000) return { data: out, error: null };
+  }
+}
 async function jogosDoMes(id, forcar) {
   if (!id) return [];
   if (!sb || (!forcar && S.jogosPorMes[id])) return S.jogosPorMes[id] || [];
-  const { data, error } = await sb.from('jogos').select('*').eq('mes', id).order('criado_em');
+  const { data, error } = await todas(() => sb.from('jogos').select('*').eq('mes', id).order('criado_em').order('id'));
   if (error) throw error;
   S.jogosPorMes[id] = data;
   await carregarCurtidas(data.map((g) => g.id));
@@ -86,10 +96,13 @@ async function jogosDoMes(id, forcar) {
 // curtidas dos jogos; se a tabela ainda não existir no banco, segue sem curtidas
 async function carregarCurtidas(ids) {
   if (!ids.length) return;
-  const { data, error } = await sb.from('curtidas').select('jogo,jogador').in('jogo', ids);
-  if (error) return;
+  // de 150 em 150 jogos: com muitos jogos a lista de ids no endereço ficaria grande demais
+  const partes = [];
+  for (let i = 0; i < ids.length; i += 150) partes.push(ids.slice(i, i + 150));
+  const rs = await Promise.all(partes.map((p) => todas(() => sb.from('curtidas').select('jogo,jogador').in('jogo', p).order('jogo').order('jogador'))));
+  if (rs.some((r) => r.error)) return;
   ids.forEach((id) => { S.curtidas[id] = []; });
-  data.forEach((c) => S.curtidas[c.jogo].push(c.jogador));
+  rs.forEach((r) => r.data.forEach((c) => S.curtidas[c.jogo].push(c.jogador)));
 }
 const CORACAO = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.1 0 3.6 1.1 5.4 3 1.8-1.9 3.3-3 5.4-3 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z" fill="currentColor"/></svg>';
 function curtir(g) {
@@ -119,9 +132,9 @@ const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   // tudo que não depende de nada vai junto (menos idas e voltas = abre mais rápido)
-  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), sb.from('pagamentos').select('*'), sb.from('finals_resposta').select('*')]);
+  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador'))]);
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
-    sb.from('jogadores').select(COLS),
+    todas(() => sb.from('jogadores').select(COLS).order('id')),
     sb.from('meses').select('*').order('id', { ascending: false }),
     sb.from('avisos').select('*').order('criado_em', { ascending: false }).limit(40),
     sb.from('patrocinadores').select('*').order('ordem'),
@@ -261,10 +274,20 @@ function dadosFinals(ano, grupo) {
   return { fz, vg, js, t, semis: js.filter((j) => j.fase === 'semi'), final: js.find((j) => j.fase === 'final') };
 }
 
-let recarregando = null;
-function recarregarDepois() {
+let recarregando = null, recarregarTudo = false;
+function recarregarDepois(p) {
+  // placar, WO e curtida só mexem nos jogos do mês: recarrega só eles (bem menos dados quando tem muita gente); o resto recarrega tudo
+  const soJogos = p && ((p.table === 'jogos' && p.eventType === 'UPDATE') || p.table === 'curtidas');
+  if (!soJogos) recarregarTudo = true;
   clearTimeout(recarregando);
-  recarregando = setTimeout(async () => { try { await carregar(); render(); lembrarFinals(); } catch (e) { console.error(e); } }, 600 + Math.floor(Math.random() * 2400));   // espalha: com 100 pessoas abertas, não recarregam todas no mesmo instante
+  recarregando = setTimeout(async () => {
+    const tudo = recarregarTudo || !S.mesAtual; recarregarTudo = false;
+    try {
+      if (tudo) await carregar();
+      else { const id = S.mesAtual.id; S.jogosPorMes = {}; S.jogos = await jogosDoMes(id, true); salvarCache(); }
+      render(); lembrarFinals();
+    } catch (e) { console.error(e); }
+  }, 600 + Math.floor(Math.random() * 2400));   // espalha: com 100 pessoas abertas, não recarregam todas no mesmo instante
 }
 
 // ---------- regras de exibição ----------
@@ -1117,9 +1140,9 @@ const PECAS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 async function carregarDesafio(ano) {
   const comecou = !!S.meses.find((x) => x.id === ano + '-01');
   const [r, n, todos] = await Promise.all([
-    sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10'),
+    todas(() => sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status').gte('mes', ano + '-01').lte('mes', ano + '-10').order('mes').order('id')),
     comecou ? sb.rpc('meu_numero_da_sorte', { p_ano: ano }) : Promise.resolve({ data: null }),
-    S.eu.admin ? sb.from('desafio_numeros').select('jogador,numero,completou,lista_em').eq('ano', ano) : Promise.resolve({ data: [] })
+    S.eu.admin ? todas(() => sb.from('desafio_numeros').select('jogador,numero,completou,lista_em').eq('ano', ano).order('jogador')) : Promise.resolve({ data: [] })
   ]);
   S.desafio = { ano, jogos: r.error ? [] : r.data, numero: n && !n.error ? n.data : null, numeros: todos && !todos.error ? todos.data || [] : [], em: Date.now() };
 }
@@ -1642,7 +1665,7 @@ async function rodarMes(abrirProx = true) {
   // WO confirmado ou sem resposta do adversário entra pela regra 2.6; contestado fica 0 pros dois (2.7)
   const validos = jogos.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de }));
   // 7.4: último confronto direto entre os empatados, olhando todos os meses
-  const { data: hist, error: eh } = await sb.from('jogos').select('mes,jogador_a,jogador_b,sets,wo_de,wo_status,criado_em').order('mes').order('criado_em');
+  const { data: hist, error: eh } = await todas(() => sb.from('jogos').select('id,mes,jogador_a,jogador_b,sets,wo_de,wo_status,criado_em').order('mes').order('criado_em').order('id'));
   if (eh) throw eh;
   const h2h = M.confrontoDireto(hist.filter((g) => g.jogador_b && (g.wo_de ? g.wo_status !== 'anulado' : g.sets)).map((g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de })));
   const nova = M.rodarMes(lista, validos, standby, h2h, M.pontosWO(mes.id)).map((j, i) => ({ ...j, posicao: i + 1 }));
