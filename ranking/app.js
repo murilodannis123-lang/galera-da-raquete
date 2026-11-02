@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102125808';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102125808';
-import { REGULAMENTO } from './regulamento.js?v=20261102125808';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102125808';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102125808';
+import * as M from './motor.js?v=20261102160609';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102160609';
+import { REGULAMENTO } from './regulamento.js?v=20261102160609';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102160609';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102160609';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -159,6 +159,8 @@ async function carregar() {
   S.tinsc = ti.error ? null : ti.data;   // inscrições dos torneios (null = ainda não ativado no banco)   // respostas "vou continuar no ranking do ano que vem" (null = ainda não ativado no banco)
   aquecerFotos();
   S.jogos = jogos;
+  // sem mês aberto (ex.: época do Finals): o início mostra o último jogo de cada um
+  S.ultJogos = !S.mesAtual && S.meses[0] ? await jogosDoMes(S.meses[0].id).catch(() => []) : [];
   if (!S.eu) return;
   Object.assign(S.eu, meus[0] || {});
   S.niver = niver;
@@ -403,13 +405,29 @@ function telaInicio() {
   } else if (!S.mesAtual && campeoes()) {
     corpo = cardCampeoes(campeoes());
   } else if (!S.mesAtual) {
-    corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Aguardando a coordenação</b><div class="dica">Os jogos do mês aparecem aqui quando o mês for aberto.</div></div></div>`;
+    const fin = /-1[0-2]$/.test(S.meses[0] ? S.meses[0].id : '') && S.finals.some((f) => f.ano === anoRanking());
+    corpo = fin ? `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">Época do Finals 🏆</b><div class="dica">O ranking ${anoRanking()} acabou em outubro. Acompanhe os jogos e os resultados do Finals.</div></div><a class="btn btn-bola" href="#/finals" style="height:44px;padding:0 14px;font-size:13px">Ver Finals</a></div>`
+      : `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Aguardando a coordenação</b><div class="dica">Os jogos do mês aparecem aqui quando o mês for aberto.</div></div></div>`;
   } else if (meu && !meu.jogador_b) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Standby do mês: +25 pontos</b><div class="dica">Número ímpar de jogadores e você ficou sem adversário (regra 2.2).</div></div></div>`;
   } else if (!meu) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">${eu.standby ? 'Você está em standby' : 'Sem jogo neste mês'}</b><div class="dica">${eu.standby ? 'Desligue o standby no seu perfil para voltar na próxima rodada.' : 'Fale com a coordenação se achar que é um erro.'}</div></div></div>`;
   }
-  let vs = typeof vsTemp === 'string' ? vsTemp : '';
+  let vs = typeof vsTemp === 'string' ? vsTemp : '', ultimo = null;
+  // sem mês aberto: o último jogo da pessoa no mesmo layout do jogo do mês (fica mais bonito que a tela vazia)
+  if (!vs && !S.mesAtual && eu.joga && eu.ativo) {
+    ultimo = (S.ultJogos || []).find((g) => g.jogador_b && (g.jogador_a === eu.id || g.jogador_b === eu.id)) || null;
+    if (ultimo) {
+      const adv = porId(ultimo.jogador_a === eu.id ? ultimo.jogador_b : ultimo.jogador_a), v = vencedor(ultimo);
+      const sub = ultimo.wo_de ? 'WO · ' + (ultimo.wo_status === 'anulado' ? 'ANULADO' : v === eu.id ? 'VITÓRIA' : 'DERROTA') : ultimo.sets ? (v === eu.id ? 'VITÓRIA' : 'DERROTA') : 'SEM PLACAR';
+      const meuLado = ultimo.jogador_a === eu.id, sets = ultimo.sets ? (meuLado ? ultimo.sets : ultimo.sets.map(([x, y]) => [y, x])) : null;
+      vs = `<div class="vs">
+      <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
+      <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${/DERROTA$/.test(sub) ? 'derrota-pisca' : ''}" style="font-size:10px;letter-spacing:1px;color:${v === eu.id ? 'var(--bola)' : 'rgba(255,255,255,.6)'};font-weight:700">${esc(sub)}</small>${sets && !ultimo.wo_de ? `<b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(sets))}${pneuTag(sets, 14)}</b>` : ''}</div>
+      <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
+    </div>`;
+    }
+  }
   if (meu && meu.jogador_b) {
     const adv = porId(meu.jogador_a === eu.id ? meu.jogador_b : meu.jogador_a);
     const v = vencedor(meu);
@@ -452,7 +470,7 @@ function telaInicio() {
     <p class="sub-ranking">RANKING</p>
   </header>
   <section class="jogo" aria-label="Seu jogo do mês">
-    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">${perguntaTemporada() && eu.ativo && eu.joga ? 'RANKING ' + (anoRanking() + 1) : !S.mesAtual && campeoes() ? 'FIM DE TEMPORADA' : 'JOGO DO MÊS'}</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : '—'}</span></div>
+    <div class="jogo-top"><b class="cond" style="font-size:14px;letter-spacing:2px;color:var(--bola)">${perguntaTemporada() && eu.ativo && eu.joga ? 'RANKING ' + (anoRanking() + 1) : ultimo ? 'ÚLTIMO JOGO' : !S.mesAtual && campeoes() ? 'FIM DE TEMPORADA' : 'JOGO DO MÊS'}</b><span class="chip">Grupo ${esc(eu.grupo)} · ${S.mesAtual ? esc(MESES[Number(S.mesAtual.id.slice(5)) - 1]) : ultimo ? esc(MESES[Number(ultimo.mes.slice(5)) - 1]) : '—'}</span></div>
     ${vs}
     ${p && meu && meu.jogador_b ? `<div style="padding:0 14px 8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.75)"><span>Prazo: até ${p.texto}</span><b style="color:var(--bola)">${p.dias}</b></div>
       <div class="barra" aria-hidden="true"><i style="width:${p.pct}%"></i><svg style="left:${p.pct}%" width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#D8F145" stroke="#1A0D33" stroke-width="1.5"/><path d="M3 4.5c4 1.5 6 3.5 6 5.5s-2 4-6 5.5M17 4.5c-4 1.5-6 3.5-6 5.5s2 4 6 5.5" fill="none" stroke="#1A0D33" stroke-width="1.5" stroke-linecap="round"/></svg></div></div>` : '<div style="height:8px"></div>'}
@@ -1172,7 +1190,7 @@ ${S.eu && S.eu.admin ? `<div class="card" style="font-size:13px;line-height:1.5"
 }
 
 function telaRegulamento() {
-  return voltar('Regulamento', 'Versão 01-2025 · vigência 01/01/2026') + `<div class="conteudo"><div class="card" style="white-space:pre-line;font-size:14px;line-height:1.5">${esc(REGULAMENTO)}</div></div>`;
+  return voltar('Regulamento', 'Versão 01-2025 · vigência 01/01/2026') + `<div class="conteudo"><div class="card" style="white-space:pre-line;font-size:14px;line-height:1.5">${esc(REGULAMENTO).replace(/\[NEW\]/g, '<span class="tag-new">NEW</span>')}</div></div>`;
 }
 
 // encerrar o mês / abrir o próximo (Admin e tela de Jogos, só coordenação)
