@@ -24,22 +24,22 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--noite);color:#fff;m
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 a{color:inherit}
 .cond{font-family:Barlow,Inter,sans-serif;font-weight:800;letter-spacing:.2px}
-.topo{text-align:center;padding:28px 16px 8px;background:radial-gradient(120% 90% at 50% 0%,#4E308A 0%,#2A1650 55%,var(--noite) 100%)}
-.topo img{width:84px;height:84px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
-.topo h1{font-size:30px;line-height:1.05;margin-top:10px}
+.topo{text-align:center;padding:18px 16px 4px;background:radial-gradient(120% 90% at 50% 0%,#4E308A 0%,#2A1650 55%,var(--noite) 100%)}
+.topo img{width:60px;height:60px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
+.topo h1{font-size:26px;line-height:1.05;margin-top:6px}
 .topo h1 b{color:var(--bola)}
-.topo p{color:#CFC6E6;font-size:15px;margin-top:8px;line-height:1.4}
+.topo p{color:#CFC6E6;font-size:14px;margin-top:6px;line-height:1.35}
 .wrap{max-width:460px;margin:0 auto;padding:0 16px 40px}
-.escolha{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.08);border-radius:16px;padding:5px;margin:16px 0 14px}
-.escolha button{height:46px;border-radius:12px;font-weight:800;font-size:16px;color:#CFC6E6;display:flex;align-items:center;justify-content:center;gap:8px}
+.escolha{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.08);border-radius:16px;padding:5px;margin:12px 0}
+.escolha button{height:42px;border-radius:12px;font-weight:800;font-size:16px;color:#CFC6E6;display:flex;align-items:center;justify-content:center;gap:8px}
 .escolha button[aria-pressed=true]{background:#fff;color:var(--noite)}
-.passo{min-height:92px;text-align:center}
+.passo{min-height:84px;text-align:center}
 .passo .n{display:inline-block;font-size:12px;font-weight:800;letter-spacing:2px;color:var(--bola);background:rgba(216,241,69,.12);padding:5px 10px;border-radius:99px}
-.passo h2{font-size:24px;line-height:1.1;margin-top:8px}
-.passo p{color:#CFC6E6;font-size:15px;line-height:1.4;margin-top:6px}
+.passo h2{font-size:21px;line-height:1.1;margin-top:8px}
+.passo p{color:#CFC6E6;font-size:14px;line-height:1.4;margin-top:6px}
 .passo kbd{font:inherit;font-weight:800;color:#fff;background:rgba(255,255,255,.14);padding:1px 7px;border-radius:7px}
 /* celular */
-.cel{width:min(280px,calc(100vw - 64px));margin:14px auto 0;aspect-ratio:9/19.3;border-radius:44px;background:#0b0b0f;padding:10px;box-shadow:0 0 0 2px #3a3350,0 30px 60px rgba(0,0,0,.55);position:relative}
+.cel{width:clamp(170px,calc((100vh - 210px) * .466),240px);width:clamp(170px,calc((100svh - 210px) * .466),240px);margin:10px auto 0;aspect-ratio:9/19.3;border-radius:44px;background:#0b0b0f;padding:10px;box-shadow:0 0 0 2px #3a3350,0 30px 60px rgba(0,0,0,.55);position:relative}
 .cel.android{border-radius:30px}
 .tela{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#fff;color:#111;container-type:inline-size;font-size:4.3cqw;-webkit-user-select:none;user-select:none}
 .android .tela{border-radius:22px}
@@ -143,11 +143,11 @@ a{color:inherit}
 .dialogo .bts span{padding:2.5cqw 5cqw;border-radius:99px;font-weight:600;font-size:3.8cqw;color:#1A62D6}
 .dialogo .bts span.cheio{background:#1A62D6;color:#fff}
 /* controles */
-.ctrl{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px}
-.ctrl button{height:44px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,.1);font-weight:600;font-size:15px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.ctrl button{height:44px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.1);font-weight:600;font-size:14px;white-space:nowrap}
 .ctrl button.prin{background:var(--bola);color:var(--noite);font-weight:800}
 .ctrl button:disabled{opacity:.35}
-.bolinhas{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.bolinhas{display:flex;justify-content:center;gap:6px;margin-top:10px}
 .bolinhas i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.25);transition:width .3s}
 .bolinhas i.on{width:22px;background:var(--bola)}
 .dica-antiga{margin-top:14px;font-size:14px;color:#CFC6E6;background:rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;line-height:1.45}
@@ -189,7 +189,7 @@ details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
 </header>
 <main class="wrap">
   <div class="escolha" role="group" aria-label="Qual é o seu celular?">
-    <button type="button" data-so="ios" aria-pressed="true"> iPhone</button>
+    <button type="button" data-so="ios" aria-pressed="true">📱 iPhone</button>
     <button type="button" data-so="android" aria-pressed="false">🤖 Android</button>
   </div>
 
@@ -198,7 +198,7 @@ details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
   <div class="bolinhas" id="bolinhas" aria-hidden="true"></div>
   <div class="ctrl">
     <button type="button" id="voltar">‹ Voltar</button>
-    <button type="button" id="auto" class="prin">▶ Mostrar sozinho</button>
+    <button type="button" id="auto" class="prin">▶ Ver sozinho</button>
     <button type="button" id="prox">Avançar ›</button>
   </div>
   <div class="dica-antiga" id="dica"></div>
@@ -310,13 +310,18 @@ details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
     $('#dica').innerHTML = DICA[so];
     tela.setAttribute('aria-label', fim ? 'Pronto, app instalado' : s.t);
   }
+  // depois de um toque, deixa o passo + celular + botões inteiros na tela
+  function enquadra() {
+    const a = document.querySelector('.passo').getBoundingClientRect(), c = document.querySelector('.ctrl').getBoundingClientRect();
+    if (a.top < 0 || c.bottom > innerHeight) scrollTo({ top: scrollY + a.top - 8, behavior: 'smooth' });
+  }
   function avancar() {
     const P = passos();
     if (fim) { fim = false; i = 0; } else if (i < P.length - 1) i++; else fim = true;
-    desenha();
+    desenha(); enquadra();
     if (fim && auto) pararAuto();
   }
-  function voltar() { if (fim) fim = false; else if (i > 0) i--; desenha(); }
+  function voltar() { if (fim) fim = false; else if (i > 0) i--; desenha(); enquadra(); }
 
   tela.addEventListener('click', (e) => {
     if (fim) return;
@@ -325,7 +330,7 @@ details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
   });
   $('#prox').onclick = () => { pararAuto(); avancar(); };
   $('#voltar').onclick = () => { pararAuto(); voltar(); };
-  document.querySelectorAll('[data-so]').forEach((b) => b.onclick = () => { pararAuto(); so = b.dataset.so; i = 0; fim = false; desenha(); });
+  document.querySelectorAll('[data-so]').forEach((b) => b.onclick = () => { pararAuto(); so = b.dataset.so; i = 0; fim = false; desenha(); enquadra(); });
 
   // modo "mostrar sozinho": um dedinho vai até o ponto que pisca e toca
   function tocarSozinho() {
@@ -337,12 +342,12 @@ details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
     requestAnimationFrame(() => { d.style.left = (r.left - t.left + r.width / 2 - t.width * 0.04) + 'px'; d.style.top = (r.top - t.top + r.height / 2) + 'px'; });
     timer = setTimeout(() => { d.classList.add('toca'); timer = setTimeout(() => { avancar(); if (auto) timer = setTimeout(tocarSozinho, 1500); }, 350); }, 1300);
   }
-  function pararAuto() { auto = false; clearTimeout(timer); $('#auto').textContent = '▶ Mostrar sozinho'; }
+  function pararAuto() { auto = false; clearTimeout(timer); $('#auto').textContent = '▶ Ver sozinho'; }
   $('#auto').onclick = () => {
     if (auto) return pararAuto();
     auto = true; $('#auto').textContent = '❚❚ Pausar';
     if (fim) { fim = false; i = 0; desenha(); }
-    timer = setTimeout(tocarSozinho, 700);
+    enquadra(); timer = setTimeout(tocarSozinho, 900);
   };
   desenha();
 })();
