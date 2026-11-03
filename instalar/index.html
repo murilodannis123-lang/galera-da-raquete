@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Instalar o app do Ranking · Galera da Raquete</title>
+<meta name="description" content="Passo a passo interativo pra colocar o app do Ranking na tela do celular (iPhone e Android) e fazer o primeiro acesso.">
+<meta property="og:title" content="Coloque o app do Ranking no seu celular">
+<meta property="og:description" content="Passo a passo interativo, iPhone e Android. Leva 1 minuto.">
+<meta property="og:image" content="https://galeradaraquete.github.io/instalar/capa.jpg">
+<meta property="og:url" content="https://galeradaraquete.github.io/instalar/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1A0D33">
+<link rel="icon" href="icone.png">
+<style>
+@font-face{font-family:Inter;font-weight:400;font-display:swap;src:url(fontes/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(fontes/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:800;font-display:swap;src:url(fontes/inter-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:Barlow;font-weight:800;font-display:swap;src:url(fontes/barlow-semi-condensed-latin-800-normal.woff2) format('woff2')}
+:root{--noite:#1A0D33;--roxo:#4E308A;--roxo2:#2A1650;--bola:#D8F145;--claro:#F5F2FA;--tinta:#1F1730;--tinta2:#5B5470;--azul:#0A84FF;--verde:#25D366}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--noite);color:#fff;min-height:100vh;overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit}
+.cond{font-family:Barlow,Inter,sans-serif;font-weight:800;letter-spacing:.2px}
+.topo{text-align:center;padding:28px 16px 8px;background:radial-gradient(120% 90% at 50% 0%,#4E308A 0%,#2A1650 55%,var(--noite) 100%)}
+.topo img{width:84px;height:84px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
+.topo h1{font-size:30px;line-height:1.05;margin-top:10px}
+.topo h1 b{color:var(--bola)}
+.topo p{color:#CFC6E6;font-size:15px;margin-top:8px;line-height:1.4}
+.wrap{max-width:460px;margin:0 auto;padding:0 16px 40px}
+.escolha{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.08);border-radius:16px;padding:5px;margin:16px 0 14px}
+.escolha button{height:46px;border-radius:12px;font-weight:800;font-size:16px;color:#CFC6E6;display:flex;align-items:center;justify-content:center;gap:8px}
+.escolha button[aria-pressed=true]{background:#fff;color:var(--noite)}
+.passo{min-height:92px;text-align:center}
+.passo .n{display:inline-block;font-size:12px;font-weight:800;letter-spacing:2px;color:var(--bola);background:rgba(216,241,69,.12);padding:5px 10px;border-radius:99px}
+.passo h2{font-size:24px;line-height:1.1;margin-top:8px}
+.passo p{color:#CFC6E6;font-size:15px;line-height:1.4;margin-top:6px}
+.passo kbd{font:inherit;font-weight:800;color:#fff;background:rgba(255,255,255,.14);padding:1px 7px;border-radius:7px}
+/* celular */
+.cel{width:min(280px,calc(100vw - 64px));margin:14px auto 0;aspect-ratio:9/19.3;border-radius:44px;background:#0b0b0f;padding:10px;box-shadow:0 0 0 2px #3a3350,0 30px 60px rgba(0,0,0,.55);position:relative}
+.cel.android{border-radius:30px}
+.tela{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#fff;color:#111;container-type:inline-size;font-size:4.3cqw;-webkit-user-select:none;user-select:none}
+.android .tela{border-radius:22px}
+.ilha{position:absolute;top:2.4cqw;left:50%;transform:translateX(-50%);width:30cqw;height:8.5cqw;background:#000;border-radius:99px;z-index:30}
+.android .ilha{width:4.5cqw;height:4.5cqw;top:2.6cqw}
+.status{position:absolute;top:0;left:0;right:0;height:13cqw;display:flex;align-items:center;justify-content:space-between;padding:1.5cqw 8cqw 0;font-weight:800;font-size:4cqw;z-index:25}
+.android .status{height:9cqw;font-size:3.4cqw;padding:0 5cqw}
+.status i{font-style:normal;letter-spacing:1px;font-size:3.4cqw}
+.cena{position:absolute;inset:0;animation:entra .35s ease}
+@keyframes entra{from{opacity:0;transform:translateY(3%)}to{opacity:1;transform:none}}
+.escuro::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:5}
+/* alvo que pisca */
+.alvo{position:relative;z-index:12;cursor:pointer}
+.alvo::after{content:'';position:absolute;inset:-1.8cqw;border:1.2cqw solid var(--bola);border-radius:3cqw;box-shadow:0 0 0 .6cqw rgba(0,0,0,.35),0 0 5cqw rgba(216,241,69,.9);animation:pisca 1.1s ease-in-out infinite;pointer-events:none}
+.alvo.redondo::after{border-radius:99px}
+@keyframes pisca{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.08)}}
+.dedo{position:absolute;z-index:40;font-size:11cqw;pointer-events:none;transition:left .6s ease,top .6s ease,transform .2s;filter:drop-shadow(0 1cqw 1.5cqw rgba(0,0,0,.5))}
+.dedo.toca{transform:scale(.8)}
+.tela.erro .alvo::after{animation:pisca .25s 3}
+/* app (tela de login) */
+.app-topo{background:linear-gradient(#2A1650,#4E308A);color:#fff;text-align:center;padding:16cqw 4cqw 6cqw}
+.app-topo img{width:22cqw;height:22cqw}
+.app-topo b{display:block;font-family:Barlow,Inter;font-size:5.4cqw;margin-top:1.5cqw}
+.app-topo small{display:block;color:var(--bola);font-weight:800;font-size:3cqw;letter-spacing:1.6cqw;margin-top:1cqw}
+.app-corpo{padding:5cqw 5cqw;background:#F5F2FA;height:100%}
+.app-corpo label{display:block;font-size:3.2cqw;color:#5B5470;margin:2.5cqw 0 1cqw}
+.app-corpo .campo{height:9.5cqw;border:.3cqw solid #E2DCEC;background:#fff;border-radius:2.5cqw;display:flex;align-items:center;padding:0 3cqw;font-size:3.8cqw;color:#111}
+.app-corpo .bt{height:10cqw;border-radius:2.5cqw;background:#4E308A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;margin-top:4cqw;font-size:4cqw}
+.app-corpo .bt.linha{background:#fff;color:#4E308A;border:.3cqw solid #D9D1EA;margin-top:2.5cqw;font-size:3.6cqw}
+/* whatsapp */
+.zap-topo{position:absolute;top:0;left:0;right:0;padding:13cqw 3cqw 2.5cqw;background:#F6F6F6;border-bottom:.3cqw solid #ddd;display:flex;align-items:center;gap:2.5cqw;z-index:4}
+.android .zap-topo{padding-top:10cqw;background:#fff}
+.zap-topo .av{width:9cqw;height:9cqw;border-radius:50%;background:#4E308A url(logo.png) center/cover}
+.zap-topo b{font-size:4cqw;display:block}
+.zap-topo small{font-size:3cqw;color:#666}
+.zap-fundo{position:absolute;inset:0;background:#EFE7DD;padding:32cqw 3cqw 0}
+.bolha{background:#D9FDD3;border-radius:3cqw;padding:3cqw 3.5cqw;margin-left:8cqw;font-size:3.9cqw;line-height:1.4;box-shadow:0 .3cqw .5cqw rgba(0,0,0,.08)}
+.bolha.dele{background:#fff;margin:0 10cqw 3cqw 0}
+.bolha .lk{color:#0B66D0;text-decoration:underline;display:inline-block;padding:.5cqw 0;margin-top:2.5cqw}
+.bolha small{display:block;text-align:right;font-size:2.8cqw;color:#667;margin-top:1cqw}
+.zap-base{position:absolute;left:0;right:0;bottom:0;height:14cqw;background:#F6F6F6;border-top:.3cqw solid #ddd;display:flex;align-items:center;padding:0 3cqw 3cqw;gap:2cqw}
+.zap-base span{flex:1;height:8cqw;border-radius:99px;background:#fff;border:.3cqw solid #ddd}
+/* safari */
+.safari-base{position:absolute;left:0;right:0;bottom:0;padding:2cqw 3cqw 6cqw;display:flex;align-items:center;gap:2.5cqw;background:linear-gradient(transparent,rgba(26,13,51,.15));z-index:6}
+.vidro{background:rgba(250,250,252,.92);box-shadow:0 1cqw 4cqw rgba(0,0,0,.25);border-radius:99px;height:11.5cqw;display:flex;align-items:center;justify-content:center;color:#222}
+.vidro.bola{width:11.5cqw;flex:none;font-size:5cqw}
+.vidro.end{flex:1;gap:2cqw;padding:0 3cqw;font-size:3.6cqw;justify-content:space-between}
+.vidro.end .me{width:8cqw;height:8cqw;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.menu-ios{position:absolute;left:4cqw;bottom:22cqw;width:60cqw;background:rgba(248,248,250,.97);border-radius:6cqw;box-shadow:0 2cqw 8cqw rgba(0,0,0,.35);padding:2cqw 0;z-index:10;animation:entra .3s ease}
+.menu-ios div{display:flex;align-items:center;gap:3cqw;padding:3cqw 5cqw;font-size:4.1cqw}
+.menu-ios div+div{border-top:.3cqw solid #e6e6ea}
+.menu-ios svg{width:5cqw;height:5cqw;flex:none}
+.folha{position:absolute;left:1.5cqw;right:1.5cqw;bottom:1.5cqw;background:#F2F2F7;border-radius:8cqw;z-index:10;padding:4cqw;animation:sobe .35s ease}
+@keyframes sobe{from{transform:translateY(40%)}to{transform:none}}
+.folha .cab{display:flex;align-items:center;gap:3cqw;background:#fff;border-radius:4cqw;padding:3cqw}
+.folha .cab img{width:10cqw;height:10cqw;border-radius:2.4cqw}
+.folha .cab b{font-size:3.8cqw;display:block}
+.folha .cab small{font-size:3.2cqw;color:#777}
+.folha .ops{text-align:center;font-size:3.6cqw;margin:3cqw 0 2cqw}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw;text-align:center;font-size:2.9cqw}
+.apps i{display:block;width:13cqw;height:13cqw;border-radius:3.4cqw;margin:0 auto 1cqw}
+.acoes{display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw;text-align:center;font-size:2.8cqw;margin-top:4cqw;line-height:1.15}
+.acoes span{display:flex;flex-direction:column;align-items:center;gap:1cqw}
+.acoes i{display:flex;width:12cqw;height:12cqw;border-radius:50%;background:#fff;align-items:center;justify-content:center;font-style:normal;font-size:5cqw}
+.lista{background:#fff;border-radius:4cqw;margin-top:3cqw}
+.lista div{display:flex;align-items:center;gap:3cqw;padding:3.2cqw 4cqw;font-size:3.9cqw}
+.lista div+div{border-top:.3cqw solid #ececf0}
+.lista i{font-style:normal;width:5.5cqw;text-align:center}
+.teclado{position:absolute;left:0;right:0;bottom:0;height:62cqw;background:#D1D3D9;padding:3cqw 1cqw;display:grid;grid-template-rows:repeat(4,1fr);gap:2.4cqw}
+.teclado div{display:flex;justify-content:center;gap:1.2cqw}
+.teclado i{width:8.4cqw;background:#fff;border-radius:1.5cqw;box-shadow:0 .4cqw 0 #999;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:4cqw;color:#222}
+/* tela inicial */
+.inicio{position:absolute;inset:0;background:radial-gradient(90% 60% at 30% 20%,#7B5FC4,transparent),radial-gradient(90% 70% at 80% 90%,#E07A5F,transparent),#2B2D6E;padding:17cqw 5cqw 0}
+.android .inicio{background:radial-gradient(90% 60% at 70% 10%,#3A8F7A,transparent),radial-gradient(90% 70% at 20% 90%,#3C5BA9,transparent),#1D2B3A;padding-top:16cqw}
+.grade{display:grid;grid-template-columns:repeat(4,1fr);gap:5cqw 3cqw;text-align:center;color:#fff;font-size:2.8cqw}
+.grade span{display:flex;flex-direction:column;align-items:center;gap:1.2cqw;text-shadow:0 .3cqw 1cqw rgba(0,0,0,.5)}
+.grade i{display:block;width:15cqw;height:15cqw;border-radius:3.8cqw;box-shadow:0 .5cqw 1.5cqw rgba(0,0,0,.25)}
+.android .grade i{border-radius:50%}
+.grade img{width:15cqw;height:15cqw;border-radius:3.8cqw;background:#fff;box-shadow:0 .5cqw 1.5cqw rgba(0,0,0,.35)}
+.android .grade img{border-radius:50%}
+.grade .novo{animation:pula .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pula{from{transform:scale(0)}to{transform:scale(1)}}
+.doca{position:absolute;left:4cqw;right:4cqw;bottom:4cqw;height:22cqw;border-radius:8cqw;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-around}
+.doca i{width:15cqw;height:15cqw;border-radius:3.8cqw;display:block}
+.android .doca{background:none}
+.android .doca i{border-radius:50%}
+/* chrome */
+.chrome-topo{position:absolute;top:0;left:0;right:0;padding:10cqw 3cqw 2.5cqw;background:#fff;display:flex;align-items:center;gap:2.5cqw;z-index:6;border-bottom:.3cqw solid #e5e5e5}
+.chrome-topo .url{flex:1;height:10cqw;border-radius:99px;background:#EEF0F4;display:flex;align-items:center;padding:0 3.5cqw;font-size:3.6cqw;gap:2cqw;color:#333;white-space:nowrap;overflow:hidden}
+.chrome-topo .ab{width:6.5cqw;height:6.5cqw;border:.6cqw solid #333;border-radius:1.5cqw;font-size:3cqw;font-weight:800;display:flex;align-items:center;justify-content:center}
+.chrome-topo .pts{width:8cqw;height:10cqw;display:flex;align-items:center;justify-content:center;font-size:6cqw;font-weight:800}
+.menu-and{position:absolute;top:9cqw;right:2cqw;width:64cqw;background:#fff;border-radius:3cqw;box-shadow:0 2cqw 8cqw rgba(0,0,0,.35);z-index:10;padding:1.5cqw 0;animation:entra .25s ease}
+.menu-and .ic{display:flex;justify-content:space-around;padding:2cqw 2cqw 3cqw;border-bottom:.3cqw solid #eee;font-size:4.6cqw;color:#444}
+.menu-and div.it{padding:3cqw 5cqw;font-size:3.9cqw}
+.dialogo{position:absolute;left:5cqw;right:5cqw;bottom:20cqw;background:#fff;border-radius:6cqw;padding:6cqw;z-index:10;box-shadow:0 3cqw 10cqw rgba(0,0,0,.4);animation:sobe .3s ease}
+.dialogo h4{font-size:5cqw;font-weight:600}
+.dialogo .lin{display:flex;align-items:center;gap:3cqw;margin:4cqw 0}
+.dialogo .lin img{width:11cqw;height:11cqw;border-radius:50%}
+.dialogo .lin small{display:block;color:#666;font-size:3.2cqw}
+.dialogo .bts{display:flex;justify-content:flex-end;gap:3cqw}
+.dialogo .bts span{padding:2.5cqw 5cqw;border-radius:99px;font-weight:600;font-size:3.8cqw;color:#1A62D6}
+.dialogo .bts span.cheio{background:#1A62D6;color:#fff}
+/* controles */
+.ctrl{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px}
+.ctrl button{height:44px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,.1);font-weight:600;font-size:15px}
+.ctrl button.prin{background:var(--bola);color:var(--noite);font-weight:800}
+.ctrl button:disabled{opacity:.35}
+.bolinhas{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.bolinhas i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.25);transition:width .3s}
+.bolinhas i.on{width:22px;background:var(--bola)}
+.dica-antiga{margin-top:14px;font-size:14px;color:#CFC6E6;background:rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;line-height:1.45}
+.dica-antiga b{color:#fff}
+/* seções de baixo */
+.secao{margin-top:34px}
+.secao>h3{font-size:24px;margin-bottom:12px}
+.secao>h3 b{color:var(--bola)}
+.cartoes{display:flex;flex-direction:column;gap:10px}
+.cartao{background:#fff;color:var(--tinta);border-radius:18px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.cartao .num{flex:none;width:32px;height:32px;border-radius:50%;background:var(--roxo);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+.cartao b{display:block;font-size:16px}
+.cartao p{color:var(--tinta2);font-size:14px;line-height:1.45;margin-top:3px}
+.cartao code{font:inherit;font-weight:800;color:var(--roxo);background:#EEE8F8;padding:1px 6px;border-radius:6px}
+details{background:rgba(255,255,255,.07);border-radius:14px;padding:0 14px;margin-top:8px}
+summary{list-style:none;cursor:pointer;padding:14px 0;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'+';color:var(--bola);font-weight:800;font-size:20px;line-height:1}
+details[open] summary::after{content:'–'}
+details p{color:#CFC6E6;font-size:14px;line-height:1.5;padding-bottom:14px}
+.botoes{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.botoes a{height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;text-decoration:none;font-size:16px}
+.b-app{background:var(--bola);color:var(--noite)}
+.b-zap{background:var(--verde);color:#062b14}
+.b-linha{border:1.5px solid rgba(255,255,255,.3);color:#fff}
+.pe{text-align:center;color:#8F86AB;font-size:12px;margin-top:26px}
+.festa{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:rgba(26,13,51,.82);color:#fff;padding:8cqw;animation:entra .4s ease}
+.festa b{font-family:Barlow,Inter;font-size:9cqw;color:var(--bola)}
+.festa p{font-size:4cqw;margin-top:2cqw;line-height:1.4}
+.festa .e{font-size:16cqw}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="topo">
+  <img src="logo.png" alt="Galera da Raquete Portal do Lago">
+  <h1 class="cond">Coloque o app do <b>Ranking</b> no seu celular</h1>
+  <p>Leva 1 minuto. Toque onde está <b style="color:var(--bola)">piscando</b> no celular abaixo, igualzinho você vai fazer no seu.</p>
+</header>
+<main class="wrap">
+  <div class="escolha" role="group" aria-label="Qual é o seu celular?">
+    <button type="button" data-so="ios" aria-pressed="true"> iPhone</button>
+    <button type="button" data-so="android" aria-pressed="false">🤖 Android</button>
+  </div>
+
+  <div class="passo" aria-live="polite"><span class="n" id="n"></span><h2 class="cond" id="tit"></h2><p id="txt"></p></div>
+  <div class="cel" id="cel"><div class="tela" id="tela" role="img" aria-label="Simulação da tela do celular"></div></div>
+  <div class="bolinhas" id="bolinhas" aria-hidden="true"></div>
+  <div class="ctrl">
+    <button type="button" id="voltar">‹ Voltar</button>
+    <button type="button" id="auto" class="prin">▶ Mostrar sozinho</button>
+    <button type="button" id="prox">Avançar ›</button>
+  </div>
+  <div class="dica-antiga" id="dica"></div>
+
+  <section class="secao">
+    <h3 class="cond">Depois: o <b>primeiro acesso</b></h3>
+    <div class="cartoes">
+      <div class="cartao"><span class="num">1</span><div><b>Abra pelo ícone “Ranking”</b><p>Agora é sempre por ele, como qualquer app.</p></div></div>
+      <div class="cartao"><span class="num">2</span><div><b>Entre com seu e-mail e a senha <code>123456</code></b><p>É o e-mail que a coordenação cadastrou pra você.</p></div></div>
+      <div class="cartao"><span class="num">3</span><div><b>Crie a sua senha</b><p>O app pede uma vez só, no primeiro acesso. Depois você fica conectado.</p></div></div>
+      <div class="cartao"><span class="num">★</span><div><b>Ainda não está no ranking?</b><p>Na tela de entrada, toque em <code>Primeira vez? Fazer inscrição</code>. A coordenação aprova e define seu grupo.</p></div></div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <h3 class="cond">Deu algum <b>problema?</b></h3>
+    <details><summary>No iPhone não aparece “Adicionar à Tela de Início”</summary><p>Role a lista do Compartilhar até o fim (às vezes precisa tocar em “Ver Mais” ou “Editar Ações”). E abra o link pelo Safari: se ele abriu dentro de outro app, toque no ícone do Safari ou em “Abrir no Safari”.</p></details>
+    <details><summary>No Android o link abriu dentro do WhatsApp</summary><p>Toque nos três pontinhos ⋮ lá em cima e escolha “Abrir no Chrome”. Aí siga o passo a passo.</p></details>
+    <details><summary>Uso o navegador da Samsung</summary><p>Toque no menu ≡ embaixo, depois em “Adicionar página a” e em “Tela inicial”.</p></details>
+    <details><summary>Esqueci a senha / não consigo entrar</summary><p>Fale com a coordenação pelo botão verde aqui embaixo que a gente resolve.</p></details>
+  </section>
+
+  <div class="botoes">
+    <a class="b-app" href="https://galeradaraquete.github.io/ranking/">🎾 Abrir o app agora</a>
+    <a class="b-zap" id="zapCoord" href="https://wa.me/5519997781210?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20pra%20instalar%20o%20app%20do%20ranking." target="_blank" rel="noopener">Falar com a coordenação</a>
+    <a class="b-linha" id="compartilhar" href="https://wa.me/?text=Coloque%20o%20app%20do%20Ranking%20no%20celular%20(passo%20a%20passo)%3A%20https%3A%2F%2Fgaleradaraquete.github.io%2Finstalar%2F" target="_blank" rel="noopener">Mandar este passo a passo pra alguém</a>
+  </div>
+  <p class="pe">Galera da Raquete · Portal do Lago Open de Tênis</p>
+</main>
+
+<script>
+(() => {
+  const URL_APP = 'galeradaraquete.github.io';
+  const $ = (s) => document.querySelector(s);
+  const tela = $('#tela'), cel = $('#cel');
+  const status = (escura) => `<div class="ilha"></div><div class="status" style="color:${escura ? '#fff' : '#111'}"><span>9:41</span><i>▂▄▆ 5G ▮</i></div>`;
+  const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const IC = {
+    comp: svg('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
+    trad: svg('<path d="M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/>'),
+    fav: svg('<path d="M6 3h12v18l-6-4-6 4z"/>'),
+    busca: svg('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>')
+  };
+  const login = () => `<div class="app-topo"><img src="logo.png" alt=""><b>Portal do Lago Open de Tênis</b><small>RANKING</small></div>
+    <div class="app-corpo"><label>E-mail</label><div class="campo"></div><label>Senha</label><div class="campo"></div><div class="bt">Entrar</div><div class="bt linha">Primeira vez? Fazer inscrição</div></div>`;
+  const zap = (andr) => `<div class="zap-fundo"><div class="bolha dele">Pessoal, o app do ranking já está no ar! 🎾<small>09:38</small></div>
+      <div class="bolha">Baixe aqui 👇<br><span class="lk alvo" data-alvo>https://${URL_APP}/ranking/</span><small>09:38</small></div></div>
+    <div class="zap-topo">${andr ? '<span style="font-size:5cqw">←</span>' : '<span style="font-size:6cqw;color:#0A7CFF">‹</span>'}<span class="av"></span><div><b>Galera da Raquete</b><small>toque para dados do grupo</small></div></div>
+    <div class="zap-base"><b style="font-size:6cqw;color:#555">+</b><span></span></div>`;
+  const safariBase = (alvoMenu) => `<div class="safari-base"><span class="vidro bola">‹</span><span class="vidro end"><span class="me ${alvoMenu ? 'alvo redondo' : ''}" ${alvoMenu ? 'data-alvo' : ''}>☰</span><span>${URL_APP}</span><span>↻</span></span><span class="vidro bola">⧉</span></div>`;
+  const grade = (andr) => {
+    const cores = ['#34C759', '#FF9500', '#5856D6', '#FF2D55', '#0A84FF', '#FFCC00', '#8E8E93', '#30B0C7', '#AF52DE', '#FF3B30', '#64D2FF', '#A2845E', '#32D74B', '#5E5CE6', '#FF9F0A'];
+    const nomes = ['Fotos', 'Câmera', 'Agenda', 'Relógio', 'Mapas', 'Clima', 'Ajustes', 'Notas', 'Música', 'Saúde', 'Arquivos', 'Contatos', 'Telefone', 'Banco', 'Loja'];
+    return `<div class="inicio">${status(true)}<div class="grade">${nomes.map((n, i) => `<span><i style="background:${cores[i]}"></i>${n}</span>`).join('')}
+      <span class="novo alvo" data-alvo><img src="icone.png" alt="">Ranking</span></div>
+      <div class="doca">${['#34C759', '#0A84FF', '#FF9500', '#25D366'].map((c) => `<i style="background:${c}"></i>`).join('')}</div></div>`;
+  };
+  const festa = () => `<div class="festa"><span class="e">🎉</span><b>PRONTO!</b><p>O app do Ranking está na sua tela.<br>Toque nele e faça o primeiro acesso (logo abaixo).</p></div>`;
+
+  const IOS = [
+    { t: 'Toque no link', p: 'No grupo do WhatsApp, toque no link do app. Ele abre no <kbd>Safari</kbd>.', h: () => status() + zap() },
+    { t: 'Toque no botão de menu', p: 'Embaixo, na barra do endereço, toque no <kbd>☰</kbd> do lado esquerdo.', h: () => status(true) + login() + safariBase(true) },
+    { t: 'Toque em “Compartilhar”', p: 'Abre um menu. Escolha <kbd>Compartilhar</kbd>.', h: () => `<div class="escuro" style="position:absolute;inset:0">${status(true) + login()}</div>${safariBase()}
+        <div class="menu-ios"><div>${IC.trad} Traduzir Site…</div><div class="alvo" data-alvo>${IC.comp} Compartilhar</div><div>${IC.fav} Adicionar a Favoritos</div><div>${IC.busca} Buscar na Página</div></div>` },
+    { t: 'Toque em “Ver Mais”', p: 'Na janela que subiu, toque em <kbd>Ver Mais</kbd> (a setinha pra baixo).', h: () => `<div class="escuro" style="position:absolute;inset:0">${status(true) + login()}</div>
+        <div class="folha" style="top:auto"><div class="cab"><img src="icone.png" alt=""><div><b>Galera da Raquete · Ranking</b><small>${URL_APP}</small></div></div><div class="ops">Opções ›</div>
+        <div class="apps"><span><i style="background:linear-gradient(#5AC8FA,#007AFF)"></i>AirDrop</span><span><i style="background:linear-gradient(#64D2FF,#0A84FF)"></i>E-mail</span><span><i style="background:linear-gradient(#5BE37D,#30C04F)"></i>Mensagens</span><span><i style="background:linear-gradient(#FFD60A,#FF9F0A)"></i>Notas</span></div>
+        <div class="acoes"><span><i>🔖</i>Adicionar a Favoritos</span><span><i>👓</i>Lista de Leitura</span><span><i>📖</i>Favorito</span><span class="alvo redondo" data-alvo style="border-radius:99px"><i>⌄</i>Ver Mais</span></div></div>` },
+    { t: 'Toque em “Adicionar à Tela de Início”', p: 'Vai aparecer uma lista. Toque em <kbd>Adicionar à Tela de Início</kbd>.', h: () => `<div class="escuro" style="position:absolute;inset:0">${status(true) + login()}</div>
+        <div class="folha" style="top:14cqw"><div class="cab"><img src="icone.png" alt=""><div><b>Galera da Raquete · Ranking</b><small>${URL_APP}</small></div></div>
+        <div class="lista"><div><i>☆</i>Preferidos</div><div><i>🗒</i>Adicionar à Nota Rápida</div><div><i>🔍</i>Buscar na Página</div><div class="alvo" data-alvo><i>⊕</i><b>Adicionar à Tela de Início</b></div></div>
+        <div class="lista"><div><i>⧉</i>Copiar</div><div><i>✎</i>Marcação</div><div><i>🖨</i>Imprimir</div></div></div>` },
+    { t: 'Toque em “Adicionar”', p: 'Deixe <kbd>Abrir como app web</kbd> ligado (verde) e toque em <kbd>Adicionar</kbd>, lá em cima.', h: () => `<div style="position:absolute;inset:0;background:#F2F2F7">${status()}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:15cqw 4cqw 3cqw"><span class="vidro bola" style="width:10cqw;height:10cqw">✕</span><b style="font-size:3.8cqw">Adicionar à Tela de Início</b><span class="alvo" data-alvo style="background:#0A84FF;color:#fff;border-radius:99px;padding:2.4cqw 4cqw;font-weight:800;font-size:3.6cqw">Adicionar</span></div>
+        <div style="margin:2cqw 4cqw;background:#fff;border-radius:4cqw;padding:3cqw;display:flex;gap:3cqw;align-items:center"><img src="icone.png" alt="" style="width:13cqw;height:13cqw;border-radius:3cqw"><div style="flex:1"><b style="font-size:4.2cqw">Ranking</b><div style="font-size:3.2cqw;color:#999;border-top:.3cqw solid #eee;margin-top:2cqw;padding-top:2cqw">https://${URL_APP}/ranking/</div></div></div>
+        <div style="margin:3cqw 4cqw;background:#fff;border-radius:4cqw;padding:3.4cqw 4cqw;display:flex;justify-content:space-between;align-items:center;font-size:4cqw">Abrir como app web<span style="width:13cqw;height:7.6cqw;border-radius:99px;background:#34C759;position:relative"><span style="position:absolute;right:.6cqw;top:.6cqw;width:6.4cqw;height:6.4cqw;border-radius:50%;background:#fff"></span></span></div>
+        <p style="font-size:3cqw;color:#888;margin:0 6cqw">Um ícone será adicionado à Tela de Início para acessar este site rapidamente.</p>
+        <div class="teclado">${['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map((l) => `<div>${[...l].map((c) => `<i>${c}</i>`).join('')}</div>`).join('')}<div><i style="width:60cqw"></i></div></div></div>` },
+    { t: 'Prontinho! Ache o ícone', p: 'O ícone <kbd>Ranking</kbd> apareceu na tela do celular. Toque nele pra abrir.', h: () => grade() }
+  ];
+  const AND = [
+    { t: 'Toque no link', p: 'No grupo do WhatsApp, toque no link do app. Ele abre no <kbd>Chrome</kbd>.', h: () => status() + zap(true) },
+    { t: 'Toque nos três pontinhos', p: 'Lá em cima, do lado do endereço, toque no <kbd>⋮</kbd>.', h: () => status() + `<div class="chrome-topo"><span style="font-size:5cqw">⌂</span><span class="url">🔒 ${URL_APP}/ranking</span><span class="ab">1</span><span class="pts alvo redondo" data-alvo>⋮</span></div><div style="position:absolute;top:22cqw;left:0;right:0;bottom:0">${login()}</div>` },
+    { t: 'Toque em “Adicionar à tela inicial”', p: 'No menu, toque em <kbd>Adicionar à tela inicial</kbd>. Em alguns celulares aparece <kbd>Instalar app</kbd>: é a mesma coisa.', h: () => `<div class="escuro" style="position:absolute;inset:0">${status()}<div class="chrome-topo"><span style="font-size:5cqw">⌂</span><span class="url">🔒 ${URL_APP}/ranking</span><span class="ab">1</span><span class="pts">⋮</span></div><div style="position:absolute;top:22cqw;left:0;right:0;bottom:0">${login()}</div></div>
+        <div class="menu-and"><div class="ic"><span>→</span><span>☆</span><span>⤓</span><span>ⓘ</span><span>↻</span></div><div class="it">Nova guia</div><div class="it">Histórico</div><div class="it">Downloads</div><div class="it">Favoritos</div><div class="it">Compartilhar…</div><div class="it alvo" data-alvo><b>Adicionar à tela inicial</b></div><div class="it">Versão para computador</div></div>` },
+    { t: 'Toque em “Instalar”', p: 'Confirme tocando em <kbd>Instalar</kbd> (ou <kbd>Adicionar</kbd>).', h: () => `<div class="escuro" style="position:absolute;inset:0">${status()}<div class="chrome-topo"><span style="font-size:5cqw">⌂</span><span class="url">🔒 ${URL_APP}/ranking</span><span class="ab">1</span><span class="pts">⋮</span></div><div style="position:absolute;top:22cqw;left:0;right:0;bottom:0">${login()}</div></div>
+        <div class="dialogo"><h4>Instalar app</h4><div class="lin"><img src="icone.png" alt=""><div><b>Ranking</b><small>${URL_APP}</small></div></div><div class="bts"><span>Cancelar</span><span class="cheio alvo" data-alvo>Instalar</span></div></div>` },
+    { t: 'Prontinho! Ache o ícone', p: 'O ícone <kbd>Ranking</kbd> apareceu na tela do celular. Toque nele pra abrir.', h: () => grade(true) }
+  ];
+  const DICA = {
+    ios: '<b>iPhone com iOS mais antigo?</b> Em vez do ☰, aparece o botão <b>Compartilhar</b> (quadradinho com uma seta pra cima) na barra de baixo do Safari. Toque nele e siga do passo 4.',
+    android: '<b>Abriu dentro do WhatsApp?</b> Toque nos ⋮ lá em cima e em <b>Abrir no Chrome</b>, depois siga os passos. Usa o navegador da Samsung? Menu ≡ embaixo › <b>Adicionar página a</b> › <b>Tela inicial</b>.'
+  };
+
+  let so = /android/i.test(navigator.userAgent) ? 'android' : 'ios', i = 0, fim = false, timer = null, auto = false;
+  const passos = () => (so === 'ios' ? IOS : AND);
+
+  function desenha() {
+    const P = passos(), s = P[i];
+    cel.classList.toggle('android', so === 'android');
+    document.querySelectorAll('[data-so]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.so === so)));
+    $('#n').textContent = fim ? 'TUDO CERTO' : `PASSO ${i + 1} DE ${P.length}`;
+    $('#tit').textContent = fim ? 'Instalado! 🎾' : s.t;
+    $('#txt').innerHTML = fim ? 'Agora é só abrir pelo ícone e fazer o primeiro acesso. Veja como logo abaixo.' : s.p;
+    tela.innerHTML = `<div class="cena">${s.h()}</div>${fim ? festa() : ''}`;
+    $('#bolinhas').innerHTML = P.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
+    $('#voltar').disabled = i === 0 && !fim;
+    $('#prox').textContent = fim ? '↺ De novo' : 'Avançar ›';
+    $('#dica').innerHTML = DICA[so];
+    tela.setAttribute('aria-label', fim ? 'Pronto, app instalado' : s.t);
+  }
+  function avancar() {
+    const P = passos();
+    if (fim) { fim = false; i = 0; } else if (i < P.length - 1) i++; else fim = true;
+    desenha();
+    if (fim && auto) pararAuto();
+  }
+  function voltar() { if (fim) fim = false; else if (i > 0) i--; desenha(); }
+
+  tela.addEventListener('click', (e) => {
+    if (fim) return;
+    if (e.target.closest('[data-alvo]')) { pararAuto(); avancar(); return; }
+    tela.classList.remove('erro'); void tela.offsetWidth; tela.classList.add('erro');
+  });
+  $('#prox').onclick = () => { pararAuto(); avancar(); };
+  $('#voltar').onclick = () => { pararAuto(); voltar(); };
+  document.querySelectorAll('[data-so]').forEach((b) => b.onclick = () => { pararAuto(); so = b.dataset.so; i = 0; fim = false; desenha(); });
+
+  // modo "mostrar sozinho": um dedinho vai até o ponto que pisca e toca
+  function tocarSozinho() {
+    const alvo = tela.querySelector('[data-alvo]');
+    if (!alvo) return avancar();
+    const r = alvo.getBoundingClientRect(), t = tela.getBoundingClientRect();
+    let d = tela.querySelector('.dedo');
+    if (!d) { d = document.createElement('span'); d.className = 'dedo'; d.textContent = '👆'; d.style.left = '50%'; d.style.top = '105%'; tela.appendChild(d); }
+    requestAnimationFrame(() => { d.style.left = (r.left - t.left + r.width / 2 - t.width * 0.04) + 'px'; d.style.top = (r.top - t.top + r.height / 2) + 'px'; });
+    timer = setTimeout(() => { d.classList.add('toca'); timer = setTimeout(() => { avancar(); if (auto) timer = setTimeout(tocarSozinho, 1500); }, 350); }, 1300);
+  }
+  function pararAuto() { auto = false; clearTimeout(timer); $('#auto').textContent = '▶ Mostrar sozinho'; }
+  $('#auto').onclick = () => {
+    if (auto) return pararAuto();
+    auto = true; $('#auto').textContent = '❚❚ Pausar';
+    if (fim) { fim = false; i = 0; desenha(); }
+    timer = setTimeout(tocarSozinho, 700);
+  };
+  desenha();
+})();
+</script>
+</body>
+</html>
