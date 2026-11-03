@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102203527';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102203527';
-import { REGULAMENTO } from './regulamento.js?v=20261102203527';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102203527';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102203527';
+import * as M from './motor.js?v=20261102210020';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102210020';
+import { REGULAMENTO } from './regulamento.js?v=20261102210020';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102210020';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102210020';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1243,7 +1243,7 @@ function telaFinals(viaJogos) {
       ${grupo.map((j, i) => { const ok = noFinals.has(j.id); return `<div class="linha-rk${ok ? ' fin' : ''}" ${dn(j.nome)}><div style="display:flex;align-items:center;gap:10px">
         <b class="cond" style="font-size:20px;width:30px;color:${ok ? 'var(--verde)' : 'var(--roxo)'}">${i + 1}º</b>${avatar(j, 36)}
         <span style="flex-grow:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.nome)}${!fz && perguntaFinals(aba) ? tagFinals(j.id, ok) : ''}</span>
-        <span class="dica" style="white-space:nowrap">${j.vi}V ${j.de}D</span><b class="cond" style="font-size:20px;color:var(--roxo);min-width:40px;text-align:right">${j.tp}</b></div></div>
+        <b class="cond" style="font-size:20px;color:var(--roxo);min-width:40px;text-align:right">${j.tp}</b></div></div>
         ${!fz && i === ultima && grupo.length > i + 1 ? '<div class="corte" aria-hidden="true">LINHA DOS FINALS · 8 VAGAS</div>' : ''}`; }).join('') || '<p class="dica">Nenhum jogador neste grupo.</p>'}
     </div>`;
   }
