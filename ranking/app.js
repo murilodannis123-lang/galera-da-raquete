@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102214348';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102214348';
-import { REGULAMENTO } from './regulamento.js?v=20261102214348';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102214348';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102214348';
+import * as M from './motor.js?v=20261102220336';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102220336';
+import { REGULAMENTO } from './regulamento.js?v=20261102220336';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102220336';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102220336';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -490,7 +490,7 @@ function telaInicio() {
       vsFin = `<div class="fin-carrossel" data-ini="${ini}" tabindex="0" aria-label="Seus jogos do Finals (arraste pro lado)">${meus.map(slide).join('')}</div>
         ${meus.length > 1 ? `<div class="fin-pontos" aria-hidden="true">${meus.map((g, i) => `<i class="${i === ini ? 'on' : ''}${g.sets ? ' feito' : ''}"></i>`).join('')}</div>` : ''}
         <div class="fin-dica">${eliminado ? `<b style="color:#fff">🏁 Sua participação no Finals ${v.ano} terminou.</b> Seus resultados ficam aqui; acompanhe ${fz.fase === 'semi' ? 'as semifinais e a final' : 'a final'} na chave.`
-          : (meus.length > 1 ? '◀ arraste pro lado pros outros jogos ▶ · ' : '') + (pend.length ? pend.length + (pend.length === 1 ? ' jogo pendente' : ' jogos pendentes') : fz.fase === 'grupos' ? 'fase de grupos concluída · as semifinais saem sozinhas' : 'aguardando os outros jogos da fase')}</div>`;
+          : (meus.length > 1 ? '◀ arraste pro lado pros outros jogos ▶ · ' : '') + (pend.length ? pend.length + (pend.length === 1 ? ' jogo pendente' : ' jogos pendentes') : fz.fase === 'grupos' ? 'fase de grupos concluída · as semifinais saem sozinhas' : fz.fase === 'final' ? 'final jogada · bônus já no ranking' : 'aguardando a outra semifinal')}</div>`;
       corpo = '';
     } else corpo = `<div class="resultado"><div style="flex-grow:1;min-width:0"><b class="cond" style="font-size:18px">Você está no Finals!</b><div class="dica">Grupo ${esc(v.grupo)} · Chave ${v.chave} · ${esc(FASES[fz.fase])}</div></div><a class="btn btn-bola" href="#/finals" style="height:44px;padding:0 14px;font-size:13px">Ver jogos</a></div>`;
   } else if (perguntaTemporada()) {
@@ -1272,7 +1272,7 @@ function telaFinals(viaJogos) {
   let campeao = '';
   if (fz.fase === 'encerrado' && final && final.sets) { const c = porId(M.resultado(final.sets).aVenceu ? final.jogador_a : final.jogador_b); campeao = `<div class="card" style="background:var(--noite);color:#fff;border:0;text-align:center"><div style="display:flex;justify-content:center">${TROFEU(44)}</div><small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÃO DO GRUPO ${aba}</small><div class="cond" style="font-size:28px;font-weight:800">${esc(c && c.nome)}</div><small style="color:rgba(255,255,255,.75)">Bônus no ranking: campeão 30 · vice 25 · semifinal 20</small></div>`; }
   const cols = tit('Pontuação do Finals') + fzCols(col(1), col(2)) + `<span class="dica">Número = pontos do Finals na chave · verde = vai pra semifinal. Jogo sem placar vale 0 pros dois.</span>
-${S.eu && S.eu.admin ? `<div class="card" style="font-size:13px;line-height:1.5"><b>Pontuação separada.</b> Os pontos dos jogos do Finals valem só aqui, pra classificar nas chaves: não entram no Dynamics nem nos grupos A, B e C. No ranking anual entra só a bonificação, conforme o Finals anda: chegou na semifinal <b>+20</b> · chegou na final <b>+25</b> · campeão <b>+30</b>.</div>` : ''}`;
+${S.eu && S.eu.admin ? `<div class="card" style="font-size:13px;line-height:1.5"><b>Pontuação separada.</b> Os pontos dos jogos do Finals valem só aqui, pra classificar nas chaves: não entram no Dynamics nem nos grupos A, B e C. No ranking anual entra só a bonificação, conforme o Finals anda: soma por fase: chegou na semifinal <b>+20</b> · chegou na final mais <b>+25</b> (vice, total 45) · campeão leva <b>+30</b> no lugar dos 25 (total 50).</div>` : ''}`;
   const grupos = tit('Jogos da Chave 1') + jogosChave(1) + tit('Jogos da Chave 2') + jogosChave(2);
   const faltam = js.filter((g) => g.fase === 'grupos' && !g.sets).length;
   const semisAgora = tit('Semifinais') + fzProj('1º CHAVE 1', null, '2º CHAVE 2', null) + fzProj('1º CHAVE 2', null, '2º CHAVE 1', null)
@@ -1987,7 +1987,7 @@ function adminFinalsGrupo(gr) {
       const conf = S.admin.finConf === gr;
       const botao = fz.fase === 'grupos' ? `<span class="dica">${feitos} de ${total} placares. <b>As semifinais saem sozinhas</b> quando o último placar das chaves for gravado. Só use o botão se algum jogo não for acontecer (jogo sem placar conta 0 pros dois).</span><button class="btn btn-linha" data-acao="finSemi" data-v="${gr}">Fechar grupos agora e gerar semifinais</button>${feitos ? '' : `<button class="btn btn-linha" data-acao="finApagar" data-v="${gr}">Apagar e montar de novo</button>`}`
         : fz.fase === 'semi' ? `<span class="dica"><b>A final sai sozinha</b> quando as duas semifinais tiverem placar.</span><button class="btn btn-linha" data-acao="finFinal" data-v="${gr}" ${semis.every((g) => g.sets) ? '' : 'disabled'}>Gerar a final agora</button>`
-        : fz.fase === 'final' ? (conf ? `<span class="dica">Os bônus (semifinal +20 · final +25 · campeão +30) já entraram no ranking na hora em que cada um avançou. Encerrar fecha o Finals do grupo e reordena as posições.</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finCancelar">Voltar</button><button class="btn btn-roxo" data-acao="finEncerrar" data-v="${gr}">Confirmar</button></div>`
+        : fz.fase === 'final' ? (conf ? `<span class="dica">Os bônus somam por fase (semifinal +20 · final +25 · campeão +30 no lugar dos 25: campeão 50, vice 45) e já entraram no ranking na hora em que cada um avançou. Encerrar fecha o Finals do grupo e reordena as posições.</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finCancelar">Voltar</button><button class="btn btn-roxo" data-acao="finEncerrar" data-v="${gr}">Confirmar</button></div>`
           : `<button class="btn btn-roxo" data-acao="finPedir" data-v="${gr}" ${final && final.sets ? '' : 'disabled'}>Encerrar o Finals do grupo</button>${final && final.sets ? '' : '<span class="dica">Falta o placar da final.</span>'}`)
         : '<span class="dica">Encerrado. Bônus no ranking.</span>';
       return `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #F0EDF5;padding-top:8px">${cab}<span class="tag" style="align-self:flex-start;background:#EFEAF8;color:var(--roxo)">${FASES[fz.fase].toUpperCase()}</span>${botao}<a href="#/finals" data-acao="abaFin" data-v="${gr}" class="dica">Ver jogos e placares</a></div>`;
@@ -2084,7 +2084,7 @@ async function finAvancar(gr, fase) {
 async function finEncerrar(gr) {
   await backup('antes de encerrar o Finals ' + gr);
   const ano = anoRanking(), { vg, semis, final } = dadosFinals(ano, gr);
-  // o banco já grava o bônus na hora (semifinal +20, final +25, campeão +30): aqui só reordena as posições e fecha.
+  // o banco já grava o bônus na hora, somando por fase (semi 20, vice 45, campeão 50): aqui só reordena as posições e fecha.
   // (banco antigo, sem a coluna "bonus" nas vagas: soma aqui, como antes)
   const naHora = vg.some((v) => 'bonus' in v);
   const bonus = naHora ? {} : M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));

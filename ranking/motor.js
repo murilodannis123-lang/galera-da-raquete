@@ -122,7 +122,8 @@ export function sortearSets(rnd, favoritoA) {
 }
 
 // ---------- FINALS ----------
-// bônus da regra 7.2.2 somado ao ranking (7.2.5): campeão 30, vice 25, semifinal 20 (sem bônus pra fase de grupos: decisão da coordenação, 02/11/2026)
+// bônus da regra 7.2.2 somado ao ranking (7.2.5), "para cada fase jogada" (7.2.1): semifinal 20 + final 25 (vice, total 45) ou 30 (campeão, total 50).
+// Sem bônus pra fase de grupos (decisão da coordenação, 02/11/2026); soma por fase confirmada pela coordenação em 02/11/2026.
 export const BONUS = { campeao: 30, vice: 25, semi: 20, grupos: 0 };
 // ids na ordem do ranking do grupo (1º ao 8º) → chave 1 = 1º, 3º, 6º, 8º · chave 2 = 2º, 4º, 5º, 7º
 export function chavesFinals(ids) {
@@ -161,20 +162,14 @@ export function tabelaChave(ids, jogos) {
 // semifinal cruzada: 1º C1 x 2º C2 e 1º C2 x 2º C1
 export function semifinais(t1, t2) { return [[t1[0].id, t2[1].id], [t2[0].id, t1[1].id]]; }
 export function vencedorDe(g) { return resultado(g.sets).aVenceu ? g.a : g.b; }
-// bônus por jogador depois da final
-// bônus ao vivo durante o Finals: quem está nos grupos 15, semifinalista 20; vice/campeão quando a final tiver placar
-// vai entrando conforme o Finals anda: chegou na semifinal +20; chegou na final +25 (vice garantido); campeão +30
+// vai entrando conforme o Finals anda e SOMA por fase: chegou na semifinal +20; chegou na final +25 (total 45, vice garantido);
+// campeão leva 30 em vez dos 25 da final (total 50)
 export function bonusParcial(ids8, semis, final) {
-  if (final && final.sets) return bonusFinals(ids8, semis, final);
   const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
   semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });
-  if (final) { b[final.a] = BONUS.vice; b[final.b] = BONUS.vice; }
+  if (final) { b[final.a] += BONUS.vice; b[final.b] += BONUS.vice; }
+  if (final && final.sets) b[vencedorDe(final)] += BONUS.campeao - BONUS.vice;
   return b;
 }
-export function bonusFinals(ids8, semis, final) {
-  const b = Object.fromEntries(ids8.map((id) => [id, BONUS.grupos]));
-  semis.forEach((g) => { b[g.a] = BONUS.semi; b[g.b] = BONUS.semi; });
-  const camp = vencedorDe(final);
-  b[final.a] = BONUS.vice; b[final.b] = BONUS.vice; b[camp] = BONUS.campeao;
-  return b;
-}
+// bônus por jogador depois da final
+export function bonusFinals(ids8, semis, final) { return bonusParcial(ids8, semis, final); }
