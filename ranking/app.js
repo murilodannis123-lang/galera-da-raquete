@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261103090143';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261103090143';
-import { REGULAMENTO } from './regulamento.js?v=20261103090143';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261103090143';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261103090143';
+import * as M from './motor.js?v=20261103090307';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261103090307';
+import { REGULAMENTO } from './regulamento.js?v=20261103090307';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261103090307';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261103090307';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -613,7 +613,7 @@ const MENU = [
   { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
-  { nome: 'Fale conosco', rotulo: () => 'Fale conosco<span class="tile-sub">e sugestões</span>', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
+  { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
   { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : torneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
 ];
