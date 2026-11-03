@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261102210418';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102210418';
-import { REGULAMENTO } from './regulamento.js?v=20261102210418';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102210418';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102210418';
+import * as M from './motor.js?v=20261102214348';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261102214348';
+import { REGULAMENTO } from './regulamento.js?v=20261102214348';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261102214348';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261102214348';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -64,6 +64,7 @@ function rankingVivo() {
   const bonus = {};
   S.finals.filter((fz) => fz.fase !== 'encerrado').forEach((fz) => {
     const { vg, semis, final } = dadosFinals(fz.ano, fz.grupo);
+    if (vg.some((v) => 'bonus' in v)) return;   // banco novo: o bônus já está gravado nos pontos
     Object.assign(bonus, M.bonusParcial(vg.map((v) => v.jogador), semis.map(pg), final ? pg(final) : null));
   });
   // quem está em standby (parou por lesão grave ou vai sair) não aparece na classificação; os pontos ficam guardados pra quando voltar
@@ -1986,9 +1987,9 @@ function adminFinalsGrupo(gr) {
       const conf = S.admin.finConf === gr;
       const botao = fz.fase === 'grupos' ? `<span class="dica">${feitos} de ${total} placares. <b>As semifinais saem sozinhas</b> quando o último placar das chaves for gravado. Só use o botão se algum jogo não for acontecer (jogo sem placar conta 0 pros dois).</span><button class="btn btn-linha" data-acao="finSemi" data-v="${gr}">Fechar grupos agora e gerar semifinais</button>${feitos ? '' : `<button class="btn btn-linha" data-acao="finApagar" data-v="${gr}">Apagar e montar de novo</button>`}`
         : fz.fase === 'semi' ? `<span class="dica"><b>A final sai sozinha</b> quando as duas semifinais tiverem placar.</span><button class="btn btn-linha" data-acao="finFinal" data-v="${gr}" ${semis.every((g) => g.sets) ? '' : 'disabled'}>Gerar a final agora</button>`
-        : fz.fase === 'final' ? (conf ? `<span class="dica">Lança no ranking: campeão +30 · vice +25 · semifinal +20, e reordena as posições.</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finCancelar">Voltar</button><button class="btn btn-roxo" data-acao="finEncerrar" data-v="${gr}">Confirmar</button></div>`
-          : `<button class="btn btn-roxo" data-acao="finPedir" data-v="${gr}" ${final && final.sets ? '' : 'disabled'}>Encerrar e lançar bônus no ranking</button>${final && final.sets ? '' : '<span class="dica">Falta o placar da final.</span>'}`)
-        : '<span class="dica">Encerrado. Bônus lançado no ranking.</span>';
+        : fz.fase === 'final' ? (conf ? `<span class="dica">Os bônus (semifinal +20 · final +25 · campeão +30) já entraram no ranking na hora em que cada um avançou. Encerrar fecha o Finals do grupo e reordena as posições.</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" data-acao="finCancelar">Voltar</button><button class="btn btn-roxo" data-acao="finEncerrar" data-v="${gr}">Confirmar</button></div>`
+          : `<button class="btn btn-roxo" data-acao="finPedir" data-v="${gr}" ${final && final.sets ? '' : 'disabled'}>Encerrar o Finals do grupo</button>${final && final.sets ? '' : '<span class="dica">Falta o placar da final.</span>'}`)
+        : '<span class="dica">Encerrado. Bônus no ranking.</span>';
       return `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #F0EDF5;padding-top:8px">${cab}<span class="tag" style="align-self:flex-start;background:#EFEAF8;color:var(--roxo)">${FASES[fz.fase].toUpperCase()}</span>${botao}<a href="#/finals" data-acao="abaFin" data-v="${gr}" class="dica">Ver jogos e placares</a></div>`;
 }
 function adminFinals() {
@@ -2083,7 +2084,10 @@ async function finAvancar(gr, fase) {
 async function finEncerrar(gr) {
   await backup('antes de encerrar o Finals ' + gr);
   const ano = anoRanking(), { vg, semis, final } = dadosFinals(ano, gr);
-  const bonus = M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));
+  // o banco já grava o bônus na hora (semifinal +20, final +25, campeão +30): aqui só reordena as posições e fecha.
+  // (banco antigo, sem a coluna "bonus" nas vagas: soma aqui, como antes)
+  const naHora = vg.some((v) => 'bonus' in v);
+  const bonus = naHora ? {} : M.bonusFinals(vg.map((v) => v.jogador), semis.map(pg), pg(final));
   // regra 7.2.5: bônus somado ao ranking; 7.2.4: classificação final só depois do Finals
   const nova = M.ordenar(listaGeral().map((j) => ({ ...j, tp: j.tp + (bonus[j.id] || 0) }))).map((j, i) => ({ ...j, posicao: i + 1 }));
   await salvarPontos(nova, { finAno: ano, finGrupo: gr });
