@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261103090307';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261103090307';
-import { REGULAMENTO } from './regulamento.js?v=20261103090307';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261103090307';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261103090307';
+import * as M from './motor.js?v=20261104184517';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104184517';
+import { REGULAMENTO } from './regulamento.js?v=20261104184517';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104184517';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104184517';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1330,6 +1330,7 @@ function telaAdmin() {
         <label class="rot">Posição no grupo<input class="campo" name="pos" type="number" min="1" inputmode="numeric" placeholder="último"></label></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="recusar" data-id="${j.id}">Recusar</button><button class="btn btn-roxo" type="submit">Aprovar</button></div>
       </form>`).join('')}</section>` : ''}
+    ${cardAvisarAprovados()}
     ${painelMes()}
     ${cardReabrir()}
     ${cardTemporada()}
@@ -2097,6 +2098,26 @@ async function finApagar(gr) {
   const ano = anoRanking();
   for (const t of ['finals_jogos', 'finals_vagas', 'finals']) { const r = await sb.from(t).delete().eq('ano', ano).eq('grupo', gr); if (r.error) throw r.error; }
 }
+// Aviso de aprovação pelo WhatsApp: quem se inscreveu sozinho pelo app (tem login) e foi aprovado nos últimos 10 dias
+// aparece no Admin até a coordenação avisar. Quem já foi avisado fica guardado em config.avisados_aprovacao (lista de ids).
+const LINK_APP = 'https://galeradaraquete.github.io/ranking/';
+const avisadosAprovacao = () => (Array.isArray(S.config.avisados_aprovacao) ? S.config.avisados_aprovacao : []);
+function paraAvisar() {
+  const limite = Date.now() - 10 * 864e5, feitos = avisadosAprovacao();
+  return S.jogadores.filter((j) => j.ativo && !j.pendente && j.user_id && j.criado_em && new Date(j.criado_em).getTime() >= limite && !feitos.includes(j.id));
+}
+const msgAprovado = (j) => `Fala, ${String(j.nome || '').trim().split(/\s+/)[0]}! Seu cadastro no app do ranking da Galera da Raquete foi aprovado ✅ Você entrou no grupo ${j.grupo}. É só abrir o app de novo (ou tocar em "Atualizar") que já entra normal: ${LINK_APP}`;
+function cardAvisarAprovados() {
+  const l = paraAvisar(); if (!l.length) return '';
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--verde)"><b class="cond" style="font-size:20px">Aprovados · avisar no zap (${l.length})</b><span class="dica">O app não avisa sozinho. Toque em "Avisar no WhatsApp": abre a conversa com a mensagem pronta, é só enviar. Depois disso ele sai daqui.</span>
+    ${l.map((j) => `<div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px"><span><b>${esc(j.nome)}</b> · grupo ${esc(j.grupo)}<br><small class="dica">${j.celular ? esc(j.celular) : 'sem celular no cadastro'}</small></span>
+      <div style="display:grid;grid-template-columns:${j.celular ? '1fr 2fr' : '1fr'};gap:8px"><button class="btn btn-linha" type="button" data-acao="jaAvisei" data-id="${j.id}">Já avisei</button>${j.celular ? `<button class="btn btn-zap" type="button" data-acao="avisarZap" data-id="${j.id}">Avisar no WhatsApp</button>` : ''}</div></div>`).join('')}</section>`;
+}
+async function marcarAvisado(id) {
+  const lista = [...new Set([...avisadosAprovacao(), id])];
+  let r = await sb.from('config').delete().eq('chave', 'avisados_aprovacao'); if (r.error) throw r.error;
+  r = await sb.from('config').insert({ chave: 'avisados_aprovacao', valor: lista }); if (r.error) throw r.error;
+}
 async function aprovar(f) {
   const j = porId(f.dataset.id); if (!j) return;
   if (!f.grupo.value) throw new Error('Escolha o grupo.');
@@ -2340,6 +2361,8 @@ const ACOES = {
   desfazerWo: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; }, 'WO desfeito.'),
   woResp: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_status: el.dataset.v }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; },
     el.dataset.v === 'anulado' ? 'WO contestado: 0 pontos pros dois.' : 'WO aceito.'),
+  avisarZap: (el) => { const j = porId(el.dataset.id); if (!j) return; const u = zap(j.celular, msgAprovado(j)); if (!u) { toast('Celular inválido no cadastro.'); return; } window.open(u, '_blank'); comTrava('', () => marcarAvisado(j.id), 'Marcado como avisado.'); },
+  jaAvisei: (el) => comTrava('', () => marcarAvisado(el.dataset.id), 'Marcado como avisado.'),
   admin: (el) => comTrava('', async () => { const r = await sb.from('jogadores').update({ admin: el.getAttribute('aria-checked') !== 'true' }).eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Admin atualizado.')
 };
 async function comTrava(espera, fn, ok) {
@@ -2457,7 +2480,7 @@ const FORMS = {
     await carregar(); toast('Senha trocada.'); location.hash = '#/'; render();
     if (S.avisosDepoisDaSenha) { S.avisosDepoisDaSenha = false; avisosDeEntrada(); }
   },
-  aprovar: (f) => comTrava('Aprovando…', () => aprovar(f), 'Jogador aprovado. Já entra no ranking.'),
+  aprovar: (f) => comTrava('Aprovando…', () => aprovar(f), 'Jogador aprovado. Agora avise ele no zap (quadro verde).'),
   novoJogador: (f) => comTrava('Cadastrando…', () => cadastrarJogador(f), 'Jogador cadastrado. Ele entra com esse e-mail.'),
   aviso: (f) => comTrava('Publicando…', async () => {
     const arq = f.arquivo.files[0];
