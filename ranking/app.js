@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261104184517';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104184517';
-import { REGULAMENTO } from './regulamento.js?v=20261104184517';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104184517';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104184517';
+import * as M from './motor.js?v=20261104195007';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104195007';
+import { REGULAMENTO } from './regulamento.js?v=20261104195007';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104195007';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104195007';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2983,3 +2983,24 @@ async function iniciar() {
   try { await entrar(); } catch (e) { console.error(e); telaLogin('entrar', '', 'Erro ao entrar: ' + (e.message || e)); }
 }
 iniciar();
+
+// olho nos campos de senha: toca pra ver o que digitou, toca de novo pra esconder
+const OLHO_ABERTO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const OLHO_FECHADO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+function colocarOlhos(raiz) {
+  (raiz.querySelectorAll ? raiz.querySelectorAll('input[type=password]:not([data-olho])') : []).forEach((inp) => {
+    inp.dataset.olho = '1';
+    const box = document.createElement('span'); box.className = 'senha-box';
+    inp.parentNode.insertBefore(box, inp); box.appendChild(inp);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'olho'; b.setAttribute('aria-label', 'Mostrar senha'); b.innerHTML = OLHO_ABERTO;
+    b.addEventListener('click', (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      const ver = inp.type === 'password';
+      inp.type = ver ? 'text' : 'password';
+      b.innerHTML = ver ? OLHO_FECHADO : OLHO_ABERTO; b.setAttribute('aria-label', ver ? 'Esconder senha' : 'Mostrar senha');
+    });
+    box.appendChild(b);
+  });
+}
+colocarOlhos(document);
+new MutationObserver(() => colocarOlhos(document)).observe(document.body, { childList: true, subtree: true });
