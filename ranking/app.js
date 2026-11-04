@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261104195007';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104195007';
-import { REGULAMENTO } from './regulamento.js?v=20261104195007';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104195007';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104195007';
+import * as M from './motor.js?v=20261104200030';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104200030';
+import { REGULAMENTO } from './regulamento.js?v=20261104200030';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104200030';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104200030';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2109,12 +2109,12 @@ function paraAvisar() {
 const msgAprovado = (j) => `Fala, ${String(j.nome || '').trim().split(/\s+/)[0]}! Seu cadastro no app do ranking da Galera da Raquete foi aprovado ✅ Você entrou no grupo ${j.grupo}. É só abrir o app de novo (ou tocar em "Atualizar") que já entra normal: ${LINK_APP}`;
 function cardAvisarAprovados() {
   const l = paraAvisar(); if (!l.length) return '';
-  return `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--verde)"><b class="cond" style="font-size:20px">Aprovados · avisar no zap (${l.length})</b><span class="dica">O app não avisa sozinho. Toque em "Avisar no WhatsApp": abre a conversa com a mensagem pronta, é só enviar. Depois disso ele sai daqui.</span>
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px;border:2px solid var(--verde)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b class="cond" style="font-size:20px">Aprovados · avisar no zap (${l.length})</b>${l.length > 1 ? '<button class="btn btn-linha" type="button" data-acao="jaAviseiTodos" style="height:38px;font-size:12px;padding:0 12px;width:auto">Já avisei todos</button>' : ''}</div><span class="dica">O app não avisa sozinho. Toque em "Avisar no WhatsApp": abre a conversa com a mensagem pronta, é só enviar. Depois disso ele sai daqui.</span>
     ${l.map((j) => `<div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:8px"><span><b>${esc(j.nome)}</b> · grupo ${esc(j.grupo)}<br><small class="dica">${j.celular ? esc(j.celular) : 'sem celular no cadastro'}</small></span>
       <div style="display:grid;grid-template-columns:${j.celular ? '1fr 2fr' : '1fr'};gap:8px"><button class="btn btn-linha" type="button" data-acao="jaAvisei" data-id="${j.id}">Já avisei</button>${j.celular ? `<button class="btn btn-zap" type="button" data-acao="avisarZap" data-id="${j.id}">Avisar no WhatsApp</button>` : ''}</div></div>`).join('')}</section>`;
 }
 async function marcarAvisado(id) {
-  const lista = [...new Set([...avisadosAprovacao(), id])];
+  const lista = [...new Set([...avisadosAprovacao(), ...[].concat(id)])];
   let r = await sb.from('config').delete().eq('chave', 'avisados_aprovacao'); if (r.error) throw r.error;
   r = await sb.from('config').insert({ chave: 'avisados_aprovacao', valor: lista }); if (r.error) throw r.error;
 }
@@ -2363,6 +2363,7 @@ const ACOES = {
     el.dataset.v === 'anulado' ? 'WO contestado: 0 pontos pros dois.' : 'WO aceito.'),
   avisarZap: (el) => { const j = porId(el.dataset.id); if (!j) return; const u = zap(j.celular, msgAprovado(j)); if (!u) { toast('Celular inválido no cadastro.'); return; } window.open(u, '_blank'); comTrava('', () => marcarAvisado(j.id), 'Marcado como avisado.'); },
   jaAvisei: (el) => comTrava('', () => marcarAvisado(el.dataset.id), 'Marcado como avisado.'),
+  jaAviseiTodos: () => comTrava('', () => marcarAvisado(paraAvisar().map((j) => j.id)), 'Todos marcados como avisados.'),
   admin: (el) => comTrava('', async () => { const r = await sb.from('jogadores').update({ admin: el.getAttribute('aria-checked') !== 'true' }).eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Admin atualizado.')
 };
 async function comTrava(espera, fn, ok) {
