@@ -12,10 +12,12 @@
   <circle cx="256" cy="256" r="162" fill="#067447"/>
   <text font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="44" letter-spacing="1" fill="#FFFFFF"><textPath href="#arcoCima" startOffset="50%" text-anchor="middle">GALERA DA RAQUETE</textPath></text>
   <text font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="44" letter-spacing="1" fill="#FFFFFF" dominant-baseline="hanging"><textPath href="#arcoBaixo" startOffset="50%" text-anchor="middle">PORTAL DO LAGO</textPath></text>
+  <g transform="translate(-25 0)">
   <path d="M176 176l50-26h30v142h-40V202l-26 13z" fill="url(#rede)" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round"/>
   <circle cx="326" cy="230" r="64.4" fill="#FFFFFF"/>
   <circle cx="326" cy="230" r="58" fill="url(#bola)"/>
   <path d="M277.7 197.8c22.6 14.0 22.6 50.5 0 64.4" fill="none" stroke="#FFFFFF" stroke-width="6.4" stroke-linecap="round"/>
   <path d="M374.3 197.8c-22.6 14.0 -22.6 50.5 0 64.4" fill="none" stroke="#FFFFFF" stroke-width="6.4" stroke-linecap="round"/>
+  </g>
   <text x="256" y="352" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="30" fill="#F5E616">Torneio de Duplas</text>
 </svg>
