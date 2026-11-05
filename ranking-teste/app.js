@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261104200030';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104200030';
-import { REGULAMENTO } from './regulamento.js?v=20261104200030';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104200030';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104200030';
+import * as M from './motor.js?v=20261104212150';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104212150';
+import { REGULAMENTO } from './regulamento.js?v=20261104212150';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104212150';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104212150';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -147,13 +147,14 @@ function abrirFoto(id) {
   document.body.appendChild(d); d.querySelector('.zoom-x').focus();
 }
 // e-mail e nascimento não vêm na lista (privacidade): só pelas funções meus_dados / admin_emails
-const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,avisos_visto_em,tp,vi,de,sp,sc,gp,gc,posicao,criado_em';
+const COLS = 'id,user_id,nome,grupo,celular,mostrar_niver,standby,foto_url,admin,dono,ativo,joga,pendente,senha_trocada,avisos_visto_em,tp,vi,de,sp,sc,gp,gc,posicao,criado_em,so_torneio';
 async function rpcLista(nome) { const { data, error } = await sb.rpc(nome); if (error) throw error; return data || []; }
 async function carregar() {
   // tudo que não depende de nada vai junto (menos idas e voltas = abre mais rápido)
-  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('temporada_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('torneio_inscricao').select('*').order('torneio').order('jogador'))]);
+  const extras = Promise.all([sb.from('cobrancas').select('*').order('criado_em'), todas(() => sb.from('pagamentos').select('*').order('cobranca').order('jogador')), todas(() => sb.from('finals_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('temporada_resposta').select('*').order('ano').order('jogador')), todas(() => sb.from('torneio_jogos').select('*').order('criado_em')), todas(() => sb.from('torneio_inscricao').select('*').order('torneio').order('jogador'))]);
   const [jg, ms, av, pt, cf, fi, fv, fj] = await Promise.all([
-    todas(() => sb.from('jogadores').select(COLS).order('id')),
+    // banco sem a coluna so_torneio (SQL do torneio ainda não rodado): carrega sem ela
+    todas(() => sb.from('jogadores').select(COLS).order('id')).then((r) => (r.error && /so_torneio/.test(r.error.message || '') ? todas(() => sb.from('jogadores').select(COLS.replace(',so_torneio', '')).order('id')) : r)),
     sb.from('meses').select('*').order('id', { ascending: false }),
     sb.from('avisos').select('*').order('criado_em', { ascending: false }).limit(40),
     sb.from('patrocinadores').select('*').order('ordem'),
@@ -171,7 +172,8 @@ async function carregar() {
   S.eu = S.jogadores.find((j) => j.user_id === S.uid) || null;
   const [jogos, meus, niver, emails, backups] = await Promise.all([S.mesAtual ? jogosDoMes(S.mesAtual.id) : [], S.eu ? rpcLista('meus_dados') : [], S.eu ? rpcLista('aniversariantes_hoje') : [], S.eu && S.eu.admin ? rpcLista('admin_emails') : [], S.eu && S.eu.admin ? rpcLista('lista_backups').catch(() => []) : []]);
   S.backups = backups;
-  const [cb, pg, fr, tr, ti] = await extras;
+  const [cb, pg, fr, tr, tj, ti] = await extras;
+  S.tjogos = tj.error ? null : tj.data;   // jogos dos torneios (null = ainda não ativado no banco)
   S.cobrancas = cb.error ? [] : cb.data; S.pagamentos = pg.error ? [] : pg.data;
   S.fresp = fr.error ? null : fr.data;   // null = tabela ainda não existe: a pergunta não aparece
   S.tresp = tr.error ? null : tr.data;
@@ -448,7 +450,11 @@ function telaInicio() {
   const meu = eu && eu.ativo && S.jogos.find((g) => g.jogador_a === eu.id || g.jogador_b === eu.id);
   const p = prazo();
   let corpo;
-  if (!eu.joga) {
+  if (eu.so_torneio && !eu.joga) {
+    const abertos = torneiosIds().filter((id) => torneioAberto(id) && torneioCfg(id).aberto);
+    corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:10px"><div><b class="cond" style="font-size:18px">Bem-vindo, ${esc(eu.nome.split(' ')[0])}!</b><div class="dica">Sua conta é de morador: você participa dos torneios do Portal do Lago, sem entrar no ranking.</div></div>
+      <a class="btn btn-bola" href="${abertos.length === 1 ? '#/torneio/' + abertos[0] : '#/torneios'}">${abertos.length ? 'Fazer minha inscrição' : 'Ver os torneios'}</a></div>`;
+  } else if (!eu.joga) {
     corpo = `<div class="resultado"><div style="flex-grow:1"><b class="cond" style="font-size:18px">Conta da coordenação</b><div class="dica">Você não entra no ranking. Use o Admin pelo botão ☰.</div></div></div>`;
   } else if (!eu.ativo) {
     corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:10px"><div><b class="cond" style="font-size:18px">Você está fora do ranking</b><div class="dica">Quer voltar? A coordenação define seu grupo e sua posição.</div></div>
@@ -572,7 +578,7 @@ function telaInicio() {
   </section>
   ${cardFinals()}
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => !foraDoRanking() || LIVRE_FORA.includes(t.nome)).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => (!foraDoRanking() || LIVRE_FORA.includes(t.nome)) && (!soTorneio() || LIVRE_TORNEIO.includes(t.nome))).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -614,7 +620,7 @@ const MENU = [
   { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
-  { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : torneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
+  { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : algumTorneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
   { nome: 'Regulamento', href: () => '#/regulamento', ic: IC('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z" fill="currentColor" fill-opacity=".14"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8.5 10.5l2 2 4-4.5"/>') }
 ];
 
@@ -622,9 +628,13 @@ const MENU = [
 const foraDoRanking = () => !!(S.eu && !S.eu.ativo && !S.eu.admin);
 const LIVRE_FORA = ['Meu perfil', 'Programação', 'Fale conosco', 'Regulamento'];
 const ROTAS_FORA = ['', 'perfil', 'senha', 'privacidade', 'termos', 'regulamento', 'programacao'];
+// morador (conta só de torneio): vê os torneios, o perfil e o básico; não entra no ranking
+const soTorneio = () => !!(S.eu && S.eu.so_torneio && !S.eu.admin);
+const LIVRE_TORNEIO = ['Meu perfil', 'Torneios', 'Fale conosco'];
+const ROTAS_TORNEIO = ['', 'perfil', 'senha', 'privacidade', 'termos', 'torneios', 'torneio', 'duplas', 'tplacar', 'avisos'];
 
 function faixa() {
-  if (foraDoRanking()) return '<span><b>GALERA DA RAQUETE</b>Portal do Lago Open de Tênis</span>';
+  if (foraDoRanking() || soTorneio()) return '<span><b>GALERA DA RAQUETE</b>Portal do Lago Open de Tênis</span>';
   const itens = [];
   // só a coordenação vê quem está com o app aberto agora
   const nomesOnline = S.eu && S.eu.admin ? (S.online || []).map((id) => (porId(id) || {}).nome).filter(Boolean) : [];
@@ -819,13 +829,13 @@ function lerSets(form) {
 }
 function previaPlacar(form) {
   const el = document.getElementById('previa'); if (!el) return;
-  const g = S.jogos.concat(S.fjogos).find((x) => x.id === form.dataset.id) || {};
+  const g = S.jogos.concat(S.fjogos, S.tjogos || []).find((x) => x.id === form.dataset.id) || {};
   const abre = empatou(form);
   ['a2', 'b2'].forEach((k) => { if (!abre) form[k].value = ''; form[k].disabled = !abre || form.a0.disabled; form[k].closest('.set').style.opacity = abre ? '1' : '.45'; });
   const { r, erro } = lerSets(form);
   const meio = form.a1.value !== '' && form.b1.value !== '';
   if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
-  const ven = porId(r.aVenceu ? g.jogador_a : g.jogador_b);
+  const ven = g.dupla_a ? { nome: nomeDuplaTxt(r.aVenceu ? g.dupla_a : g.dupla_b) } : porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
   el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0 <span style="display:inline-flex;vertical-align:-4px">' + PNEU(18) + '</span>' : ''}</div>`;
 }
@@ -877,7 +887,7 @@ function telaPerfil() {
       <label style="position:relative;cursor:pointer" aria-label="Trocar minha foto">${avatar(e, 96)}
         <span style="position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
         <input type="file" accept="image/*" data-foto style="position:absolute;width:1px;height:1px;opacity:0"></label>
-      <span class="dica">Toque na foto pra trocar · Grupo ${esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span>
+      <span class="dica">Toque na foto pra trocar · ${e.so_torneio ? 'Morador · torneios' : 'Grupo ' + esc(e.grupo)}${e.admin ? ' · Admin' : ''}</span>
       ${e.foto_url ? '<button type="button" class="link" data-acao="removerFoto">Remover minha foto</button>' : ''}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <label class="rot">Nome no ranking<input class="campo" name="nome" value="${esc(e.nome)}" autocomplete="name" required maxlength="40"></label>
@@ -1086,15 +1096,45 @@ function finalsAgora() {
   const ano = anoFinals(), fz = S.finals.filter((f) => f.ano === ano);
   return fz.length > 0 && !S.mesAtual && new Date() < new Date(ano, 11, 6) && !(fz.length === 3 && fz.every((f) => f.fase === 'encerrado'));
 }
-// ---------- torneio de duplas (a coordenação monta tudo: classes, valor, Pix, cabeças de chave e sorteio) ----------
-const TORNEIO = 'duplas-10';
-const TORNEIO_PADRAO = { nome: '10º Torneio de Duplas', classes: ['A', 'B', 'C'], inscricoes: false, valor: null, pix_chave: '19997635743', pix_nome: 'Daniella Gesualdo', zap: '19996194094', zap_nome: 'Daniella', data: '', obs: '' };
-const torneioCfg = () => ({ ...TORNEIO_PADRAO, ...(S.config['torneio_' + TORNEIO] || {}) });
-const torneioAberto = () => !!S.tinsc && torneioCfg().inscricoes === true;
-const inscricoes = () => (S.tinsc || []).filter((x) => x.torneio === TORNEIO);
+// ---------- torneios (a coordenação cria quantos quiser; cada um fica em config.torneio_<id>) ----------
+// Jogos dos torneios ficam em torneio_jogos: não somam nada no ranking, que segue normal enquanto tem torneio.
+const TORNEIO_10 = 'duplas-10';
+const BASE_TORNEIO = { classes: ['A', 'B', 'C'], inscricoes: false, publicado: false, aberto: false, camisetas: true, valor: null, valor_camiseta: null, pix_chave: '19997635743', pix_nome: 'Daniella Gesualdo', zap: '19996194094', zap_nome: 'Daniella', data: '', obs: '', insc_ini: '', insc_fim: '', foto_url: '' };
+const TORNEIO_PADRAO = { ...BASE_TORNEIO, nome: '10º Torneio de Duplas', publicado: true, aberto: true, foto_url: 'icones/torneio-10.svg', criado_em: '2026-11-01' };
+let TORNEIO = TORNEIO_10;   // o torneio aberto na tela agora (do jogador ou do Admin)
+const torneioCfg = (id = TORNEIO) => ({ ...(id === TORNEIO_10 ? TORNEIO_PADRAO : { ...BASE_TORNEIO, nome: 'Torneio' }), ...((S.config || {})['torneio_' + id] || {}) });
+function torneiosIds() {
+  const ids = Object.keys(S.config || {}).filter((k) => k.startsWith('torneio_') && S.config[k] && typeof S.config[k] === 'object').map((k) => k.slice(8));
+  if (!ids.includes(TORNEIO_10)) ids.push(TORNEIO_10);
+  return ids.sort((a, b) => String(torneioCfg(b).criado_em || '').localeCompare(String(torneioCfg(a).criado_em || '')));
+}
+const fotoTorneio = (cfg) => cfg.foto_url || 'icones/logo.png';
+const torneioVisivel = (id) => torneioCfg(id).publicado === true || !!(S.eu && S.eu.admin);
+// inscrição aberta = a coordenação abriu e hoje está dentro das datas (quando tiver datas): abre e fecha sozinha
+function torneioAberto(id = TORNEIO) {
+  if (!S.tinsc) return false;
+  const c = torneioCfg(id), h = hojeISO();
+  return c.inscricoes === true && c.publicado === true && !(c.insc_ini && h < c.insc_ini) && !(c.insc_fim && h > c.insc_fim);
+}
+const algumTorneioAberto = () => torneiosIds().some((id) => torneioAberto(id));
+const diaMes = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
+function situacaoTorneio(id) {
+  const c = torneioCfg(id), fs = Object.values(c.fases || {}), h = hojeISO();
+  if (!c.publicado) return { txt: 'RASCUNHO · SÓ A COORDENAÇÃO VÊ' };
+  if (fs.length && fs.every((f) => f === 'encerrado')) return { txt: 'ENCERRADO' };
+  if (fs.length) return { txt: 'JOGOS ROLANDO', verm: true };
+  if (torneioAberto(id)) return { txt: 'INSCRIÇÕES ABERTAS', verm: true };
+  if (c.inscricoes && c.insc_ini && h < c.insc_ini) return { txt: 'INSCRIÇÕES A PARTIR DE ' + diaMes(c.insc_ini) };
+  if (c.duplas && Object.keys(c.duplas).length) return { txt: 'DUPLAS SORTEADAS' };
+  if (c.inscricoes && c.insc_fim && h > c.insc_fim) return { txt: 'INSCRIÇÕES ENCERRADAS' };
+  return { txt: 'EM BREVE' };
+}
+const inscricoes = (id = TORNEIO) => (S.tinsc || []).filter((x) => x.torneio === id);
 const minhaInscricao = () => S.eu && inscricoes().find((x) => x.jogador === S.eu.id);
+// pode se inscrever: quem está no ranking (ativo e aprovado) e, se o torneio for aberto, o morador
+const podeInscrever = (cfg) => !!(S.eu && S.eu.ativo && !S.eu.pendente && (!S.eu.so_torneio || cfg.aberto));
 const CAMISETA = { masculina: 'Masculina', babylook: 'Feminina baby look', outro: 'Outro tamanho' };
-const camisetaTxt = (x) => (x.camiseta === 'outro' ? 'Outro: ' + (x.outro || '') : CAMISETA[x.camiseta] + ' ' + (x.tamanho || ''));
+const camisetaTxt = (x) => (!x.camiseta ? 'sem camiseta' : x.camiseta === 'outro' ? 'Outro: ' + (x.outro || '') : CAMISETA[x.camiseta] + ' ' + (x.tamanho || ''));
 // camisetas a mais: [{ modelo, tam, n }] (o texto livre vem com n = 1 e tam = o que a pessoa escreveu)
 const TAMS = ['P', 'M', 'G', 'GG'];
 function extrasDe(x) {
@@ -1106,88 +1146,193 @@ function extrasDe(x) {
 const qtdExtras = (x) => extrasDe(x).filter((y) => !y.livre).reduce((s, y) => s + y.n, 0);
 const extrasTxt = (x) => extrasDe(x).map((y) => (y.livre ? 'outro: ' + y.tam : y.modelo + ' ' + y.tam + (y.n > 1 ? ' (' + y.n + ')' : ''))).join(' · ');
 const valorInscricao = (cfg, x) => (Number(cfg.valor) || 0) + qtdExtras(x) * (Number(cfg.valor_camiseta) || 0);
+// duplas e jogos
+const nomeDupla = (d) => (d || []).map((id) => esc((porId(id) || {}).nome || '?')).join(' <b style="color:var(--roxo)">/</b> ');
+const nomeDuplaTxt = (d) => (d || []).map((id) => (porId(id) || {}).nome || '?').join(' / ');
+const tjogosDe = (id, c) => (S.tjogos || []).filter((g) => g.torneio === id && g.classe === c).sort((x, y) => (x.chave || 0) - (y.chave || 0) || String(x.criado_em).localeCompare(String(y.criado_em)) || String(x.id).localeCompare(String(y.id)));
+const pgT = (g) => ({ a: M.chaveDupla(g.dupla_a), b: M.chaveDupla(g.dupla_b), sets: g.sets });
+const FASES_T = { grupos: 'Fase de grupos', quartas: 'Quartas de final', semi: 'Semifinal', final: 'Final', encerrado: 'Encerrado' };
+const souDaDupla = (g) => !!(S.eu && ((g.dupla_a || []).includes(S.eu.id) || (g.dupla_b || []).includes(S.eu.id)));
+function dadosTorneio(id, c) {
+  const cfg = torneioCfg(id), duplas = (cfg.duplas || {})[c] || [], grupos = (cfg.grupos || {})[c] || [], js = tjogosDe(id, c);
+  const porChave = Object.fromEntries(duplas.map((d) => [M.chaveDupla(d), d]));
+  const tabs = grupos.map((g, i) => M.tabelaChave(g.map(M.chaveDupla), js.filter((x) => x.fase === 'grupos' && x.chave === i + 1).map(pgT)));
+  return { cfg, fase: (cfg.fases || {})[c], duplas, grupos, tabs, js, porChave };
+}
+// quantos de cada grupo vão pro mata-mata
+const classificamT = (nGrupos, nDuplas) => (nGrupos === 1 ? (nDuplas >= 4 ? 4 : 2) : 2);
+function linhaJogoT(g, fase) {
+  const r = g.sets ? M.resultado(g.sets) : null, pode = S.eu && (S.eu.admin || (souDaDupla(g) && fase === g.fase && !gravadoPorOutro(g)));
+  return `<div class="tj${souDaDupla(g) ? ' meu' : ''}"><span class="tj-l${r && r.aVenceu ? ' ven' : ''}">${nomeDupla(g.dupla_a)}</span><b class="tj-p">${g.sets ? esc(placarTxt(g.sets)) + pneuTag(g.sets, 14) : 'x'}</b><span class="tj-l${r && !r.aVenceu ? ' ven' : ''}" style="text-align:right">${nomeDupla(g.dupla_b)}</span>
+    ${pode ? `<a class="btn btn-linha tj-b" href="#/tplacar/${g.id}">${g.sets ? 'Corrigir placar' : 'Gravar placar'}</a>` : ''}</div>`;
+}
+function blocoJogosTorneio(id, c) {
+  const { fase, grupos, tabs, js, duplas } = dadosTorneio(id, c);
+  if (!grupos.length) return '';
+  const nCl = classificamT(grupos.length, duplas.length), porChave = Object.fromEntries(duplas.map((d) => [M.chaveDupla(d), d]));
+  const tabela = (t) => `<table class="tt"><thead><tr><th>#</th><th>Dupla</th><th>J</th><th>V</th><th>Sets</th><th>Pts</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${i < nCl ? 'cls' : ''}"><td>${i + 1}</td><td>${nomeDupla(porChave[x.id])}</td><td>${x.j}</td><td>${x.vi}</td><td>${x.sp}-${x.sc}</td><td><b>${x.tp}</b></td></tr>`).join('')}</tbody></table>`;
+  const gruposHtml = grupos.map((g, i) => `<div class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">${grupos.length > 1 ? 'Grupo ' + (i + 1) : 'Grupo único'}</b>${tabela(tabs[i])}
+    <div>${js.filter((x) => x.fase === 'grupos' && x.chave === i + 1).map((x) => linhaJogoT(x, fase)).join('')}</div></div>`).join('');
+  const mata = ['quartas', 'semi', 'final'].filter((f) => js.some((x) => x.fase === f)).map((f) => `<div class="card" style="display:flex;flex-direction:column;gap:6px"><b class="cond" style="font-size:18px">${FASES_T[f]}</b>${js.filter((x) => x.fase === f).map((x) => linhaJogoT(x, fase)).join('')}</div>`).join('');
+  const fin = js.find((x) => x.fase === 'final' && x.sets);
+  const campeao = fin ? `<section class="card" style="background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px">${TROFEU(52)}<small style="color:var(--bola);font-weight:700;letter-spacing:2px">CAMPEÕES · CATEGORIA ${esc(c)}</small><b class="cond" style="font-size:22px">${esc(nomeDuplaTxt(M.resultado(fin.sets).aVenceu ? fin.dupla_a : fin.dupla_b))}</b></section>` : '';
+  return `${campeao}<p class="dica" style="margin:0">${esc(FASES_T[fase] || '')}${fase === 'grupos' ? ` · ${grupos.length > 1 ? 'os ' + nCl + ' melhores de cada grupo' : 'os ' + nCl + ' melhores'} vão pro mata-mata (destacados em verde)` : ''}. Quem está no jogo grava o placar. Os pontos do torneio não entram no ranking.</p>${gruposHtml}${mata}`;
+}
 function telaTorneios() {
   const ano = anoFinals(), fases = ['A', 'B', 'C'].map((g) => (S.finals.find((x) => x.ano === ano && x.grupo === g) || {}).fase).filter(Boolean);
   const stFin = !fases.length ? 'Os 8 melhores de cada grupo · aguardando o sorteio' : fases.every((f) => f === 'encerrado') ? 'Encerrado · veja os campeões' : 'Em andamento · ' + FASES[fases.find((f) => f !== 'encerrado')];
-  const cartao = (href, tit, sub, tag, fundo, verm) => `<a class="card tor" href="${href}">${fundo || ''}<span class="tor-ic">${TROFEU(46)}</span><span class="tor-tx"><b class="cond">${tit}</b><small>${sub}</small>${tag ? `<span class="tag${verm ? ' tag-pisca' : ''}" style="background:${verm ? 'var(--verm)' : 'var(--bola)'};color:${verm ? '#fff' : 'var(--noite)'};align-self:flex-start;margin-top:4px">${tag}</span>` : ''}</span><span class="tor-seta" aria-hidden="true">›</span></a>`;
-  const cfg = torneioCfg(), duplas = cfg.duplas && Object.keys(cfg.duplas).length;
+  const cartao = (href, tit, sub, tag, fundo, verm, ic) => `<a class="card tor" href="${href}">${fundo || ''}<span class="tor-ic">${ic || TROFEU(46)}</span><span class="tor-tx"><b class="cond">${tit}</b><small>${sub}</small>${tag ? `<span class="tag${verm ? ' tag-pisca' : ''}" style="background:${verm ? 'var(--verm)' : 'var(--bola)'};color:${verm ? '#fff' : 'var(--noite)'};align-self:flex-start;margin-top:4px">${tag}</span>` : ''}</span><span class="tor-seta" aria-hidden="true">›</span></a>`;
+  const tors = torneiosIds().filter(torneioVisivel).map((id) => {
+    const c = torneioCfg(id), s = situacaoTorneio(id), f = esc(fotoTorneio(c));
+    return cartao('#/torneio/' + id, esc(c.nome), esc(c.data || 'Portal do Lago Open de Tênis'), s.txt, `<img class="tor-logo" src="${f}" alt="" aria-hidden="true">`, s.verm, `<img src="${f}" alt="" style="width:62px;height:62px;border-radius:16px;object-fit:cover">`);
+  }).join('');
   return voltar('Torneios', 'Portal do Lago Open de Tênis') + `<div class="conteudo">
-    ${cartao('#/finals', 'Finals ' + ano, esc(stFin), finalsAgora() ? 'FINALS ROLANDO' : '', '', finalsAgora())}
-    ${cartao('#/duplas', esc(cfg.nome), 'Portal do Lago Open de Tênis', torneioAberto() ? 'INSCRIÇÕES ABERTAS' : duplas ? 'DUPLAS SORTEADAS' : 'EM BREVE', '<img class="tor-logo" src="icones/logo.png" alt="" aria-hidden="true">', torneioAberto())}
+    ${soTorneio() ? '' : cartao('#/finals', 'Finals ' + ano, esc(stFin), finalsAgora() ? 'FINALS ROLANDO' : '', '', finalsAgora())}
+    ${tors || '<p class="dica">Nenhum torneio por enquanto. Quando a coordenação divulgar, aparece aqui.</p>'}
   </div>`;
 }
-function telaDuplas() {
-  const cfg = torneioCfg(), eu = S.eu, minha = minhaInscricao(), abertas = torneioAberto(), editar = S.torEditar || !minha;
+function telaTorneio(id) {
+  if (id && torneiosIds().includes(id)) TORNEIO = id;
+  if (!torneioVisivel(TORNEIO)) return voltar('Torneio', '', '#/torneios') + '<div class="conteudo"><p class="erro">Esse torneio ainda não foi divulgado.</p></div>';
+  const cfg = torneioCfg(), eu = S.eu, minha = minhaInscricao(), abertas = torneioAberto(), editar = S.torEditar || !minha, cam = cfg.camisetas !== false;
   const lista = inscricoes(), porClasse = (c) => lista.filter((x) => x.classe === c).map((x) => porId(x.jogador)).filter(Boolean);
-  const topo = `<section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 18px">
-      <img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">
-      ${TROFEU(56)}
-      <small style="color:var(--bola);font-weight:700;letter-spacing:2px">TORNEIO DE DUPLAS</small>
+  const datasInsc = cfg.insc_ini || cfg.insc_fim ? 'Inscrições ' + (cfg.insc_ini && cfg.insc_fim ? 'de ' + diaMes(cfg.insc_ini) + ' a ' + diaMes(cfg.insc_fim) : cfg.insc_ini ? 'a partir de ' + diaMes(cfg.insc_ini) : 'até ' + diaMes(cfg.insc_fim)) : '';
+  const st = situacaoTorneio(TORNEIO);
+  const topo = `<section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 18px">
+      ${cfg.foto_url ? `<img src="${esc(cfg.foto_url)}" alt="Logo do ${esc(cfg.nome)}" style="width:150px;height:150px;border-radius:24px;object-fit:cover">` : `<img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">${TROFEU(56)}`}
       <b class="cond" style="font-size:30px;line-height:1.1">${esc(cfg.nome)}</b>
-      <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis · classes ${cfg.classes.join(', ')}</span>
+      <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis · categorias ${esc(cfg.classes.join(', '))}</span>
       ${cfg.data ? `<span style="font-size:14px;color:#fff">📅 ${esc(cfg.data)}</span>` : ''}
-      <span class="tag${abertas ? ' tag-pisca' : ''}" style="background:${abertas ? 'var(--verm)' : 'var(--bola)'};color:${abertas ? '#fff' : 'var(--noite)'};margin-top:6px">${abertas ? 'INSCRIÇÕES ABERTAS' : 'EM BREVE MAIS INFORMAÇÕES'}</span>
+      ${datasInsc ? `<span style="font-size:13px;color:rgba(255,255,255,.8)">${esc(datasInsc)}</span>` : ''}
+      ${cfg.aberto ? '<span style="font-size:13px;color:var(--bola)">Aberto a moradores do Portal do Lago, mesmo fora do ranking</span>' : ''}
+      <span class="tag${st.verm ? ' tag-pisca' : ''}" style="background:${st.verm ? 'var(--verm)' : 'var(--bola)'};color:${st.verm ? '#fff' : 'var(--noite)'};margin-top:6px">${esc(st.txt)}</span>
     </section>${cfg.obs ? `<p class="dica" style="white-space:pre-line">${esc(cfg.obs)}</p>` : ''}`;
   let corpo = '';
-  if (abertas && eu && eu.ativo && !eu.pendente) {
-    if (editar) {
-      const m = minha || {}, tam = (n, v) => { const mod = n === 'tamM' ? 'masculina' : 'babylook'; return `<label class="tam"><input type="radio" name="tam" value="${mod}:${v}"${m.camiseta === mod && m.tamanho === v ? ' checked' : ''}><span>${v}</span></label>`; };
-      corpo = `<form class="card" data-form="torInscrever" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">${minha ? 'Mudar minha inscrição' : 'Minha inscrição'}</b>
-        <fieldset class="grupo-op"><legend class="rot">Classe</legend><div class="op-linha">${cfg.classes.map((c) => `<label class="tam"><input type="radio" name="classe" value="${c}" required${(m.classe || eu.grupo) === c ? ' checked' : ''}><span>${c}</span></label>`).join('')}</div></fieldset>
-        <fieldset class="grupo-op"><legend class="rot">Camiseta masculina</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamM', v)).join('')}</div></fieldset>
-        <fieldset class="grupo-op"><legend class="rot">Camiseta feminina (baby look)</legend><div class="op-linha">${['P', 'M', 'G', 'GG'].map((v) => tam('tamF', v)).join('')}</div></fieldset>
-        <label class="rot">Outro tamanho (não está na lista)<input class="campo" name="outro" maxlength="60" placeholder="Ex.: XGG, infantil 12" value="${esc(m.camiseta === 'outro' ? m.outro || '' : '')}"></label>
-        <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho. <b>A sua camiseta já está incluída na inscrição.</b></span>
-        <details class="extras"${m.extras && Object.keys(m.extras).length ? ' open' : ''}><summary><b>Quer mais camisetas?</b> <span class="dica">(opcional · só as camisetas a mais são cobradas${Number(cfg.valor_camiseta) ? ', ' + real(cfg.valor_camiseta) + ' cada' : ''})</span></summary>
-          <div class="extras-grade">${['masculina', 'babylook'].map((mod) => `<span class="rot" style="grid-column:1/-1">${mod === 'masculina' ? 'Masculina' : 'Feminina baby look'}</span>${TAMS.map((t) => `<label class="extra-q"><span>${t}</span><input class="campo" type="number" name="x-${mod}:${t}" min="0" max="10" inputmode="numeric" value="${(m.extras || {})[mod + ':' + t] || ''}" placeholder="0" aria-label="Quantas ${mod === 'masculina' ? 'masculinas' : 'baby look'} ${t} a mais"></label>`).join('')}`).join('')}</div>
-          <label class="rot">Outro tamanho a mais<input class="campo" name="x-outro" maxlength="80" placeholder="Ex.: 1 infantil 10" value="${esc((m.extras || {}).outro || '')}"></label></details>
-        <p id="tor-msg" role="status"></p>
-        <div style="display:grid;grid-template-columns:${minha ? '1fr 1fr' : '1fr'};gap:8px">${minha ? '<button class="btn btn-linha" type="button" data-acao="torEditar" data-v="0">Voltar</button>' : ''}<button class="btn btn-roxo" type="submit">${minha ? 'Salvar' : 'Fazer minha inscrição'}</button></div></form>`;
-    }
+  if (abertas && !podeInscrever(cfg) && eu && eu.so_torneio) corpo = '<p class="dica">Esse torneio é só pra quem está no ranking.</p>';
+  if (abertas && podeInscrever(cfg) && editar) {
+    const m = minha || {}, tam = (n, v) => { const mod = n === 'tamM' ? 'masculina' : 'babylook'; return `<label class="tam"><input type="radio" name="tam" value="${mod}:${v}"${m.camiseta === mod && m.tamanho === v ? ' checked' : ''}><span>${v}</span></label>`; };
+    corpo = `<form class="card" data-form="torInscrever" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">${minha ? 'Mudar minha inscrição' : 'Minha inscrição'}</b>
+      <fieldset class="grupo-op"><legend class="rot">Categoria</legend><div class="op-linha">${cfg.classes.map((c) => `<label class="tam"><input type="radio" name="classe" value="${esc(c)}" required${(m.classe || eu.grupo) === c ? ' checked' : ''}><span>${esc(c)}</span></label>`).join('')}</div></fieldset>
+      ${cam ? `<fieldset class="grupo-op"><legend class="rot">Camiseta masculina</legend><div class="op-linha">${TAMS.map((v) => tam('tamM', v)).join('')}</div></fieldset>
+      <fieldset class="grupo-op"><legend class="rot">Camiseta feminina (baby look)</legend><div class="op-linha">${TAMS.map((v) => tam('tamF', v)).join('')}</div></fieldset>
+      <label class="rot">Outro tamanho (não está na lista)<input class="campo" name="outro" maxlength="60" placeholder="Ex.: XGG, infantil 12" value="${esc(m.camiseta === 'outro' ? m.outro || '' : '')}"></label>
+      <span class="dica">Marque um tamanho (masculina ou baby look) ou escreva outro tamanho. <b>A sua camiseta já está incluída na inscrição.</b></span>
+      <details class="extras"${m.extras && Object.keys(m.extras).length ? ' open' : ''}><summary><b>Quer mais camisetas?</b> <span class="dica">(opcional · só as camisetas a mais são cobradas${Number(cfg.valor_camiseta) ? ', ' + real(cfg.valor_camiseta) + ' cada' : ''})</span></summary>
+        <div class="extras-grade">${['masculina', 'babylook'].map((mod) => `<span class="rot" style="grid-column:1/-1">${mod === 'masculina' ? 'Masculina' : 'Feminina baby look'}</span>${TAMS.map((t) => `<label class="extra-q"><span>${t}</span><input class="campo" type="number" name="x-${mod}:${t}" min="0" max="10" inputmode="numeric" value="${(m.extras || {})[mod + ':' + t] || ''}" placeholder="0" aria-label="Quantas ${mod === 'masculina' ? 'masculinas' : 'baby look'} ${t} a mais"></label>`).join('')}`).join('')}</div>
+        <label class="rot">Outro tamanho a mais<input class="campo" name="x-outro" maxlength="80" placeholder="Ex.: 1 infantil 10" value="${esc((m.extras || {}).outro || '')}"></label></details>` : ''}
+      <p id="tor-msg" role="status"></p>
+      <div style="display:grid;grid-template-columns:${minha ? '1fr 1fr' : '1fr'};gap:8px">${minha ? '<button class="btn btn-linha" type="button" data-acao="torEditar" data-v="0">Voltar</button>' : ''}<button class="btn btn-roxo" type="submit">${minha ? 'Salvar' : 'Fazer minha inscrição'}</button></div></form>`;
   }
   if (minha && !editar) {
-    const px = pixDe(cfg), st = minha.status, valor = Number(cfg.valor) ? valorInscricao(cfg, minha) : 0, ext = extrasTxt(minha);
+    const px = pixDe(cfg), stt = minha.status, valor = Number(cfg.valor) ? valorInscricao(cfg, minha) : 0, ext = extrasTxt(minha);
     const cc = valor ? pixCopiaCola(valor, cfg.nome + ' ' + eu.nome, ('TD' + eu.id.replace(/-/g, '')).slice(0, 25).toUpperCase(), px) : '';
     corpo = `<section class="card" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Classe ${esc(minha.classe)} · camiseta ${esc(camisetaTxt(minha))}${ext ? '<br>Camisetas a mais: ' + esc(ext) : ''}</div></div>
-        ${st === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : st === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : '<span class="tag" style="background:#FDECEC;color:var(--verm)">FALTA PAGAR</span>'}</div>
-      ${st === 'pago' ? '<p class="dica">Pagamento confirmado pela coordenação. Bom torneio!</p>'
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b class="cond" style="font-size:20px">✓ Você está inscrito</b><div class="dica">Categoria ${esc(minha.classe)}${cam ? ' · camiseta ' + esc(camisetaTxt(minha)) : ''}${ext ? '<br>Camisetas a mais: ' + esc(ext) : ''}</div></div>
+        ${stt === 'pago' ? '<span class="tag" style="background:#E3F0E8;color:var(--verde)">PAGO</span>' : stt === 'informado' ? '<span class="tag" style="background:#FFF3D6;color:#6B4A00">CONFERINDO</span>' : '<span class="tag" style="background:#FDECEC;color:var(--verm)">FALTA PAGAR</span>'}</div>
+      ${stt === 'pago' ? '<p class="dica">Pagamento confirmado pela coordenação. Bom torneio!</p>'
         : valor ? `<b style="font-size:16px">Inscrição: ${real(valor)}</b>${qtdExtras(minha) && Number(cfg.valor_camiseta) ? `<span class="dica">${real(cfg.valor)} da inscrição (com a sua camiseta) + ${qtdExtras(minha)} camiseta(s) a mais × ${real(cfg.valor_camiseta)}${extrasDe(minha).some((y) => y.livre) ? ' (o "outro tamanho" a coordenação combina com você)' : ''}</span>` : ''}
         <div class="pix-qr" data-qr="${esc(cc)}" data-valor="${esc(real(valor))}"><span class="dica">Carregando QR Code…</span></div>
         <button class="btn btn-roxo" type="button" data-acao="copiarPix" data-cc="${esc(cc)}">Copiar Pix copia e cola</button>
         <button class="btn btn-linha" type="button" data-acao="copiarPix" data-cc="${esc(px.chave)}" data-ok="Chave Pix copiada.">Copiar chave Pix (${esc(px.tipo)})</button>
         <span class="dica">Chave ${esc(px.tipo)} <b>${esc(px.mostra)}</b> em nome de <b>${esc(px.nome)}</b>. Depois de pagar, mande o comprovante:</span>
-        ${botaoComprovante(cfg.zap, 'Aqui está o comprovante da minha inscrição no ' + cfg.nome + ' (classe ' + minha.classe + ')', cfg.zap_nome)}
-        ${st === 'pendente' ? '<button class="btn btn-linha" type="button" data-acao="torPaguei">Já paguei</button>' : '<p class="dica">Você avisou que pagou. A coordenação confere e confirma aqui.</p>'}`
+        ${botaoComprovante(cfg.zap, 'Aqui está o comprovante da minha inscrição no ' + cfg.nome + ' (categoria ' + minha.classe + ')', cfg.zap_nome)}
+        ${stt === 'pendente' ? '<button class="btn btn-linha" type="button" data-acao="torPaguei">Já paguei</button>' : '<p class="dica">Você avisou que pagou. A coordenação confere e confirma aqui.</p>'}`
         : '<p class="dica">O valor da inscrição ainda vai ser definido pela coordenação. Assim que sair, o Pix aparece aqui.</p>'}
-      ${abertas ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="torEditar" data-v="1">Mudar classe/camiseta</button>${st === 'pago' ? '' : '<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="torDesistir">Desistir</button>'}</div>` : ''}
+      ${abertas ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="torEditar" data-v="1">Mudar inscrição</button>${stt === 'pago' ? '' : '<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="torDesistir">Desistir</button>'}</div>` : ''}
     </section>`;
   }
+  // jogos: uma aba por categoria que já tem grupos
+  const comJogos = cfg.classes.filter((c) => ((cfg.grupos || {})[c] || []).length);
+  const aba = comJogos.includes(S.torAba) ? S.torAba : (minha && comJogos.includes(minha.classe) ? minha.classe : comJogos[0]);
+  const jogos = comJogos.length ? `<h2 class="cond" style="font-size:22px;margin:6px 0 0">Jogos</h2>${comJogos.length > 1 ? `<div class="abas" role="tablist" style="grid-template-columns:repeat(${comJogos.length},1fr)">${comJogos.map((c) => `<button class="aba" role="tab" aria-selected="${aba === c}" data-acao="torAba" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}${blocoJogosTorneio(TORNEIO, aba)}` : '';
   const inscritos = lista.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Inscritos (${lista.length})</b>
-      ${cfg.classes.map((c) => { const ps = porClasse(c); return `<div><b style="font-size:13px;color:var(--roxo)">Classe ${c} (${ps.length})</b><div class="dica" style="line-height:1.6">${ps.map((j) => esc(j.nome)).join(' · ') || 'ninguém ainda'}</div></div>`; }).join('')}</section>` : '';
-  const duplas = cfg.duplas && Object.keys(cfg.duplas).length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Duplas sorteadas</b>
-      ${Object.entries(cfg.duplas).map(([c, ds]) => `<div><b style="font-size:13px;color:var(--roxo)">Classe ${c}</b>${ds.map((d, i) => `<div style="font-size:14px">${i + 1}. ${d.map((id) => esc((porId(id) || {}).nome || '?')).join(' <b style="color:var(--roxo)">+</b> ')}</div>`).join('')}</div>`).join('')}</section>` : '';
-  return voltar(cfg.nome, 'Portal do Lago Open de Tênis', '#/torneios') + `<div class="conteudo">${topo}${corpo}${duplas}${inscritos}
+      ${cfg.classes.map((c) => { const ps = porClasse(c); return `<div><b style="font-size:13px;color:var(--roxo)">Categoria ${esc(c)} (${ps.length})</b><div class="dica" style="line-height:1.6">${ps.map((j) => esc(j.nome)).join(' · ') || 'ninguém ainda'}</div></div>`; }).join('')}</section>` : '';
+  const duplas = cfg.duplas && Object.keys(cfg.duplas).length && !comJogos.length ? `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Duplas sorteadas</b>
+      ${Object.entries(cfg.duplas).map(([c, ds]) => `<div><b style="font-size:13px;color:var(--roxo)">Categoria ${esc(c)}</b>${ds.map((d, i) => `<div style="font-size:14px">${i + 1}. ${nomeDupla(d)}</div>`).join('')}</div>`).join('')}</section>` : '';
+  return voltar(cfg.nome, 'Portal do Lago Open de Tênis', '#/torneios') + `<div class="conteudo">${topo}${corpo}${jogos}${duplas}${inscritos}
     ${!abertas && !lista.length ? '<p class="dica">Datas, inscrição e regulamento aparecem aqui e no sino de avisos assim que a coordenação divulgar.</p>' : ''}</div>`;
 }
-// Admin: a coordenação monta o torneio do jeito que quiser
-function adminTorneio() {
+// placar do jogo do torneio (a dupla grava; mesma regra de sets do ranking)
+function telaPlacarTorneio(id) {
+  const g = (S.tjogos || []).find((x) => x.id === id);
+  if (!g) return voltar('Gravar placar', '', '#/torneios') + '<div class="conteudo"><p class="erro">Jogo não encontrado.</p></div>';
+  TORNEIO = g.torneio;
+  const cfg = torneioCfg(g.torneio), fase = (cfg.fases || {})[g.classe], outro = gravadoPorOutro(g);
+  if (!souDaDupla(g) && !S.eu.admin) return voltar('Gravar placar', '', '#/torneio/' + g.torneio) + '<div class="conteudo"><p class="erro">Você só grava o placar do seu jogo.</p></div>';
+  const fechado = !!outro || (!S.eu.admin && fase !== g.fase);
+  const sets = (g.sets || []).concat([[], [], []]).slice(0, 3), A = nomeDuplaTxt(g.dupla_a), B = nomeDuplaTxt(g.dupla_b);
+  return voltar('Gravar placar', cfg.nome + ' · ' + g.classe + ' · ' + FASES_T[g.fase], '#/torneio/' + g.torneio) + `
+  <form class="conteudo" data-form="placar" data-id="${g.id}" data-tabela="torneio_jogos">
+    <div class="card" style="font-size:13px;line-height:1.4;background:${fechado ? '#FDECEC' : '#EFEAF8'};color:${fechado ? 'var(--verm)' : 'var(--roxo2)'};border:0">${outro ? `Placar gravado por ${esc(outro)}. Só quem gravou pode corrigir; se estiver errado, fale com a coordenação.` : fechado ? 'Essa fase do torneio já fechou. Só a coordenação altera.' : 'Qualquer um dos 4 jogadores pode gravar. Pode corrigir enquanto esta fase estiver aberta. Os pontos do torneio não entram no ranking.'}</div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="set"><span></span><b style="text-align:center;font-size:13px">${esc(A)}</b><b style="text-align:center;font-size:13px">${esc(B)}</b></div>
+      ${sets.map((s, i) => { const tb = i === 2, rot = tb ? 'Tie-break' : (i + 1) + 'º set', mx = tb ? 40 : 7; return `<div class="set"><span class="dica" style="font-weight:${tb ? 800 : 600};${tb ? 'color:var(--verm)' : ''}">${rot}</span>
+        <input class="campo" name="a${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[0] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(A)}" ${fechado ? 'disabled' : ''}>
+        <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(B)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
+    </div>
+    <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
+    ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
+    ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="torneio_jogos">Cancelar placar</button>` : ''}
+    <p id="placar-msg" role="status"></p>
+  </form>`;
+}
+// Admin: escolhe o torneio, cria novo e monta do jeito que quiser
+function adminTorneios() {
   if (!S.tinsc) return '';
-  const cfg = torneioCfg(), lista = inscricoes(), ver = S.admin.torVer;
-  const conta = {}; lista.forEach((x) => { const k = camisetaTxt(x); conta[k] = (conta[k] || 0) + 1; extrasDe(x).forEach((y) => { const kk = y.livre ? 'Outro: ' + y.tam : y.modelo + ' ' + y.tam; conta[kk] = (conta[kk] || 0) + y.n; }); });
+  const ids = torneiosIds();
+  if (!ids.includes(TORNEIO)) TORNEIO = ids[0];
+  const chips = ids.map((id) => { const c = torneioCfg(id); return `<button type="button" class="btn ${id === TORNEIO ? 'btn-roxo' : 'btn-linha'}" style="height:40px;font-size:13px;padding:0 12px;width:auto" data-acao="torSel" data-v="${esc(id)}">${esc(c.nome)}${c.publicado ? '' : ' (rascunho)'}</button>`; }).join('');
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:20px">Torneios</b>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${chips}<button type="button" class="btn btn-bola" style="height:40px;font-size:13px;padding:0 12px;width:auto" data-acao="torNovoAbrir">+ Criar novo torneio</button></div>
+    ${S.admin.torNovo ? `<form data-form="torNovo" style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #F0EDF5;padding-top:10px"><label class="rot">Nome do novo torneio<input class="campo" name="nome" maxlength="60" required placeholder="Ex.: 1º Torneio de Simples"></label>
+      <span class="dica">Ele nasce como rascunho: só a coordenação vê até você tocar em "Publicar torneio".</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-linha" type="button" data-acao="torNovoAbrir" data-v="0">Cancelar</button><button class="btn btn-roxo" type="submit">Criar</button></div></form>` : ''}
+  </section>${adminTorneio()}`;
+}
+function adminJogosClasse(c) {
+  const { cfg, duplas, fase, js } = dadosTorneio(TORNEIO, c);
+  if (!duplas.length) return '';
+  if (!S.tjogos) return '<p class="dica">Os jogos do torneio ainda não foram ativados no banco.</p>';
+  if (!fase) {
+    const ops = [1, 2, 4].filter((n) => duplas.length >= n * 2 && !(n === 1 && duplas.length > 8));
+    if (!ops.length) return '';
+    return `<form data-form="torGrupos" data-v="${esc(c)}" style="display:flex;flex-direction:column;gap:8px;border-top:1px dashed #D8D0E8;padding-top:10px"><b style="font-size:14px">Jogos da categoria ${esc(c)} · ${duplas.length} duplas</b>
+      <label class="rot">Quantos grupos<select class="campo" name="n">${ops.map((n) => `<option value="${n}"${n === (duplas.length >= 8 ? 2 : 1) ? ' selected' : ''}>${n === 1 ? '1 grupo (todos contra todos)' : n + ' grupos de ' + Math.floor(duplas.length / n) + (duplas.length % n ? ' a ' + Math.ceil(duplas.length / n) : '') + ' duplas'}</option>`).join('')}</select></label>
+      <span class="dica">Igual ao Finals: os cabeças de chave ficam em grupos diferentes, todo mundo joga contra todo mundo no grupo e os melhores vão pro mata-mata (semifinal e final; com 4 grupos, quartas antes).</span>
+      <button class="btn btn-roxo" type="submit">Montar grupos e jogos</button></form>`;
+  }
+  const doFase = js.filter((g) => g.fase === fase), sem = doFase.filter((g) => !g.sets).length;
+  const prox = fase === 'grupos' ? 'Fechar grupos e gerar o mata-mata' : fase === 'final' ? 'Encerrar a categoria ' + c : M.PROXIMA[fase] ? 'Gerar ' + FASES_T[M.PROXIMA[fase]].toLowerCase() : '';
+  return `<div style="display:flex;flex-direction:column;gap:8px;border-top:1px dashed #D8D0E8;padding-top:10px"><b style="font-size:14px">Jogos da categoria ${esc(c)} · ${esc(FASES_T[fase])}</b>
+    ${fase !== 'encerrado' ? `<span class="dica">${sem ? sem + ' jogo(s) desta fase sem placar.' : 'Todos os placares desta fase gravados.'}${fase === 'grupos' && sem ? ' Dá pra fechar assim mesmo: jogo sem placar vale 0 pras duas duplas.' : ''}</span>
+    <button type="button" class="btn btn-roxo" data-acao="torAvancar" data-v="${esc(c)}"${fase !== 'grupos' && sem ? ' disabled' : ''}>${esc(prox)}</button>` : '<span class="dica">Categoria encerrada. Os campeões aparecem na tela do torneio.</span>'}
+    <a class="btn btn-linha" href="#/torneio/${esc(TORNEIO)}">Ver jogos e placares</a>
+    <button type="button" class="btn btn-linha" style="color:var(--verm)" data-acao="torZerar" data-v="${esc(c)}">Apagar os jogos da categoria ${esc(c)}</button></div>`;
+}
+function adminTorneio() {
+  const cfg = torneioCfg(), lista = inscricoes(), ver = S.admin.torVer, cam = cfg.camisetas !== false;
+  const conta = {}; if (cam) lista.forEach((x) => { const k = camisetaTxt(x); conta[k] = (conta[k] || 0) + 1; extrasDe(x).forEach((y) => { const kk = y.livre ? 'Outro: ' + y.tam : y.modelo + ' ' + y.tam; conta[kk] = (conta[kk] || 0) + y.n; }); });
   const linha = (x) => { const j = porId(x.jogador) || { nome: '?' };
-    return `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.cabeca ? '⭐ ' : ''}${esc(j.nome)}</b><small class="dica">Classe ${esc(x.classe)} · ${esc(camisetaTxt(x))}${extrasTxt(x) ? ' · + ' + esc(extrasTxt(x)) : ''}</small></span>
+    return `<div class="cob-linha"><span style="min-width:0;flex-grow:1"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.cabeca ? '⭐ ' : ''}${esc(j.nome)}</b><small class="dica">${j.so_torneio ? 'Morador · ' : ''}Categoria ${esc(x.classe)}${cam ? ' · ' + esc(camisetaTxt(x)) : ''}${extrasTxt(x) ? ' · + ' + esc(extrasTxt(x)) : ''}</small></span>
       <button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torCabeca" data-j="${x.jogador}" aria-pressed="${x.cabeca}" aria-label="Cabeça de chave: ${esc(j.nome)}">${x.cabeca ? '⭐ Cabeça' : '☆ Cabeça'}</button>
       ${x.status === 'pago' ? `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px" data-acao="torPago" data-j="${x.jogador}" data-v="pendente">Pago ✓</button>`
         : `<button type="button" class="ic-mini" style="width:auto;padding:0 8px;font-size:12px;background:var(--verde);color:#fff;border-color:var(--verde)" data-acao="torPago" data-j="${x.jogador}" data-v="pago">${x.status === 'informado' ? 'Avisou · Confirmar' : 'Confirmar'}</button>`}
       <button type="button" class="ic-mini" data-acao="torTirar" data-j="${x.jogador}" aria-label="Tirar ${esc(j.nome)} do torneio">✕</button></div>`; };
-  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><b class="cond" style="font-size:20px">${esc(cfg.nome)}</b>
-    <span class="dica">Monte do jeito que quiser: classes, valor, Pix e quando abrir as inscrições. Depois marque os cabeças de chave (⭐) e sorteie as duplas de cada classe.</span>
+  const st = situacaoTorneio(TORNEIO);
+  return `<section class="card" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:12px"><img src="${esc(fotoTorneio(cfg))}" alt="" style="width:56px;height:56px;border-radius:14px;object-fit:cover;flex-shrink:0"><div style="min-width:0"><b class="cond" style="font-size:20px">${esc(cfg.nome)}</b><div class="dica">${esc(st.txt)}</div></div></div>
+    <span class="dica">Monte do jeito que quiser: categorias, datas, valor, Pix e quem pode se inscrever. Depois marque os cabeças de chave (⭐), sorteie as duplas e monte os grupos de cada categoria.</span>
+    <button class="btn ${cfg.publicado ? 'btn-linha' : 'btn-roxo'}" data-acao="torPublicar" data-v="${cfg.publicado ? '0' : '1'}">${cfg.publicado ? 'Tirar do ar (volta a ser rascunho)' : 'Publicar torneio (aparece pra todo mundo)'}</button>
     <form data-form="torConfig" style="display:flex;flex-direction:column;gap:8px">
       <label class="rot">Nome do torneio<input class="campo" name="nome" maxlength="60" value="${esc(cfg.nome)}" required></label>
-      <fieldset class="grupo-op"><legend class="rot">Classes</legend><div class="op-linha">${['A', 'B', 'C'].map((c) => `<label class="tam"><input type="checkbox" name="cl${c}"${cfg.classes.includes(c) ? ' checked' : ''}><span>${c}</span></label>`).join('')}</div></fieldset>
+      <label class="rot">Foto ou logo do torneio (opcional)<input class="campo" name="foto" type="file" accept="image/*" style="padding:10px"></label>
+      <label class="rot">Categorias (separe por vírgula)<input class="campo" name="classes" maxlength="160" value="${esc(cfg.classes.join(', '))}" placeholder="A, B, C, Mista, Feminina" required></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Inscrições abrem em<input class="campo" name="inscIni" type="date" value="${esc(cfg.insc_ini || '')}"></label>
+      <label class="rot">Inscrições fecham em<input class="campo" name="inscFim" type="date" value="${esc(cfg.insc_fim || '')}"></label></div>
+      <span class="dica" style="margin-top:-4px">Com datas, as inscrições abrem e fecham sozinhas (o botão "Abrir inscrições" precisa estar ligado). Em branco = abre e fecha só pelo botão.</span>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Valor da inscrição (R$)<input class="campo" name="valor" inputmode="decimal" placeholder="a definir" value="${cfg.valor ? String(cfg.valor).replace('.', ',') : ''}"></label>
-      <label class="rot">Data (texto livre)<input class="campo" name="data" maxlength="60" placeholder="Ex.: 20 e 21/03/2027" value="${esc(cfg.data || '')}"></label></div>
+      <label class="rot">Data dos jogos<input class="campo" name="data" maxlength="60" placeholder="Ex.: 20 e 21/03/2027" value="${esc(cfg.data || '')}"></label></div>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" name="aberto" style="width:20px;height:20px;accent-color:var(--roxo)"${cfg.aberto ? ' checked' : ''}>Aberto a moradores fora do ranking</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" name="camisetas" style="width:20px;height:20px;accent-color:var(--roxo)"${cam ? ' checked' : ''}>Tem camiseta do torneio</label>
       <label class="rot">Valor de cada camiseta a mais (R$)<input class="campo" name="valorCam" inputmode="decimal" placeholder="a definir" value="${cfg.valor_camiseta ? String(cfg.valor_camiseta).replace('.', ',') : ''}"></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="rot">Chave Pix<input class="campo" name="pix" maxlength="77" value="${esc(cfg.pix_chave || '')}"></label>
       <label class="rot">Nome de quem recebe<input class="campo" name="pixNome" maxlength="60" value="${esc(cfg.pix_nome || '')}"></label></div>
@@ -1198,14 +1343,16 @@ function adminTorneio() {
     <button class="btn ${cfg.inscricoes ? 'btn-linha' : 'btn-roxo'}" data-acao="torAbrir" data-v="${cfg.inscricoes ? '0' : '1'}">${cfg.inscricoes ? 'Fechar inscrições' : 'Abrir inscrições'}</button>
     <div class="cob-cont"><span><b>${lista.length}</b> inscritos</span><span><b style="color:var(--verde)">${lista.filter((x) => x.status === 'pago').length}</b> pagos</span><span><b style="color:#6B4A00">${lista.filter((x) => x.status === 'informado').length}</b> avisaram</span></div>
     ${Object.keys(conta).length ? `<div class="dica"><b>Camisetas:</b> ${Object.entries(conta).sort().map(([k, n]) => esc(k) + ' (' + n + ')').join(' · ')}</div>` : ''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="torVer" aria-expanded="${!!ver}">${ver ? 'Fechar lista' : 'Ver inscritos'}</button><button type="button" class="btn btn-linha" data-acao="torPlanilha"${lista.length ? '' : ' disabled'}>Baixar planilha</button></div>
-    <button type="button" class="btn btn-roxo" data-acao="torGrafica"${lista.length ? '' : ' disabled'}>👕 Lista das camisetas pra gráfica</button>
-    ${ver ? cfg.classes.map((c) => { const xs = lista.filter((x) => x.classe === c); return `<div><b style="font-size:14px">Classe ${c} (${xs.length}) · ${xs.filter((x) => x.cabeca).length} cabeças de chave</b><div class="cob-lista">${xs.map(linha).join('') || '<p class="dica">Ninguém ainda.</p>'}</div>
-      <button type="button" class="btn btn-roxo" style="margin-top:8px;width:100%" data-acao="torSortear" data-v="${c}"${xs.length < 2 ? ' disabled' : ''}>${cfg.duplas && cfg.duplas[c] ? 'Sortear de novo as duplas da classe ' + c : 'Sortear as duplas da classe ' + c}</button></div>`; }).join('') : ''}
-    <span class="dica">Sorteio: cada cabeça de chave (⭐) recebe um parceiro sorteado entre os outros da classe; quem sobrar forma dupla entre si, também por sorteio. As duplas aparecem pra todo mundo na tela do torneio.</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn btn-linha" data-acao="torVer" aria-expanded="${!!ver}">${ver ? 'Fechar lista' : 'Inscritos, duplas e jogos'}</button><button type="button" class="btn btn-linha" data-acao="torPlanilha"${lista.length ? '' : ' disabled'}>Baixar planilha</button></div>
+    ${cam ? `<button type="button" class="btn btn-roxo" data-acao="torGrafica"${lista.length ? '' : ' disabled'}>👕 Lista das camisetas pra gráfica</button>` : ''}
+    ${ver ? cfg.classes.map((c) => { const xs = lista.filter((x) => x.classe === c), temJogos = !!(cfg.fases || {})[c]; return `<div style="display:flex;flex-direction:column;gap:8px"><b style="font-size:14px">Categoria ${esc(c)} (${xs.length}) · ${xs.filter((x) => x.cabeca).length} cabeças de chave</b><div class="cob-lista">${xs.map(linha).join('') || '<p class="dica">Ninguém ainda.</p>'}</div>
+      ${temJogos ? '' : `<button type="button" class="btn btn-roxo" style="width:100%" data-acao="torSortear" data-v="${esc(c)}"${xs.length < 2 ? ' disabled' : ''}>${cfg.duplas && cfg.duplas[c] ? 'Sortear de novo as duplas da categoria ' + esc(c) : 'Sortear as duplas da categoria ' + esc(c)}</button>`}
+      ${cfg.duplas && cfg.duplas[c] ? `<div class="dica" style="line-height:1.6">${cfg.duplas[c].map((d, i) => (i + 1) + '. ' + nomeDupla(d)).join('<br>')}</div>` : ''}
+      ${adminJogosClasse(c)}</div>`; }).join('') : ''}
+    <span class="dica">Sorteio: cada cabeça de chave (⭐) recebe um parceiro sorteado entre os outros da categoria; quem sobrar forma dupla entre si, também por sorteio. Depois de montar os grupos, o sorteio trava (pra refazer, apague os jogos da categoria).</span>
   </section>`;
 }
-// sorteio das duplas: cabeça de chave + parceiro sorteado; o resto em duplas sorteadas
+// sorteio das duplas: cabeça de chave + parceiro sorteado; o resto em duplas sorteadas (as duplas dos cabeças vêm primeiro)
 function sortearDuplas(ids, cabecas, rnd = Math.random) {
   const emb = (xs) => { const a = xs.slice(); for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(rnd() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
   const cab = emb(ids.filter((id) => cabecas.has(id))), resto = emb(ids.filter((id) => !cabecas.has(id))), duplas = [];
@@ -1213,10 +1360,36 @@ function sortearDuplas(ids, cabecas, rnd = Math.random) {
   while (resto.length) duplas.push(resto.splice(0, 2));
   return duplas;
 }
-async function salvarTorneio(muda) {
-  const novo = { ...torneioCfg(), ...muda };
-  let r = await sb.from('config').delete().eq('chave', 'torneio_' + TORNEIO); if (r.error) throw r.error;
-  r = await sb.from('config').insert({ chave: 'torneio_' + TORNEIO, valor: novo }); if (r.error) throw r.error;
+async function salvarTorneio(muda, id = TORNEIO) {
+  const atual = (S.config || {})['torneio_' + id] || {}, novo = { ...(id === TORNEIO_10 ? TORNEIO_PADRAO : {}), ...atual, ...muda };
+  let r = await sb.from('config').delete().eq('chave', 'torneio_' + id); if (r.error) throw r.error;
+  r = await sb.from('config').insert({ chave: 'torneio_' + id, valor: novo }); if (r.error) throw r.error;
+  S.config['torneio_' + id] = novo;
+}
+async function montarGruposTorneio(c, n) {
+  const cfg = torneioCfg(), duplas = (cfg.duplas || {})[c] || [];
+  if ((cfg.fases || {})[c]) throw new Error('Os grupos da categoria ' + c + ' já foram montados.');
+  const grupos = M.montarGrupos(duplas, n);
+  const linhas = grupos.flatMap((g, i) => M.todosContraTodos(g).map(([a, b]) => ({ torneio: TORNEIO, classe: c, fase: 'grupos', chave: i + 1, dupla_a: a, dupla_b: b })));
+  const r = await sb.from('torneio_jogos').insert(linhas); if (r.error) throw r.error;
+  await salvarTorneio({ grupos: { ...(cfg.grupos || {}), [c]: grupos }, fases: { ...(cfg.fases || {}), [c]: 'grupos' } });
+}
+async function avancarTorneio(c) {
+  const D = dadosTorneio(TORNEIO, c), fase = D.fase;
+  const doFase = D.js.filter((g) => g.fase === fase);
+  if (fase !== 'grupos' && doFase.some((g) => !g.sets)) throw new Error('Faltam placares desta fase.');
+  let nova, jogos = [];
+  if (fase === 'grupos') {
+    const n = classificamT(D.grupos.length, D.duplas.length), tabs = D.tabs.map((t) => t.slice(0, n).map((x) => D.porChave[x.id]));
+    ({ fase: nova, jogos } = M.primeiraFase(tabs));
+  } else if (M.PROXIMA[fase]) {
+    nova = M.PROXIMA[fase];
+    jogos = M.proximaFase(doFase.map((g) => (M.resultado(g.sets).aVenceu ? g.dupla_a : g.dupla_b)));
+  } else if (fase === 'final') nova = 'encerrado';
+  else throw new Error('Nada pra avançar.');
+  if (jogos.length) { const r = await sb.from('torneio_jogos').insert(jogos.map(([a, b], i) => ({ torneio: TORNEIO, classe: c, fase: nova, chave: i + 1, dupla_a: a, dupla_b: b }))); if (r.error) throw r.error; }
+  await salvarTorneio({ fases: { ...(torneioCfg().fases || {}), [c]: nova } });
+  return nova;
 }
 // novembro/dezembro: sem jogos do ranking, a tela de Jogos mostra o Finals (dá pra voltar pros meses anteriores)
 function finalsNosJogos() {
@@ -1344,7 +1517,7 @@ function telaAdmin() {
     ${adminRespostasTemporada()}
     ${adminRespostasFinals()}
     ${adminFinals()}
-    ${adminTorneio()}
+    ${adminTorneios()}
     <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Testar o botão do ranking ${anoRanking() + 1}</b><span class="dica">Toca o som e os fogos do "SIM, VAMOS!!!!" sem salvar nada. O botão de verdade aparece pra todo mundo quando o Finals acabar (ou em 10/12).</span><button type="button" class="btn btn-bola btn-vamos" data-acao="testarVamos">SIM, VAMOS!!!!</button></section>
     <form class="card" data-form="novoJogador" style="display:flex;flex-direction:column;gap:10px"><b class="cond" style="font-size:18px">Cadastrar jogador</b><span class="dica">Regra 5.1: a coordenação define grupo e posição dentro do grupo. Ele entra com a mesma linha de quem está hoje nessa posição do grupo e essa pessoa desce uma. Em branco = último do grupo.</span>
       <label class="rot">Nome<input class="campo" name="nome" required maxlength="40"></label>
@@ -1365,8 +1538,8 @@ function telaAdmin() {
       <button class="btn btn-roxo" type="submit">Publicar</button></form>
     <section class="card" style="display:flex;flex-direction:column;gap:8px"><b class="cond" style="font-size:18px">Jogadores (${S.jogadores.length})</b>${BUSCA('Buscar jogador…')}${NADA}
       ${S.jogadores.filter((j) => !j.pendente).sort((a, b) => a.nome.localeCompare(b.nome)).map((j) => `<div ${dn(j.nome, S.emails[j.id])} style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0EDF5">
-        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.ativo ? '' : ` <span class="tag" style="background:#FDECEC;color:var(--verm)">FORA DO RANKING</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="reativar" data-id="${j.id}">Voltar ao ranking</button>`}${j.ativo && j.joga ? (j.standby ? ` <span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="standbyAdm" data-v="0" data-id="${j.id}">Tirar do standby</button>` : ` <button class="tag" style="background:#F0EDF5;color:var(--tinta2);border:0" data-acao="standbyAdm" data-v="1" data-id="${j.id}">Pôr em standby</button>`) : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
-        <select class="campo" style="width:64px;height:40px;padding:0 6px" data-acao="grupo" data-id="${j.id}" aria-label="Grupo de ${esc(j.nome)}">${['A', 'B', 'C'].map((g) => `<option ${g === j.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select>
+        <span style="flex-grow:1;min-width:0"><b style="font-size:14px">${esc(j.nome)}</b>${j.so_torneio ? ' <span class="tag" style="background:#E3F0E8;color:var(--verde)">MORADOR · SÓ TORNEIO</span>' : ''}${j.ativo ? '' : ` <span class="tag" style="background:#FDECEC;color:var(--verm)">FORA DO RANKING</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="reativar" data-id="${j.id}">Voltar ao ranking</button>`}${j.ativo && j.joga ? (j.standby ? ` <span class="tag" style="background:#EFEAF8;color:var(--roxo)">STANDBY</span> <button class="tag" style="background:var(--roxo);color:#fff;border:0" data-acao="standbyAdm" data-v="0" data-id="${j.id}">Tirar do standby</button>` : ` <button class="tag" style="background:#F0EDF5;color:var(--tinta2);border:0" data-acao="standbyAdm" data-v="1" data-id="${j.id}">Pôr em standby</button>`) : ''}<br><small class="dica">${esc(S.emails[j.id] || '')}${j.user_id ? '' : ' · ainda não entrou'}</small></span>
+        ${j.so_torneio ? '' : `<select class="campo" style="width:64px;height:40px;padding:0 6px" data-acao="grupo" data-id="${j.id}" aria-label="Grupo de ${esc(j.nome)}">${['A', 'B', 'C'].map((g) => `<option ${g === j.grupo ? 'selected' : ''}>${g}</option>`).join('')}</select>`}
         <button class="btn btn-linha" style="height:40px;padding:0 8px;font-size:11px" data-acao="resetSenha" data-id="${j.id}" title="Volta a senha para ${SENHA_INICIAL}">Senha</button>
         <button class="switch" role="switch" aria-checked="${j.admin}" data-acao="admin" data-id="${j.id}" aria-label="Admin: ${esc(j.nome)}" ${j.dono ? 'disabled' : ''}><i></i></button>
       </div>`).join('')}
@@ -2184,6 +2357,20 @@ const ACOES = {
   tempNao: () => { S.tempConfirma = true; render(); },
   testarVamos: () => { tocarVamos(); fogos(''); toast('VAMOS!!!! (teste: nada foi salvo)'); },
   torEditar: (el) => { S.torEditar = el.dataset.v === '1'; render(); },
+  torAba: (el) => { S.torAba = el.dataset.v; render(); },
+  torSel: (el) => { TORNEIO = el.dataset.v; S.admin.torVer = false; S.admin.torNovo = false; render(); },
+  torNovoAbrir: (el) => { S.admin.torNovo = el.dataset.v !== '0'; render(); },
+  torPublicar: (el) => comTrava('', () => salvarTorneio({ publicado: el.dataset.v === '1' }), el.dataset.v === '1' ? 'Torneio publicado: já aparece em Torneios pra todo mundo.' : 'Torneio tirado do ar: só a coordenação vê.'),
+  torAvancar: (el) => {
+    const c = el.dataset.v, D = dadosTorneio(TORNEIO, c), sem = D.js.filter((g) => g.fase === D.fase && !g.sets).length;
+    if (D.fase === 'grupos' && sem && el.dataset.ok !== '1') { el.dataset.ok = '1'; el.textContent = 'Faltam ' + sem + ' placar(es). Toque de novo pra fechar assim mesmo'; el.style.background = 'var(--verm)'; return; }
+    comTrava('Montando a próxima fase…', async () => { await avancarTorneio(c); }, D.fase === 'final' ? 'Categoria ' + c + ' encerrada. Parabéns aos campeões!' : 'Próxima fase montada. Já aparece pra todo mundo.');
+  },
+  torZerar: (el) => {
+    if (el.dataset.ok !== '1') { el.dataset.ok = '1'; el.textContent = 'Toque de novo pra apagar TODOS os jogos e placares da categoria ' + el.dataset.v; el.style.background = '#FDECEC'; return; }
+    const c = el.dataset.v, cfg = torneioCfg(), g = { ...(cfg.grupos || {}) }, f = { ...(cfg.fases || {}) }; delete g[c]; delete f[c];
+    comTrava('', async () => { const r = await sb.from('torneio_jogos').delete().eq('torneio', TORNEIO).eq('classe', c); if (r.error) throw r.error; await salvarTorneio({ grupos: g, fases: f }); }, 'Jogos da categoria ' + c + ' apagados. Dá pra sortear de novo.');
+  },
   torPaguei: () => comTrava('', async () => { const r = await sb.rpc('informar_pagamento_torneio', { p_torneio: TORNEIO }); if (r.error) throw r.error; }, 'Valeu! A coordenação vai conferir e confirmar.'),
   torDesistir: () => comTrava('', async () => { const r = await sb.rpc('cancelar_inscricao_torneio', { p_torneio: TORNEIO }); if (r.error) throw r.error; }, 'Inscrição cancelada.'),
   torAbrir: (el) => comTrava('', () => salvarTorneio({ inscricoes: el.dataset.v === '1' }), el.dataset.v === '1' ? 'Inscrições abertas: já aparece pra todo mundo.' : 'Inscrições fechadas.'),
@@ -2193,6 +2380,7 @@ const ACOES = {
   torTirar: (el) => comTrava('', async () => { const r = await sb.from('torneio_inscricao').delete().eq('torneio', TORNEIO).eq('jogador', el.dataset.j); if (r.error) throw r.error; }, 'Tirado do torneio.'),
   torSortear: (el) => comTrava('Sorteando…', async () => {
     const c = el.dataset.v, xs = inscricoes().filter((x) => x.classe === c);
+    if ((torneioCfg().fases || {})[c]) throw new Error('Os grupos já foram montados. Pra sortear de novo, apague os jogos da categoria.');
     const duplas = sortearDuplas(xs.map((x) => x.jogador), new Set(xs.filter((x) => x.cabeca).map((x) => x.jogador)));
     await salvarTorneio({ duplas: { ...(torneioCfg().duplas || {}), [c]: duplas } });
   }, 'Duplas sorteadas! Já aparecem na tela do torneio.'),
@@ -2247,10 +2435,10 @@ const ACOES = {
   // apaga o placar (o jogo volta a ficar pendente); pede um segundo toque pra confirmar
   cancelarPlacar: (el) => {
     if (el.dataset.ok !== '1') { el.dataset.ok = '1'; el.textContent = 'Toque de novo para apagar o placar'; el.style.background = '#FDECEC'; return; }
-    const fin = el.dataset.tabela === 'finals_jogos';
+    const fin = el.dataset.tabela === 'finals_jogos', tor = el.dataset.tabela === 'torneio_jogos';
     comTrava('', async () => {
-      const r = await sb.from(el.dataset.tabela).update(fin ? { sets: null } : { sets: null, wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error;
-      location.hash = fin ? '#/finals' : '#/';
+      const r = await sb.from(el.dataset.tabela).update(fin || tor ? { sets: null } : { sets: null, wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error;
+      location.hash = tor ? '#/torneio/' + TORNEIO : fin ? '#/finals' : '#/';
     }, 'Placar cancelado. O jogo voltou a ficar pendente.');
   },
   apagarAviso: (el) => comTrava('', async () => { const r = await sb.from('avisos').delete().eq('id', el.dataset.id); if (r.error) throw r.error; }, 'Aviso apagado.'),
@@ -2385,25 +2573,46 @@ const FORMS = {
     r = await sb.from('config').insert({ chave: 'desafio_' + ano, valor: { qtd, img, titulo: f.titulo.value.trim() || null } }); if (r.error) throw r.error;
   }, 'Desafio salvo.'),
   torInscrever: async (f) => {
-    const msg = document.getElementById('tor-msg'), t = f.querySelector('input[name=tam]:checked'), outro = f.outro.value.trim();
+    const msg = document.getElementById('tor-msg'), cam = torneioCfg().camisetas !== false, t = f.querySelector('input[name=tam]:checked'), outro = cam ? f.outro.value.trim() : '';
     const classe = (f.querySelector('input[name=classe]:checked') || {}).value;
-    if (!classe) { msg.className = 'erro'; msg.textContent = 'Escolha a classe.'; return; }
-    if (!t && !outro) { msg.className = 'erro'; msg.textContent = 'Escolha o tamanho da camiseta.'; return; }
-    const [camiseta, tamanho] = outro ? ['outro', null] : t.value.split(':');
+    if (!classe) { msg.className = 'erro'; msg.textContent = 'Escolha a categoria.'; return; }
+    if (cam && !t && !outro) { msg.className = 'erro'; msg.textContent = 'Escolha o tamanho da camiseta.'; return; }
+    const [camiseta, tamanho] = !cam ? [null, null] : outro ? ['outro', null] : t.value.split(':');
     const extras = {};
     f.querySelectorAll('input[name^="x-"]').forEach((i) => { const k = i.name.slice(2), v = i.value.trim(); if (!v) return; if (k === 'outro') extras.outro = v; else { const n = Math.floor(Number(v)); if (n > 0) extras[k] = Math.min(n, 10); } });
     const { error } = await sb.rpc('inscrever_torneio', { p_torneio: TORNEIO, p_classe: classe, p_camiseta: camiseta, p_tamanho: tamanho, p_outro: outro || null, p_extras: extras });
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
-    S.torEditar = false; await carregar(); render(); toast('Inscrição feita! Agora é só pagar e mandar o comprovante.');
+    S.torEditar = false; await carregar(); render(); toast(Number(torneioCfg().valor) ? 'Inscrição feita! Agora é só pagar e mandar o comprovante.' : 'Inscrição feita!');
   },
-  torConfig: (f) => comTrava('', async () => {
-    const classes = ['A', 'B', 'C'].filter((c) => f['cl' + c].checked);
-    if (!classes.length) throw new Error('Marque pelo menos uma classe.');
+  torNovo: (f) => comTrava('', async () => {
+    const nome = f.nome.value.trim(); if (nome.length < 3) throw new Error('Dê um nome ao torneio.');
+    const id = (ascii(nome).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'torneio') + '-' + Date.now().toString(36).slice(-4);
+    await salvarTorneio({ nome, criado_em: new Date().toISOString(), publicado: false }, id);
+    TORNEIO = id; S.admin.torNovo = false; S.admin.torVer = false;
+  }, 'Torneio criado como rascunho. Configure e toque em "Publicar torneio".'),
+  torGrupos: (f) => comTrava('Montando os grupos…', () => montarGruposTorneio(f.dataset.v, Number(f.n.value)), 'Grupos e jogos montados! Já aparecem na tela do torneio.'),
+  torConfig: (f) => comTrava('Salvando…', async () => {
+    const classes = [...new Set(f.classes.value.split(',').map((x) => x.trim().replace(/\s+/g, ' ')).filter(Boolean))];
+    if (!classes.length) throw new Error('Escreva pelo menos uma categoria.');
+    if (classes.length > 8 || classes.some((c) => c.length > 20)) throw new Error('Até 8 categorias, cada uma com até 20 letras.');
+    const cfg = torneioCfg(), travadas = Object.keys(cfg.fases || {}).filter((c) => !classes.includes(c));
+    if (travadas.length) throw new Error('A categoria ' + travadas.join(', ') + ' já tem jogos: apague os jogos antes de tirar a categoria.');
     const v = String(f.valor.value).trim(), valor = v ? Number(v.replace(/\./g, '').replace(',', '.')) : null;
     if (v && !(valor > 0)) throw new Error('Valor inválido.');
     const vc = String(f.valorCam.value).trim(), valor_camiseta = vc ? Number(vc.replace(/\./g, '').replace(',', '.')) : null;
     if (vc && !(valor_camiseta > 0)) throw new Error('Valor da camiseta inválido.');
-    await salvarTorneio({ nome: f.nome.value.trim() || TORNEIO_PADRAO.nome, classes, valor, valor_camiseta, data: f.data.value.trim(), pix_chave: f.pix.value.trim(), pix_nome: f.pixNome.value.trim(), zap: soDigitos(f.zap.value), zap_nome: f.zapNome.value.trim(), obs: f.obs.value.trim() });
+    const insc_ini = f.inscIni.value || '', insc_fim = f.inscFim.value || '';
+    if (insc_ini && insc_fim && insc_fim < insc_ini) throw new Error('A data de fechar as inscrições é antes da de abrir.');
+    let foto_url = cfg.foto_url || '';
+    const arq = f.foto.files[0];
+    if (arq) {
+      if (!/^image\//.test(arq.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(arq.name)) throw new Error('Escolha uma imagem pra foto do torneio.');
+      if (arq.size > 20 * 1024 * 1024) throw new Error('Imagem maior que 20 MB.');
+      const blob = await prepararImagem(arq, 800, true), caminho = `torneio-${TORNEIO}-${Date.now()}.jpg`;
+      const up = await sb.storage.from('avisos').upload(caminho, blob, { contentType: 'image/jpeg' }); if (up.error) throw up.error;
+      foto_url = sb.storage.from('avisos').getPublicUrl(caminho).data.publicUrl;
+    }
+    await salvarTorneio({ nome: f.nome.value.trim() || cfg.nome, classes, valor, valor_camiseta, data: f.data.value.trim(), insc_ini, insc_fim, aberto: f.aberto.checked, camisetas: f.camisetas.checked, foto_url, pix_chave: f.pix.value.trim(), pix_nome: f.pixNome.value.trim(), zap: soDigitos(f.zap.value), zap_nome: f.zapNome.value.trim(), obs: f.obs.value.trim() });
   }, 'Torneio salvo.'),
   cobNova: (f) => comTrava('', async () => {
     const valor = Number(String(f.valor.value).replace(/\./g, '').replace(',', '.'));
@@ -2434,15 +2643,15 @@ const FORMS = {
   placar: async (f) => {
     const { sets, r, erro } = lerSets(f); const msg = document.getElementById('placar-msg');
     if (erro) { msg.className = 'erro'; msg.textContent = erro; return; }
-    const fin = f.dataset.tabela === 'finals_jogos';
-    const { error } = await sb.from(f.dataset.tabela).update(fin ? { sets } : { sets, wo_de: null }).eq('id', f.dataset.id);
+    const fin = f.dataset.tabela === 'finals_jogos', tor = f.dataset.tabela === 'torneio_jogos';
+    const { error } = await sb.from(f.dataset.tabela).update(fin || tor ? { sets } : { sets, wo_de: null }).eq('id', f.dataset.id);
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
-    const g = S.jogos.concat(S.fjogos).find((x) => x.id === f.dataset.id) || {};
-    const ven = r.aVenceu ? g.jogador_a : g.jogador_b;
+    const g = S.jogos.concat(S.fjogos, S.tjogos || []).find((x) => x.id === f.dataset.id) || {};
+    const ven = tor ? (r.aVenceu ? g.dupla_a : g.dupla_b) || [] : [r.aVenceu ? g.jogador_a : g.jogador_b];
     await carregar();
-    if (ven === S.eu.id) fogos();
-    toast('Placar gravado. O adversário já vê no app.');
-    location.hash = fin ? '#/finals' : '#/';
+    if (ven.includes(S.eu.id)) fogos();
+    toast(tor ? 'Placar gravado. Os outros jogadores já veem no app.' : 'Placar gravado. O adversário já vê no app.');
+    location.hash = tor ? '#/torneio/' + g.torneio : fin ? '#/finals' : '#/';
   },
   perfil: async (f) => {
     const sw = (k) => f.querySelector(`[data-v="${k}"]`).getAttribute('aria-checked') === 'true';
@@ -2768,7 +2977,7 @@ async function render() {
   const [rota, arg] = h.split('/');
   if (rota !== 'jogos' && rota !== 'placar' && rota !== 'wo') S.verMeses = false;
   clearInterval(timerCarrossel);
-  if (foraDoRanking() && !ROTAS_FORA.includes(rota || '')) { history.replaceState(null, '', location.pathname + location.search); hashAnterior = ''; return render(); }
+  if ((foraDoRanking() && !ROTAS_FORA.includes(rota || '')) || (soTorneio() && !ROTAS_TORNEIO.includes(rota || ''))) { history.replaceState(null, '', location.pathname + location.search); hashAnterior = ''; return render(); }
   let html;
   try {
     html = rota === 'ranking' ? telaRanking()
@@ -2776,7 +2985,9 @@ async function render() {
       : rota === 'placar' ? await telaPlacar(arg)
       : rota === 'fplacar' ? await telaPlacar(arg, true)
       : rota === 'torneios' ? telaTorneios()
-      : rota === 'duplas' ? telaDuplas()
+      : rota === 'duplas' ? telaTorneio(TORNEIO_10)
+      : rota === 'torneio' ? telaTorneio(arg)
+      : rota === 'tplacar' ? telaPlacarTorneio(arg)
       : rota === 'finals' ? telaFinals()
       : rota === 'wo' ? await telaWo(arg)
       : rota === 'pagamentos' ? telaPagamentos()
@@ -2823,10 +3034,13 @@ function telaEspera() {
 function telaInscricao(email, erro) {
   $app.innerHTML = `<header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">INSCRIÇÃO</p></header>
   <form class="conteudo" style="max-width:420px;width:100%;margin:0 auto">
-    <p class="dica">Acesso criado para <b>${esc(email)}</b>. Agora seus dados pra entrar no ranking. A coordenação define seu grupo e posição.</p>
-    <label class="rot">Nome no ranking<input class="campo" name="nome" required maxlength="40" autocomplete="name"></label>
+    <p class="dica">Acesso criado para <b>${esc(email)}</b>. Agora seus dados.</p>
+    <fieldset class="grupo-op"><legend class="rot">O que você quer?</legend>
+      <label class="op-insc"><input type="radio" name="tipo" value="ranking" checked><span><b>Entrar no ranking</b><small>A coordenação define seu grupo e sua posição.</small></span></label>
+      <label class="op-insc"><input type="radio" name="tipo" value="morador"><span><b>Só jogar torneio (morador)</b><small>Pra quem mora no Portal do Lago e não está no ranking. Entra na hora.</small></span></label></fieldset>
+    <label class="rot">Seu nome<input class="campo" name="nome" required maxlength="40" autocomplete="name"></label>
     <label class="rot">Celular (WhatsApp)<input class="campo" name="celular" type="tel" inputmode="tel" placeholder="(19) 9____-____" autocomplete="tel"></label>
-    <label class="rot">Nascimento (opcional)<input class="campo" name="nascimento" type="date"></label>
+    <label class="rot nasc">Nascimento (opcional)<input class="campo" name="nascimento" type="date"></label>
     <button class="btn btn-roxo" type="submit">Enviar inscrição</button>
     <button class="btn btn-linha" type="button" data-outro>Sair</button>
     ${typeof novo !== 'undefined' && novo ? '<p class="dica" style="font-size:12px">Ao criar o acesso, você concorda com os Termos de uso e declara ter lido a Política de privacidade.</p>' : ''}
@@ -2835,9 +3049,14 @@ function telaInscricao(email, erro) {
   </form>`;
   const f = $app.querySelector('form');
   f.querySelector('[data-outro]').onclick = async () => { await sb.auth.signOut(); telaLogin('entrar'); };
+  // morador: celular obrigatório e sem data de nascimento
+  const tipo = () => { const m = (f.querySelector('input[name=tipo]:checked') || {}).value === 'morador'; f.celular.required = m; f.querySelector('.nasc').style.display = m ? 'none' : ''; };
+  f.querySelectorAll('input[name=tipo]').forEach((i) => { i.onchange = tipo; });
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
-    const { data: novoId, error } = await sb.rpc('cadastrar_me', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim(), p_nascimento: f.nascimento.value || null });
+    const morador = (f.querySelector('input[name=tipo]:checked') || {}).value === 'morador';
+    const { data: novoId, error } = morador ? await sb.rpc('cadastrar_morador', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim() })
+      : await sb.rpc('cadastrar_me', { p_nome: f.nome.value.trim(), p_celular: f.celular.value.trim(), p_nascimento: f.nascimento.value || null });
     if (error) return telaInscricao(email, error.message);
     // quem acabou de criar o acesso já escolheu a própria senha: não pede de novo no primeiro acesso
     let propria = false; try { propria = sessionStorage.getItem('senha-propria') === '1'; } catch (e) { /* sem armazenamento */ }
@@ -2917,6 +3136,7 @@ async function entrar() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'finals_resposta' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'temporada_resposta' }, recarregarDepois)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'torneio_inscricao' }, recarregarDepois)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneio_jogos' }, recarregarDepois)
     .subscribe();
   render();
   // no primeiro acesso, os avisos (tour, parabéns, cobrança, Finals...) esperam a pessoa criar a senha

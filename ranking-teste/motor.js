@@ -173,3 +173,39 @@ export function bonusParcial(ids8, semis, final) {
 }
 // bônus por jogador depois da final
 export function bonusFinals(ids8, semis, final) { return bonusParcial(ids8, semis, final); }
+
+// ---------- torneios de duplas: grupos e mata-mata (pontos separados do ranking) ----------
+// chave de uma dupla: os dois ids em ordem (a mesma dupla sempre dá a mesma chave)
+export const chaveDupla = (d) => [...d].sort().join('|');
+// distribui as duplas nos grupos em "serpentina" na ordem dada (cabeças de chave primeiro):
+// 4 grupos → 1, 2, 3, 4, 4, 3, 2, 1, 1, 2…  Assim cada grupo fica com um cabeça e o nível equilibrado.
+export function montarGrupos(duplas, nGrupos) {
+  if (![1, 2, 4].includes(nGrupos)) throw new Error('Escolha 1, 2 ou 4 grupos.');
+  if (duplas.some((d) => d.length !== 2)) throw new Error('Tem dupla incompleta (número ímpar de inscritos). Tire alguém ou sorteie de novo.');
+  if (duplas.length < nGrupos * 2) throw new Error('Precisa de pelo menos ' + nGrupos * 2 + ' duplas para ' + nGrupos + (nGrupos > 1 ? ' grupos.' : ' grupo.'));
+  if (nGrupos === 1 && duplas.length > 8) throw new Error('Um grupo só com mais de 8 duplas fica com jogos demais. Use 2 ou 4 grupos.');
+  const grupos = Array.from({ length: nGrupos }, () => []);
+  duplas.forEach((d, i) => { const volta = Math.floor(i / nGrupos), pos = i % nGrupos; grupos[volta % 2 ? nGrupos - 1 - pos : pos].push(d); });
+  return grupos;
+}
+// 1º jogo do mata-mata a partir das classificações dos grupos (listas de chaves de dupla, da 1ª à última)
+// 1 grupo: semifinal 1º x 4º e 2º x 3º (com menos de 4 duplas, final 1º x 2º)
+// 2 grupos: semifinal cruzada 1º G1 x 2º G2 e 1º G2 x 2º G1
+// 4 grupos: quartas 1º G1 x 2º G2, 1º G3 x 2º G4, 1º G2 x 2º G1, 1º G4 x 2º G3
+export function primeiraFase(tabs) {
+  if (tabs.length === 1) {
+    const t = tabs[0];
+    if (t.length < 4) return { fase: 'final', jogos: [[t[0], t[1]]] };
+    return { fase: 'semi', jogos: [[t[0], t[3]], [t[1], t[2]]] };
+  }
+  if (tabs.length === 2) return { fase: 'semi', jogos: [[tabs[0][0], tabs[1][1]], [tabs[1][0], tabs[0][1]]] };
+  if (tabs.length === 4) return { fase: 'quartas', jogos: [[tabs[0][0], tabs[1][1]], [tabs[2][0], tabs[3][1]], [tabs[1][0], tabs[0][1]], [tabs[3][0], tabs[2][1]]] };
+  throw new Error('Mata-mata só com 1, 2 ou 4 grupos.');
+}
+export const PROXIMA = { quartas: 'semi', semi: 'final' };
+// próxima fase: vencedor do jogo 1 x vencedor do jogo 2, 3 x 4…
+export function proximaFase(vencedores) {
+  const jogos = [];
+  for (let i = 0; i + 1 < vencedores.length; i += 2) jogos.push([vencedores[i], vencedores[i + 1]]);
+  return jogos;
+}
