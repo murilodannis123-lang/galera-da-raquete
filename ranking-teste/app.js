@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261104212150';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104212150';
-import { REGULAMENTO } from './regulamento.js?v=20261104212150';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104212150';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104212150';
+import * as M from './motor.js?v=20261104213322';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104213322';
+import { REGULAMENTO } from './regulamento.js?v=20261104213322';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104213322';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104213322';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1100,7 +1100,7 @@ function finalsAgora() {
 // Jogos dos torneios ficam em torneio_jogos: não somam nada no ranking, que segue normal enquanto tem torneio.
 const TORNEIO_10 = 'duplas-10';
 const BASE_TORNEIO = { classes: ['A', 'B', 'C'], inscricoes: false, publicado: false, aberto: false, camisetas: true, valor: null, valor_camiseta: null, pix_chave: '19997635743', pix_nome: 'Daniella Gesualdo', zap: '19996194094', zap_nome: 'Daniella', data: '', obs: '', insc_ini: '', insc_fim: '', foto_url: '' };
-const TORNEIO_PADRAO = { ...BASE_TORNEIO, nome: '10º Torneio de Duplas', publicado: true, aberto: true, foto_url: 'icones/torneio-10.svg', criado_em: '2026-11-01' };
+const TORNEIO_PADRAO = { ...BASE_TORNEIO, nome: '10º Torneio de Duplas', publicado: true, aberto: true, foto_url: 'icones/torneio-10.svg?v=2', criado_em: '2026-11-01' };
 let TORNEIO = TORNEIO_10;   // o torneio aberto na tela agora (do jogador ou do Admin)
 const torneioCfg = (id = TORNEIO) => ({ ...(id === TORNEIO_10 ? TORNEIO_PADRAO : { ...BASE_TORNEIO, nome: 'Torneio' }), ...((S.config || {})['torneio_' + id] || {}) });
 function torneiosIds() {
