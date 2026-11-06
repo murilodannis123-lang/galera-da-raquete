@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261105214556';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261105214556';
-import { REGULAMENTO } from './regulamento.js?v=20261105214556';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261105214556';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261105214556';
+import * as M from './motor.js?v=20261106133644';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261106133644';
+import { REGULAMENTO } from './regulamento.js?v=20261106133644';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261106133644';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261106133644';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2699,6 +2699,7 @@ const FORMS = {
     const { error } = await sb.auth.updateUser({ password: f.senha.value });
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
     await sb.from('jogadores').update({ senha_trocada: true }).eq('id', S.eu.id);
+    S.recuperando = false;
     await carregar(); toast('Senha trocada.'); location.hash = '#/'; render();
     if (S.avisosDepoisDaSenha) { S.avisosDepoisDaSenha = false; avisosDeEntrada(); }
   },
@@ -2977,6 +2978,7 @@ function telaSoCoordenacao() {
 async function render() {
   if (!S.eu) return;
   if (TESTE && !S.eu.admin) { document.body.classList.remove('noite'); $app.innerHTML = telaSoCoordenacao(); return; }
+  if (S.recuperando) { document.body.classList.remove('noite'); $app.innerHTML = telaSenha('recuperar'); return; }
   if (S.eu.pendente) { document.body.classList.remove('noite'); $app.innerHTML = telaEspera(); return; }
   // primeiro acesso: todo mundo troca a senha inicial antes de usar o app (quem entrou com uma senha própria passa direto)
   if (!S.eu.senha_trocada) {
@@ -3079,7 +3081,44 @@ function telaInscricao(email, erro) {
 
 // ---------- login por e-mail e senha ----------
 const SENHA_INICIAL = '123456';
+const LINK_RECUPERAR = 'https://galeradaraquete.github.io/ranking/';
+const zapCoordSenha = (t) => `<a class="btn btn-linha" href="${esc(zap('5519997781210', 'Olá! Esqueci minha senha do app do ranking.'))}" target="_blank" rel="noopener">${t || 'Falar com a coordenação no WhatsApp'}</a>`;
+// esqueci a senha: e-mail cadastrado recebe o link pra criar senha nova; não cadastrado vai pra criar acesso
+function telaEsqueci(email, erro, fase) {
+  document.body.classList.remove('noite');
+  const corpo = fase === 'enviado' ? `<b class="cond" style="font-size:22px">Confira seu e-mail</b>
+      <p style="line-height:1.5">Mandamos um link pra <b>${esc(email)}</b>. Abra o e-mail, toque no link e crie a sua senha nova. Se não achar, olhe no <b>spam</b> ou em "Promoções".</p>
+      <button class="btn btn-roxo" type="button" data-ir="entrar">Voltar pra entrar</button>
+      <p class="dica" style="text-align:center">Não chegou em alguns minutos?</p>${zapCoordSenha()}`
+    : fase === 'nao' ? `<b class="cond" style="font-size:22px">E-mail não cadastrado</b>
+      <p style="line-height:1.5"><b>${esc(email)}</b> não tem acesso no app. Se você nunca entrou, crie um acesso novo. Se já entrou com outro e-mail, tente com ele.</p>
+      <button class="btn btn-roxo" type="button" data-ir="inscrever">Criar novo acesso</button>
+      <button class="btn btn-linha" type="button" data-ir="esqueci">Tentar outro e-mail</button>`
+    : fase === 'falhou' ? `<b class="cond" style="font-size:22px">Não deu pra mandar o e-mail</b>
+      <p style="line-height:1.5">${esc(erro || 'Tente de novo daqui a pouco.')}</p>${zapCoordSenha()}<button class="btn btn-linha" type="button" data-ir="entrar">Voltar pra entrar</button>`
+    : `<p class="dica">Digite o e-mail que você usa pra entrar no app. Se ele estiver cadastrado, mandamos um link pra você criar uma senha nova.</p>
+      <label class="rot">E-mail<input class="campo" name="email" type="email" autocomplete="email" required value="${esc(email || '')}"></label>
+      <button class="btn btn-roxo" type="submit">Continuar</button>
+      <button class="btn btn-linha" type="button" data-ir="entrar">Voltar</button>
+      ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}`;
+  $app.innerHTML = `<header class="topo" style="padding-bottom:28px"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" style="width:120px;height:120px;margin-top:12px"><h1 class="titulo">Portal do Lago Open de Tênis</h1><p class="sub-ranking">ESQUECI A SENHA</p></header>
+  <form class="conteudo" style="max-width:420px;width:100%;margin:0 auto">${corpo}</form>`;
+  const f = $app.querySelector('form');
+  f.querySelectorAll('[data-ir]').forEach((b) => { b.onclick = () => (b.dataset.ir === 'esqueci' ? telaEsqueci('') : telaLogin(b.dataset.ir, email)); });
+  f.onsubmit = async (ev) => {
+    ev.preventDefault(); if (!f.email) return;
+    const b = f.querySelector('[type=submit]'); b.disabled = true; b.textContent = 'Conferindo…';
+    const em = f.email.value.trim().toLowerCase();
+    const { data: tem, error } = await sb.rpc('email_cadastrado', { p_email: em });
+    if (error) return telaEsqueci(em, 'Não consegui conferir o e-mail agora. Fale com a coordenação.', 'falhou');
+    if (!tem) return telaEsqueci(em, '', 'nao');
+    const r = await sb.auth.resetPasswordForEmail(em, { redirectTo: LINK_RECUPERAR });
+    if (r.error) return telaEsqueci(em, /rate|limit|seconds/i.test(r.error.message) ? 'Já mandamos um link há pouco. Espere um minuto e tente de novo, ou fale com a coordenação.' : 'O envio de e-mail do app ainda não está funcionando. Fale com a coordenação, que ela volta a sua senha pra ' + SENHA_INICIAL + '.', 'falhou');
+    telaEsqueci(em, '', 'enviado');
+  };
+}
 function telaLogin(etapa, email, erro) {
+  if (etapa === 'esqueci') return telaEsqueci(email, erro);
   document.body.classList.remove('noite');
   const novo = etapa === 'inscrever';
   $app.innerHTML = `
@@ -3093,13 +3132,13 @@ function telaLogin(etapa, email, erro) {
     ${novo ? '<button class="btn btn-linha" type="button" data-ir="entrar">Já tenho acesso</button>'
       : `<p class="dica">Já está no ranking? Entre com o seu e-mail e a senha inicial que a coordenação passou no grupo; no primeiro acesso o app pede pra você criar a sua senha. Você fica conectado.</p>
       <button class="btn btn-linha" type="button" data-ir="inscrever">Primeira vez? Fazer inscrição</button>
-      <a class="btn btn-linha" style="height:40px;font-size:13px" href="${esc(zap('5519997781210', 'Olá! Esqueci minha senha do app do ranking.'))}" target="_blank" rel="noopener">Esqueci a senha</a>`}
+      <button class="btn btn-linha" style="height:40px;font-size:13px" type="button" data-ir="esqueci">Esqueci a senha</button>`}
     ${typeof novo !== 'undefined' && novo ? '<p class="dica" style="font-size:12px">Ao criar o acesso, você concorda com os Termos de uso e declara ter lido a Política de privacidade.</p>' : ''}
     <p class="dica" style="text-align:center;font-size:13px"><button class="link" type="button" data-texto="privacidade">Política de privacidade</button> · <button class="link" type="button" data-texto="termos">Termos de uso</button></p>
     ${erro ? `<p class="erro" role="alert">${esc(erro)}</p>` : ''}
   </form>`;
   const f = $app.querySelector('form');
-  f.querySelector('[data-ir]').onclick = (e) => telaLogin(e.currentTarget.dataset.ir, f.email.value);
+  f.querySelectorAll('[data-ir]').forEach((b) => { b.onclick = (e) => telaLogin(e.currentTarget.dataset.ir, f.email.value); });
   f.onsubmit = async (ev) => {
     ev.preventDefault(); const b = f.querySelector('[type=submit]'); b.disabled = true;
     const em = f.email.value.trim().toLowerCase(), senha = f.senha.value;
@@ -3119,6 +3158,14 @@ function telaLogin(etapa, email, erro) {
   };
 }
 function telaSenha(obrigatorio) {
+  if (obrigatorio === 'recuperar') return `<header class="topo" style="padding-bottom:20px"><h1 class="titulo" style="margin-top:20px">Crie sua senha nova</h1><p class="sub-ranking">RECUPERAR SENHA</p></header>
+  <form class="conteudo" data-form="senha" style="max-width:420px;width:100%;margin:0 auto">
+    <p class="dica">Pronto, ${esc((S.eu && S.eu.nome || '').split(' ')[0] || 'você')}! Agora escolha a sua senha nova.</p>
+    <label class="rot">Nova senha (mínimo 6)<input class="campo" name="senha" type="password" autocomplete="new-password" minlength="6" required></label>
+    <label class="rot">Repita a nova senha<input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="6" required></label>
+    <button class="btn btn-roxo" type="submit">Salvar senha</button>
+    <p id="senha-msg" role="status"></p>
+  </form>`;
   return (obrigatorio ? `<header class="topo" style="padding-bottom:20px"><h1 class="titulo" style="margin-top:20px">Crie sua senha</h1><p class="sub-ranking">PRIMEIRO ACESSO</p></header>` : voltar('Trocar senha')) + `
   <form class="conteudo" data-form="senha" style="max-width:420px;width:100%;margin:0 auto">
     ${obrigatorio ? `<p class="dica">${S.eu && S.eu.admin ? 'Você é da coordenação. Com a senha inicial, qualquer um que souber seu e-mail entraria como admin.' : 'Por segurança, troque a senha inicial (' + SENHA_INICIAL + ') por uma só sua: com ela, qualquer um que souber seu e-mail entraria na sua conta.'} É só uma vez.</p>` : ''}
@@ -3223,8 +3270,12 @@ async function iniciar() {
   // window.__SB__ = cliente falso usado só nos testes automáticos
   // biblioteca do Supabase servida pelo próprio site (vendor/), sem CDN de terceiros
   if (!window.__SB__ && !window.supabase) await new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'vendor/supabase-2.45.4/supabase.js'; s.onload = ok; s.onerror = () => erro(new Error('Não consegui carregar o app. Confira a internet.')); document.head.appendChild(s); });
+  const doLink = location.hash, recuperar = /type=recovery/.test(doLink), linkRuim = /error_code=/.test(doLink);
   sb = window.__SB__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const { data: { session } } = await sb.auth.getSession();
+  if (recuperar || linkRuim) { history.replaceState(null, '', location.pathname + location.search); hashAnterior = ''; }
+  if (linkRuim && !session) return telaEsqueci('', 'Esse link de recuperação venceu ou já foi usado. Peça outro aqui.');
+  if (recuperar && session) S.recuperando = true;
   if (!session) return telaLogin('entrar');
   try { await entrar(); } catch (e) { console.error(e); telaLogin('entrar', '', 'Erro ao entrar: ' + (e.message || e)); }
 }
