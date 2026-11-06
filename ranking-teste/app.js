@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261104213322';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261104213322';
-import { REGULAMENTO } from './regulamento.js?v=20261104213322';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261104213322';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261104213322';
+import * as M from './motor.js?v=20261105213531';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261105213531';
+import { REGULAMENTO } from './regulamento.js?v=20261105213531';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261105213531';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261105213531';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -131,6 +131,15 @@ function curtir(g) {
     : `<button class="curtir-b${eu ? ' on' : ''}" data-acao="curtir" data-id="${g.id}" aria-pressed="${eu}" aria-label="Curtir a vitória de ${esc((porId(v) || {}).nome)}">${CORACAO} ${eu ? 'Curtiu' : 'Curtir'}${lista.length ? ' · ' + lista.length : ''}</button>`;
   return botao ? `<div class="curtir">${botao}</div>` : '';
 }
+// telefone formatado: (19) 99999-0000
+function celTxt(c) { let d = soDigitos(c); if (d.length > 11 && d.startsWith('55')) d = d.slice(2); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : String(c || '').trim(); }
+// ícone verde de conversa (balão com telefone) pro link do WhatsApp
+const IC_ZAP = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="#25D366"/><path d="M9.2 7.4c.3 0 .5 0 .7.5l.8 1.9c.1.3 0 .5-.1.7l-.6.7c-.1.2-.2.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l1.9.9c.3.1.4.3.4.6 0 .9-.6 1.9-1.6 2.1-.8.2-1.9 0-3.4-.8a10 10 0 0 1-4.1-4.2c-.8-1.6-.7-2.7-.3-3.5.3-.8 1-1.2 1.4-1.2z" fill="#fff"/></svg>';
+function linkZapFoto(j) {
+  if (!j.celular || (S.eu && j.id === S.eu.id)) return '';
+  const l = zap(j.celular, 'Oi, ' + String(j.nome || '').trim().split(/\s+/)[0] + '! Te achei no app do ranking da Galera da Raquete 🎾'); if (!l) return '';
+  return `<a class="zoom-zap" href="${esc(l)}" target="_blank" rel="noopener" aria-label="Chamar ${esc(j.nome)} no WhatsApp: ${esc(celTxt(j.celular))}">${IC_ZAP}<span>${esc(celTxt(j.celular))}</span></a>`;
+}
 // foto grande ao tocar no avatar
 function abrirFoto(id) {
   const j = porId(id); if (!j) return;
@@ -138,12 +147,13 @@ function abrirFoto(id) {
   const d = document.createElement('div');
   d.className = 'zoom'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Foto de ' + j.nome);
   d.innerHTML = `<div class="zoom-c">${j.foto_url ? `<img class="foto-zoom" src="${esc(j.foto_url)}" alt="Foto de ${esc(j.nome)}">` : avatar({ nome: j.nome }, 220)}
-    <b class="cond">${esc(j.nome)}</b><small>${geral[j.id] ? geral[j.id] + 'º lugar · ' : ''}${j.grupo ? 'Grupo ' + esc(j.grupo) : ''}</small></div>
+    <b class="cond">${esc(j.nome)}</b><small>${geral[j.id] ? geral[j.id] + 'º lugar · ' : ''}${j.grupo ? 'Grupo ' + esc(j.grupo) : ''}</small>
+    ${linkZapFoto(j)}</div>
     <button class="zoom-x" aria-label="Fechar">×</button>`;
   const volta = document.activeElement;
   const fechar = () => { d.remove(); document.removeEventListener('keydown', esc1); if (volta && volta.isConnected && volta.focus) volta.focus(); };
   const esc1 = (e) => { if (e.key === 'Escape') fechar(); };
-  d.addEventListener('click', fechar); document.addEventListener('keydown', esc1);
+  d.addEventListener('click', (e) => { if (!e.target.closest('.zoom-zap')) fechar(); }); document.addEventListener('keydown', esc1);
   document.body.appendChild(d); d.querySelector('.zoom-x').focus();
 }
 // e-mail e nascimento não vêm na lista (privacidade): só pelas funções meus_dados / admin_emails
