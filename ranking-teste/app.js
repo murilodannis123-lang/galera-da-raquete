@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261105213531';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261105213531';
-import { REGULAMENTO } from './regulamento.js?v=20261105213531';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261105213531';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261105213531';
+import * as M from './motor.js?v=20261105214249';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261105214249';
+import { REGULAMENTO } from './regulamento.js?v=20261105214249';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261105214249';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261105214249';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1110,7 +1110,7 @@ function finalsAgora() {
 // Jogos dos torneios ficam em torneio_jogos: não somam nada no ranking, que segue normal enquanto tem torneio.
 const TORNEIO_10 = 'duplas-10';
 const BASE_TORNEIO = { classes: ['A', 'B', 'C'], inscricoes: false, publicado: false, aberto: false, camisetas: true, valor: null, valor_camiseta: null, pix_chave: '19997635743', pix_nome: 'Daniella Gesualdo', zap: '19996194094', zap_nome: 'Daniella', data: '', obs: '', insc_ini: '', insc_fim: '', foto_url: '' };
-const TORNEIO_PADRAO = { ...BASE_TORNEIO, nome: '10º Torneio de Duplas', publicado: true, aberto: true, foto_url: 'icones/torneio-10.svg?v=2', criado_em: '2026-11-01' };
+const TORNEIO_PADRAO = { ...BASE_TORNEIO, nome: '10º Torneio de Duplas', publicado: true, aberto: true, foto_url: 'icones/torneio-10.png?v=3', criado_em: '2026-11-01' };
 let TORNEIO = TORNEIO_10;   // o torneio aberto na tela agora (do jogador ou do Admin)
 const torneioCfg = (id = TORNEIO) => ({ ...(id === TORNEIO_10 ? TORNEIO_PADRAO : { ...BASE_TORNEIO, nome: 'Torneio' }), ...((S.config || {})['torneio_' + id] || {}) });
 function torneiosIds() {
@@ -1118,7 +1118,9 @@ function torneiosIds() {
   if (!ids.includes(TORNEIO_10)) ids.push(TORNEIO_10);
   return ids.sort((a, b) => String(torneioCfg(b).criado_em || '').localeCompare(String(torneioCfg(a).criado_em || '')));
 }
-const fotoTorneio = (cfg) => cfg.foto_url || 'icones/logo.png';
+// o logo do 10º em SVG saía torto no iPhone (texto em curva): troca pelo PNG pronto, mesmo se ficou salvo no banco
+const LOGO_10 = 'icones/torneio-10.png?v=3';
+const fotoTorneio = (cfg) => (/^icones\/torneio-10\.svg/.test(cfg.foto_url || '') ? LOGO_10 : cfg.foto_url || 'icones/logo.png');
 const torneioVisivel = (id) => torneioCfg(id).publicado === true || !!(S.eu && S.eu.admin);
 // inscrição aberta = a coordenação abriu e hoje está dentro das datas (quando tiver datas): abre e fecha sozinha
 function torneioAberto(id = TORNEIO) {
@@ -1209,7 +1211,7 @@ function telaTorneio(id) {
   const datasInsc = cfg.insc_ini || cfg.insc_fim ? 'Inscrições ' + (cfg.insc_ini && cfg.insc_fim ? 'de ' + diaMes(cfg.insc_ini) + ' a ' + diaMes(cfg.insc_fim) : cfg.insc_ini ? 'a partir de ' + diaMes(cfg.insc_ini) : 'até ' + diaMes(cfg.insc_fim)) : '';
   const st = situacaoTorneio(TORNEIO);
   const topo = `<section class="card" style="position:relative;overflow:hidden;isolation:isolate;background:var(--noite);color:#fff;border:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 18px">
-      ${cfg.foto_url ? `<img src="${esc(cfg.foto_url)}" alt="Logo do ${esc(cfg.nome)}" style="width:150px;height:150px;border-radius:24px;object-fit:cover">` : `<img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">${TROFEU(56)}`}
+      ${cfg.foto_url ? `<img src="${esc(fotoTorneio(cfg))}" alt="Logo do ${esc(cfg.nome)}" style="width:170px;height:170px;object-fit:contain">` : `<img src="icones/logo.png" alt="" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);opacity:.16;z-index:-1;pointer-events:none">${TROFEU(56)}`}
       <b class="cond" style="font-size:30px;line-height:1.1">${esc(cfg.nome)}</b>
       <span style="font-size:15px;color:rgba(255,255,255,.8)">Portal do Lago Open de Tênis · categorias ${esc(cfg.classes.join(', '))}</span>
       ${cfg.data ? `<span style="font-size:14px;color:#fff">📅 ${esc(cfg.data)}</span>` : ''}
