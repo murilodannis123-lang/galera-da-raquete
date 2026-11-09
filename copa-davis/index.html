@@ -628,11 +628,10 @@ function vRelatorio(){
   })});
   if(!n) h+='<div class="dica">Nenhum resultado ainda.</div>';
   h+='</div>';
-  if(adm()) h+='<div class="card"><h2>Backup</h2><div class="dica">Tudo fica salvo online. Se quiser uma cópia, copie e guarde no seu WhatsApp.</div>'+
+  if(adm()) h+='<div class="card"><h2>Organizador</h2><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
     '<textarea id="bk" class="hide" placeholder="Cole aqui um backup para restaurar"></textarea>'+
-    '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Restaurar</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
-    '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button>'+
-    '<button class="btn s'+(ui.excluir==="ZERAR"?" r":"")+'" data-a="zerar">'+(ui.excluir==="ZERAR"?"Confirmar: zerar tudo":"Zerar campeonato")+'</button></div></div>';
+    '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Colar backup</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
+    '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button>'</div></div>';
   return h;
 }
 
