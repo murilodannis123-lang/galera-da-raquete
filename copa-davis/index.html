@@ -208,7 +208,7 @@ function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.
 var S=(function(){try{var o=JSON.parse(lsGet(KEY));if(valido(o))return o}catch(e){}return novo()})();
 
 var ui={tab:"placar",aberto:null,timeJog:"A",excluir:null,editando:null,login:false};
-var net={sb:null,versao:-1,on:false,salvando:false,pendente:false,papel:null,pin:lsGet(KPIN)};
+var net={sb:null,versao:-1,on:false,rt:false,ultimo:0,salvando:false,pendente:false,papel:null,pin:lsGet(KPIN)};
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove("on")},2600)}
@@ -301,7 +301,7 @@ var LIVRE={tab:1,abrir:1,timeJog:1,login:1,entrar:1,sair:1,backup:1,mostrarBk:1}
 function act(a,d){
   var m;
   if(!LIVRE[a]&&!pode()){toast("Entre com o PIN para alterar");return;}
-  var soAdm={autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
+  var soAdm={recomecar:1,autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
   if(soAdm[a]&&!adm()){toast("Só o organizador faz isso");return;}
   switch(a){
     case "tab": ui.tab=d.v; ui.login=false; window.scrollTo(0,0); render(); return;
@@ -377,6 +377,9 @@ function act(a,d){
     case "restaurar":
       try{var o=JSON.parse($("bk").value); if(!valido(o)) throw 0; S=o; toast("Backup restaurado");}catch(e){toast("Backup inválido");return;}
       break;
+    case "recomecar":
+      if(ui.excluir!=="RECOMECAR"){ui.excluir="RECOMECAR";render();return;}
+      var nv=novo(); S.conf=nv.conf; S.sorteio=null; S.ord=0; ui.excluir=null; toast("Escalação e resultados apagados. Jogadores e coringas mantidos."); break;
     case "zerar":
       if(ui.excluir!=="ZERAR"){ui.excluir="ZERAR";render();return;}
       S=novo(); ui.excluir=null; toast("Campeonato zerado"); break;
@@ -405,7 +408,7 @@ function baixar(forca){
   if(!net.sb) return Promise.resolve();
   return net.sb.from("copa_davis").select("estado,versao").eq("id",1).single().then(function(r){
     if(r.error){net.on=false;status();return;}
-    net.on=true; status(); aplicar(r.data,forca);
+    net.on=true; net.ultimo=Date.now(); status(); aplicar(r.data,forca);
   },function(){net.on=false;status();});
 }
 function save(){
@@ -444,10 +447,15 @@ function iniciar(){
   baixar(true).then(function(){
     if(net.pin) net.sb.rpc("copa_papel",{p_pin:net.pin}).then(function(r){ if(r.data){net.papel=r.data;render();} else {net.pin=null;lsSet(KPIN,null);} });
   });
-  net.sb.channel("copa-davis").on("postgres_changes",{event:"UPDATE",schema:"public",table:"copa_davis"},function(p){aplicar(p.new,false)})
-    .subscribe(function(st){ if(st==="SUBSCRIBED"){net.on=true;status();} });
-  setInterval(function(){baixar(false)},15000);
+  net.sb.channel("copa-davis").on("postgres_changes",{event:"UPDATE",schema:"public",table:"copa_davis"},function(p){net.ultimo=Date.now();aplicar(p.new,false)})
+    .subscribe(function(st){ net.rt=(st==="SUBSCRIBED"); if(net.rt){net.on=true;status();baixar(false);} });
+  setInterval(function(){
+    if(document.hidden) return;
+    if(!net.rt||Date.now()-net.ultimo>30000) baixar(false);
+  },4000);
   document.addEventListener("visibilitychange",function(){if(!document.hidden)baixar(false)});
+  window.addEventListener("online",function(){baixar(false)});
+  window.addEventListener("focus",function(){baixar(false)});
 }
 
 /* ---------- WhatsApp ---------- */
@@ -623,6 +631,7 @@ function vRelatorio(){
   if(adm()) h+='<div class="card"><h2>Backup</h2><div class="dica">Tudo fica salvo online. Se quiser uma cópia, copie e guarde no seu WhatsApp.</div>'+
     '<textarea id="bk" class="hide" placeholder="Cole aqui um backup para restaurar"></textarea>'+
     '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Restaurar</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
+    '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button>'+
     '<button class="btn s'+(ui.excluir==="ZERAR"?" r":"")+'" data-a="zerar">'+(ui.excluir==="ZERAR"?"Confirmar: zerar tudo":"Zerar campeonato")+'</button></div></div>';
   return h;
 }
@@ -648,7 +657,7 @@ function render(){
 document.addEventListener("click",function(e){
   var n=e.target.closest("nav button"); if(n){act("tab",{v:n.dataset.tab});return;}
   var b=e.target.closest("[data-a]"); if(!b||b.tagName==="SELECT"||b.type==="checkbox"||b.tagName==="A") return;
-  if(b.dataset.a!=="del"&&b.dataset.a!=="zerar"&&b.dataset.a!=="coringa") ui.excluir=null;
+  if(["del","zerar","coringa","recomecar"].indexOf(b.dataset.a)<0) ui.excluir=null;
   act(b.dataset.a,b.dataset);
 });
 document.addEventListener("change",function(e){
