@@ -100,6 +100,12 @@ textarea{min-height:110px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#1e1830;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:9;opacity:0;transition:.2s;pointer-events:none;max-width:90%;text-align:center}
 .toast.on{opacity:1}
 .hide{display:none}
+.quadra{border:2px solid #e0b400;background:linear-gradient(180deg,#fffbe8,#fff)}
+.qd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:10px 0 4px;text-align:center;font-weight:800;font-size:15px}
+.qa{color:var(--roxo)}.qb{color:var(--verde)}.qx{color:#b8901f;font-size:20px}
+.crono{font-size:54px;font-weight:900;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em;margin:2px 0 8px;color:#1e1830}
+.crono.quase{color:#c77700}
+.crono.fim{color:#fff;background:var(--erro);border-radius:12px;animation:pisca 1s infinite}
 .picker{margin-top:8px;border-top:1px dashed #d9c27a;padding-top:8px}
 .chips-j{display:flex;flex-wrap:wrap;gap:6px}
 .chip-j{border:2px solid transparent;border-radius:11px;padding:7px 10px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer}
@@ -200,7 +206,7 @@ var NCONF=10, MAX_NORMAL=2, MAX_EXTRA=2, MAX_CORINGAS=2;
 function novo(){
   var conf=[];
   for(var i=0;i<NCONF;i++) conf.push({m:TIPOS.map(function(x){return {t:x.t,lb:x.lb,A:new Array(x.n).fill(null),B:new Array(x.n).fill(null),placar:"",win:null};})});
-  return {v:2,nomes:{A:"Floresta",B:"Portal do Lago"},jog:[],conf:conf,seq:1,ord:0,estrito:true,sorteio:null};
+  return {v:2,inicio:"07:00",dur:12,nomes:{A:"Floresta",B:"Portal do Lago"},jog:[],conf:conf,seq:1,ord:0,estrito:true,sorteio:null};
 }
 function valido(o){return o&&o.v===2&&o.conf&&o.jog}
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -234,6 +240,35 @@ function stats(id,ig){
 }
 function pontos(){var p={A:0,B:0};S.conf.forEach(function(c){c.m.forEach(function(m){if(m.win)p[m.win]++})});return p}
 function confPts(c){var p={A:0,B:0,fim:0};c.m.forEach(function(m){if(m.win){p[m.win]++;p.fim++}});return p}
+
+/* ---------- horário e cronômetro ---------- */
+function durMin(){return +S.dur||12}
+function horario(k){var p=(S.inicio||"07:00").split(":"),t=(+p[0])*60+(+p[1])+k*durMin();return ("0"+Math.floor(t/60)%24).slice(-2)+":"+("0"+t%60).slice(-2)}
+function emQuadra(){for(var k=0;k<NCONF*3;k++){var m=partida(k);if(!m.win&&cheio(m,"A")&&cheio(m,"B"))return k}return -1}
+function restante(m){return m.ini?durMin()*60000-(Date.now()-m.ini):null}
+function fmt(ms){var neg=ms<0;ms=Math.abs(ms);var s=Math.floor(ms/1000);return (neg?"+":"")+Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+function vQuadra(){
+  var k=emQuadra(); if(k<0) return "";
+  var m=partida(k), ci=Math.floor(k/3), r=restante(m);
+  var h='<div class="card quadra"><div class="row"><span class="badge vz">🎾 Em quadra</span><span class="dica sp" style="margin:0 0 0 6px">Confronto '+(ci+1)+' · '+m.lb+' · previsto '+horario(k)+'</span></div>'+
+    '<div class="qd"><div class="qa">'+esc(m.A.map(nome).join(" / "))+'</div><div class="qx">×</div><div class="qb">'+esc(m.B.map(nome).join(" / "))+'</div></div>'+
+    '<div class="crono'+(r!==null&&r<=0?" fim":r!==null&&r<120000?" quase":"")+'" data-crono="'+k+'">'+(r===null?fmt(durMin()*60000):r<=0?"TEMPO!":fmt(r))+'</div>';
+  if(pode()){
+    h+='<div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">'+(m.ini?'<button class="btn s" data-a="crono0" data-c="'+ci+'" data-m="'+(k%3)+'">↺ Zerar tempo</button>':'<button class="btn v" data-a="crono" data-c="'+ci+'" data-m="'+(k%3)+'">▶ Iniciar '+durMin()+' min</button>')+'</div>'+
+      '<div class="res" style="margin-top:8px"><input type="text" placeholder="Placar (ex: 10-7)" value="'+esc(m.placar)+'" data-placar="'+ci+','+(k%3)+'">'+
+      '<button class="wbtn a" data-a="win" data-c="'+ci+'" data-m="'+(k%3)+'" data-t="A">'+esc(time("A"))+'</button><button class="wbtn b" data-a="win" data-c="'+ci+'" data-m="'+(k%3)+'" data-t="B">'+esc(time("B"))+'</button></div>';
+  }
+  var atraso=Math.round((Date.now()-hojeMin(horario(k)))/60000);
+  if(atraso>2&&atraso<180&&!m.ini) h+='<div class="dica" style="text-align:center">⏱ '+atraso+' min atrasado em relação ao previsto</div>';
+  return h+'</div>';
+}
+function hojeMin(hhmm){var d=new Date(),p=hhmm.split(":");d.setHours(+p[0],+p[1],0,0);return d.getTime()}
+setInterval(function(){
+  var el=document.querySelector("[data-crono]"); if(!el) return;
+  var m=partida(+el.dataset.crono), r=restante(m); if(r===null) return;
+  var txt=r<=0?"TEMPO!":fmt(r); if(el.textContent!==txt){el.textContent=txt; el.classList.toggle("fim",r<=0); el.classList.toggle("quase",r>0&&r<120000);
+    if(r<=0&&!el.dataset.avisou){el.dataset.avisou=1; try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}}
+},500);
 
 /* ---------- vez de quem ---------- */
 function cheio(m,t){return m[t].every(Boolean)}
@@ -339,6 +374,8 @@ function act(a,d){
       var f=autoTudo(); toast(f?f+" vaga(s) sem jogador disponível":"Escalação completa"); break;
     case "limparConf":
       S.conf[d.c].m.forEach(function(mm){if(mm.win)return;mm.A=mm.A.map(function(){return null});mm.B=mm.B.map(function(){return null})}); break;
+    case "crono": m=S.conf[d.c].m[d.m]; m.ini=Date.now(); toast("⏱ Valendo! "+durMin()+" minutos"); break;
+    case "crono0": m=S.conf[d.c].m[d.m]; delete m.ini; break;
     case "win":
       m=S.conf[d.c].m[d.m]; if(!cheio(m,"A")||!cheio(m,"B")){toast("Escalação incompleta");return;}
       m.win=(m.win===d.t?null:d.t); break;
@@ -481,14 +518,14 @@ function vLogin(){
     '<div class="row"><input type="password" inputmode="numeric" id="pin" placeholder="PIN"><button class="btn p" data-a="entrar">Entrar</button></div></div>';
 }
 function vPlacar(){
-  var h='<div class="card"><div class="row"><h2 class="sp" style="margin:0">Confrontos</h2><a class="btn w s" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(textoWhats())+'">Enviar no WhatsApp</a></div></div>';
+  var h=vQuadra()+'<div class="card"><div class="row"><h2 class="sp" style="margin:0">Confrontos</h2><a class="btn w s" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(textoWhats())+'">Enviar no WhatsApp</a></div></div>';
   S.conf.forEach(function(c,ci){
     var cp=confPts(c), esc3=c.m.every(function(m){return cheio(m,"A")&&cheio(m,"B")});
     var st=cp.fim===3?'<span class="badge fim">Encerrado</span>':cp.fim?'<span class="badge lib">Em jogo</span>':esc3?'<span class="badge lib">Escalado</span>':'<span class="badge">Escalando</span>';
     h+='<div class="card"><div class="conf-h"><span class="tt">Confronto '+(ci+1)+'</span>'+st+'<span class="sp"></span><span class="pl">'+cp.A+' × '+cp.B+'</span></div>';
     c.m.forEach(function(m){
       var w=m.win?' <span class="w">✅ '+esc(time(m.win))+'</span>':'';
-      h+='<div class="mini"><span class="q">'+m.lb+'</span><span>'+esc(m.A.map(nome).join(" / "))+' × '+esc(m.B.map(nome).join(" / "))+(m.placar?' <b>'+esc(m.placar)+'</b>':'')+w+'</span></div>';
+      h+='<div class="mini"><span class="q">'+horario(ci*3+c.m.indexOf(m))+' '+m.lb.replace("Simples ","S").replace("Duplas","D")+'</span><span>'+esc(m.A.map(nome).join(" / "))+' × '+esc(m.B.map(nome).join(" / "))+(m.placar?' <b>'+esc(m.placar)+'</b>':'')+w+'</span></div>';
     });
     h+='</div>';
   });
@@ -543,7 +580,7 @@ function vStatus(){
   return h+'</div>';
 }
 function vConfrontos(){
-  var h=vStatus(), k=atual(), ca=k<0?-1:Math.floor(k/3);
+  var h=vQuadra()+vStatus(), k=atual(), ca=k<0?-1:Math.floor(k/3);
   if(adm()) h+='<div class="card"><div class="row wrap"><b class="sp">Organizador</b><button class="btn s" data-a="autoTudo">Escalar o restante automático</button>'+(S.sorteio&&!S.ord?'<button class="btn s" data-a="resorteio">Refazer sorteio</button>':'')+
     '<label class="dica" style="display:flex;gap:5px;align-items:center;margin:0"><input type="checkbox" data-a="estrito"'+(S.estrito?" checked":"")+'>exigir 1 simples + 1 duplas</label></div></div>';
   var aberto=ui.aberto===null?ca:ui.aberto;
@@ -554,7 +591,7 @@ function vConfrontos(){
     if(ab){
       c.m.forEach(function(m,mi){
         var kk=ci*3+mi, f=primeiro(kk);
-        h+='<div class="jogo'+(kk===k?" atual":"")+'"><div class="lb">'+m.lb+(f?' <span class="badge">1º '+esc(time(f))+'</span>':'')+(m.win?' <span class="badge fim">✅ '+esc(time(m.win))+'</span>':'')+'</div><div class="lados">';
+        h+='<div class="jogo'+(kk===k?" atual":"")+'"><div class="lb">'+horario(kk)+' · '+m.lb+(f?' <span class="badge">1º '+esc(time(f))+'</span>':'')+(m.win?' <span class="badge fim">✅ '+esc(time(m.win))+'</span>':'')+'</div><div class="lados">';
         ["A","B"].forEach(function(t){
           h+='<div class="lado '+t.toLowerCase()+'"><div class="tn">'+esc(time(t))+'</div>';
           m[t].forEach(function(sl,pi){
@@ -570,7 +607,7 @@ function vConfrontos(){
         h+='</div>';
         if(kk===k) h+=vPicker(ci,mi);
         if(cheio(m,"A")&&cheio(m,"B")){
-          if(pode()) h+='<div class="res"><input type="text" placeholder="Placar (ex: 6/4)" value="'+esc(m.placar)+'" data-placar="'+ci+','+mi+'">'+
+          if(pode()) h+='<div class="res"><input type="text" placeholder="Placar (ex: 10-7)" value="'+esc(m.placar)+'" data-placar="'+ci+','+mi+'">'+
             '<button class="wbtn a'+(m.win==="A"?" on":"")+'" data-a="win" data-c="'+ci+'" data-m="'+mi+'" data-t="A">'+esc(time("A"))+'</button>'+
             '<button class="wbtn b'+(m.win==="B"?" on":"")+'" data-a="win" data-c="'+ci+'" data-m="'+mi+'" data-t="B">'+esc(time("B"))+'</button></div>';
           else if(m.placar) h+='<div class="dica">Placar: <b>'+esc(m.placar)+'</b></div>';
@@ -628,10 +665,10 @@ function vRelatorio(){
   })});
   if(!n) h+='<div class="dica">Nenhum resultado ainda.</div>';
   h+='</div>';
-  if(adm()) h+='<div class="card"><h2>Organizador</h2><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
+  if(adm()) h+='<div class="card"><h2>Organizador</h2><div class="row" style="margin-bottom:8px"><label class="dica" style="margin:0">Início <input type="text" data-cfg="inicio" value="'+esc(S.inicio||"07:00")+'" style="width:76px"></label><label class="dica" style="margin:0">Minutos por jogo <input type="text" inputmode="numeric" data-cfg="dur" value="'+durMin()+'" style="width:56px"></label></div><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
     '<textarea id="bk" class="hide" placeholder="Cole aqui um backup para restaurar"></textarea>'+
     '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Colar backup</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
-    '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button>'</div></div>';
+    '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button></div></div>';
   return h;
 }
 
@@ -664,6 +701,7 @@ document.addEventListener("change",function(e){
   if(t.dataset.slot){var p=t.dataset.slot.split(",");setSlot(+p[0],+p[1],p[2],+p[3],t.value);return;}
   if(t.dataset.placar){ if(!pode()) return; var q=t.dataset.placar.split(",");S.conf[+q[0]].m[+q[1]].placar=t.value.trim();save();return;}
   if(t.dataset.a==="estrito"){act("estrito",{});return;}
+  if(t.dataset.cfg&&adm()){var vv=t.value.trim(); if(t.dataset.cfg==="dur"){vv=Math.max(5,Math.min(60,parseInt(vv)||12));} else if(!/^\d{1,2}:\d{2}$/.test(vv)){toast("Use HH:MM");render();return;} S[t.dataset.cfg]=vv; save(); render(); return;}
   if(t.dataset.nometime&&adm()){var v=t.value.trim();if(v){S.nomes[t.dataset.nometime]=v;save();render();}return;}
 });
 document.addEventListener("focusout",function(e){
