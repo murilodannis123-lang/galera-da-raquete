@@ -100,6 +100,26 @@ textarea{min-height:110px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#1e1830;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:9;opacity:0;transition:.2s;pointer-events:none;max-width:90%;text-align:center}
 .toast.on{opacity:1}
 .hide{display:none}
+.picker{margin-top:8px;border-top:1px dashed #d9c27a;padding-top:8px}
+.chips-j{display:flex;flex-wrap:wrap;gap:6px}
+.chip-j{border:2px solid transparent;border-radius:11px;padding:7px 10px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer}
+.chip-j small{font-size:10px;font-weight:700;opacity:.75}
+.chip-j.verde{background:#1f8a4c;color:#fff}
+.chip-j.meio{background:#d9f2e2;color:#145c33;border-color:#8fd3a8}
+.chip-j.ouro{border-color:#c9a03a;box-shadow:0 0 0 1px #f3d77e inset}
+.chip-j.verde.ouro{background:linear-gradient(135deg,#1f8a4c 55%,#c9a03a)}
+.chip-j.extra{background:linear-gradient(135deg,#f6dd8a,#c9a03a);color:#3a2a00;border-color:#a8801f}
+.chip-j.off{background:#eceaf0;color:#a9a4b5;text-decoration:line-through;cursor:default;border-color:transparent;box-shadow:none}
+.chip-j:active:not(:disabled){transform:scale(.96)}
+.pill{display:inline-flex;align-items:center;gap:6px;background:#1e1830;color:#fff;border-radius:10px;padding:6px 10px;font-size:14px;font-weight:700;margin-bottom:5px}
+.pill.ouro{background:linear-gradient(135deg,#c9a03a,#8a6a14)}
+.tira{border:0;background:rgba(255,255,255,.2);color:#fff;border-radius:7px;font-size:12px;padding:2px 6px}
+.lg{display:inline-block;font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:2px}
+.lg.verde{background:#1f8a4c;color:#fff}.lg.meio{background:#d9f2e2;color:#145c33}.lg.ouro{background:#f0d27a;color:#3a2a00}.lg.off{background:#eceaf0;color:#a9a4b5;text-decoration:line-through}
+.lin-ouro .nm{color:#8a6a14;font-weight:800}
+.estrela.conf{filter:none;opacity:1;font-size:12px;font-weight:800;background:#f0d27a;border-radius:8px;padding:4px 8px;color:#3a2a00}
+span.estrela{display:inline-block;width:26px;text-align:center}
+.aviso-ouro{background:#fff4c2;border:1px solid #e0b400;border-radius:9px;padding:8px;font-size:12px;margin:8px 0}
 .intro{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 42%,#26304f 0%,#0b0f1d 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff;transition:opacity .45s;cursor:pointer}
 .intro.sai{opacity:0;pointer-events:none}
 .arena{position:relative;width:min(62vw,290px);aspect-ratio:1}
@@ -236,6 +256,7 @@ function erroSlot(ci,mi,t,pi,sl){
   var j=jog(sl.id), m=S.conf[ci].m[mi];
   if(!j) return "Jogador excluído";
   if(j.team!==t) return j.name+" não é do "+time(t);
+  if(j.reserva) return j.name+" está na reserva";
   for(var k=0;k<m[t].length;k++) if(k!==pi&&m[t][k]&&m[t][k].id===sl.id) return j.name+" está duas vezes na mesma partida";
   var s=stats(sl.id,{ci:ci,mi:mi,t:t,pi:pi});
   if(sl.x){
@@ -253,7 +274,7 @@ function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()
 function naConf(c,id){var r=false;c.m.forEach(function(m){["A","B"].forEach(function(t){m[t].forEach(function(sl){if(sl&&sl.id===id)r=true})})});return r}
 function sugerir(ci,mi,t,pi){
   var c=S.conf[ci];
-  var cand=shuffle(S.jog.filter(function(j){return j.team===t})).map(function(j){return {j:j,s:stats(j.id),d:naConf(c,j.id)}})
+  var cand=shuffle(S.jog.filter(function(j){return j.team===t&&!j.reserva})).map(function(j){return {j:j,s:stats(j.id),d:naConf(c,j.id)}})
     .filter(function(o){return !erroSlot(ci,mi,t,pi,{id:o.j.id,x:false})});
   cand.sort(function(a,b){return (a.d-b.d)||(a.s.N-b.s.N)});
   return cand.length?cand[0].j.id:null;
@@ -280,7 +301,7 @@ var LIVRE={tab:1,abrir:1,timeJog:1,login:1,entrar:1,sair:1,backup:1,mostrarBk:1}
 function act(a,d){
   var m;
   if(!LIVRE[a]&&!pode()){toast("Entre com o PIN para alterar");return;}
-  var soAdm={autoTudo:1,limparConf:1,estrito:1,coringa:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
+  var soAdm={autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
   if(soAdm[a]&&!adm()){toast("Só o organizador faz isso");return;}
   switch(a){
     case "tab": ui.tab=d.v; ui.login=false; window.scrollTo(0,0); render(); return;
@@ -295,6 +316,19 @@ function act(a,d){
     case "resorteio":
       if(S.ord){toast("Já tem jogador escalado");return;}
       S.sorteio=null; break;
+    case "pegar":
+      var kp=atual(); if(kp<0) return; var tp=jog(d.id).team;
+      if(!adm()&&cap()!==tp){toast("Só o capitão do "+time(tp));return;}
+      if(vez()!==tp){toast("Não é a vez do "+time(tp));return;}
+      var cip=Math.floor(kp/3), mip=kp%3, mp=partida(kp), pp=-1;
+      for(var q=0;q<mp[tp].length;q++) if(!mp[tp][q]&&podeSlot(cip,mip,tp,q)){pp=q;break}
+      if(pp<0) return;
+      var sn={id:d.id,x:false,o:++S.ord};
+      if(erroSlot(cip,mip,tp,pp,sn)){ sn.x=true; var ex=erroSlot(cip,mip,tp,pp,sn); if(ex){toast(ex);return;} toast("⭐ "+jog(d.id).name+" entra como coringa (extra)"); }
+      mp[tp][pp]=sn; break;
+    case "tirar":
+      if(!podeSlot(+d.c,+d.m,d.t,+d.p)){toast("Não dá pra mudar agora");return;}
+      S.conf[d.c].m[d.m][d.t][+d.p]=null; break;
     case "sugestao":
       var k=atual(); if(k<0) return; var t=cap()||vez(); if(vez()!==t){toast("Não é a vez do "+time(t));return;}
       var ci=Math.floor(k/3), mi=k%3; m=partida(k); var n=0;
@@ -311,9 +345,20 @@ function act(a,d){
     case "estrito": S.estrito=!S.estrito; break;
     case "coringa":
       var j=jog(d.id);
-      if(!j.joker){if(S.jog.filter(function(x){return x.team===j.team&&x.joker}).length>=MAX_CORINGAS){toast("Cada time tem só "+MAX_CORINGAS+" coringas");return;}}
-      else if(stats(j.id).X){toast(j.name+" já usou entrada extra");return;}
-      j.joker=!j.joker; break;
+      if(!adm()&&cap()!==j.team){toast("Só o capitão do "+time(j.team)+" escolhe os coringas");return;}
+      if(j.joker){
+        if(!adm()){toast("Coringa definido não pode ser trocado");return;}
+        if(stats(j.id).X){toast(j.name+" já usou entrada extra");return;}
+        j.joker=false; break;
+      }
+      if(S.jog.filter(function(x){return x.team===j.team&&x.joker}).length>=MAX_CORINGAS){toast("O "+time(j.team)+" já tem os "+MAX_CORINGAS+" coringas");return;}
+      if(ui.excluir!=="C"+j.id){ui.excluir="C"+j.id;render();toast("Toque de novo para confirmar. Não dá pra trocar depois.");return;}
+      ui.excluir=null; j.joker=true; toast("⭐ "+j.name+" é coringa do "+time(j.team)); break;
+    case "reserva":
+      var jr=jog(d.id), sr=stats(jr.id);
+      if(!jr.reserva&&(sr.N||sr.X)){toast(jr.name+" já está escalado");return;}
+      if(!jr.reserva&&jr.joker){toast("Coringa não vai pra reserva");return;}
+      jr.reserva=!jr.reserva; toast(jr.reserva?jr.name+" foi pra reserva":jr.name+" entrou no time"); break;
     case "editar": ui.editando=d.id; render(); return;
     case "del":
       if(ui.excluir!==d.id){ui.excluir=d.id;render();return;}
@@ -443,7 +488,7 @@ function vPlacar(){
 }
 function opcoes(ci,mi,t,pi,sl){
   var o='<option value="">— escolher —</option>';
-  S.jog.filter(function(j){return j.team===t}).sort(function(a,b){return a.name.localeCompare(b.name)}).forEach(function(j){
+  S.jog.filter(function(j){return j.team===t&&!j.reserva}).sort(function(a,b){return a.name.localeCompare(b.name)}).forEach(function(j){
     var s=stats(j.id);
     [false,true].forEach(function(x){
       if(x&&!j.joker) return;
@@ -453,6 +498,24 @@ function opcoes(ci,mi,t,pi,sl){
     });
   });
   return o;
+}
+function chip(ci,mi,t,j){
+  var s=stats(j.id), pi=-1, m=S.conf[ci].m[mi];
+  for(var i=0;i<m[t].length;i++) if(!m[t][i]){pi=i;break}
+  var okN=pi>=0&&!erroSlot(ci,mi,t,pi,{id:j.id,x:false}), okX=pi>=0&&j.joker&&!erroSlot(ci,mi,t,pi,{id:j.id,x:true});
+  var cl=okN?(s.N===0?"verde":"meio"):okX?"extra":"off";
+  var info=okN||!j.joker?s.N+"/2":"extra "+s.X+"/2";
+  if(j.joker&&okN&&s.X) info+=" · X"+s.X;
+  return '<button class="chip-j '+cl+(j.joker?" ouro":"")+'"'+(okN||okX?' data-a="pegar" data-id="'+j.id+'"':' disabled')+'>'+(j.joker?"⭐ ":"")+esc(j.name)+'<small>'+info+'</small></button>';
+}
+function vPicker(ci,mi){
+  var v=vez(); if(!v) return "";
+  if(!(adm()||cap()===v)) return "";
+  var l=S.jog.filter(function(j){return j.team===v&&!j.reserva}).sort(function(a,b){
+    var sa=stats(a.id).N, sb=stats(b.id).N; return (sa-sb)||a.name.localeCompare(b.name)});
+  return '<div class="picker"><div class="dica" style="margin-top:0"><b>'+esc(time(v))+'</b>: toque no nome '+(S.conf[ci].m[mi].t==="D"?"(2 jogadores)":"")+
+    ' · <span class="lg verde">não jogou</span> <span class="lg meio">1 jogo</span> <span class="lg ouro">coringa</span> <span class="lg off">completo</span></div><div class="chips-j">'+
+    l.map(function(j){return chip(ci,mi,v,j)}).join("")+'</div></div>';
 }
 function vStatus(){
   var h, k=atual(), v=vez(), eu=cap();
@@ -487,7 +550,9 @@ function vConfrontos(){
         ["A","B"].forEach(function(t){
           h+='<div class="lado '+t.toLowerCase()+'"><div class="tn">'+esc(time(t))+'</div>';
           m[t].forEach(function(sl,pi){
-            if(podeSlot(ci,mi,t,pi)){
+            if(kk===k&&sl){
+              h+='<div class="pill'+(sl.x?" ouro":"")+'">'+esc(nome(sl))+(podeSlot(ci,mi,t,pi)?' <button class="tira" data-a="tirar" data-c="'+ci+'" data-m="'+mi+'" data-t="'+t+'" data-p="'+pi+'">✕</button>':'')+'</div>';
+            }else if(kk!==k&&adm()&&podeSlot(ci,mi,t,pi)){
               var err=erroSlot(ci,mi,t,pi,sl);
               h+='<select data-slot="'+ci+','+mi+','+t+','+pi+'" class="'+(err?"bad":sl&&sl.x?"ex":"")+'">'+opcoes(ci,mi,t,pi,sl)+'</select>';
             }else h+='<div class="nomej">'+(sl?esc(nome(sl)):'<span class="esp">'+(kk===k&&vez()===t?"escolhendo…":"—")+'</span>')+'</div>';
@@ -495,6 +560,7 @@ function vConfrontos(){
           h+='</div>';
         });
         h+='</div>';
+        if(kk===k) h+=vPicker(ci,mi);
         if(cheio(m,"A")&&cheio(m,"B")){
           if(pode()) h+='<div class="res"><input type="text" placeholder="Placar (ex: 6/4)" value="'+esc(m.placar)+'" data-placar="'+ci+','+mi+'">'+
             '<button class="wbtn a'+(m.win==="A"?" on":"")+'" data-a="win" data-c="'+ci+'" data-m="'+mi+'" data-t="A">'+esc(time("A"))+'</button>'+
@@ -510,21 +576,30 @@ function vConfrontos(){
   return h;
 }
 function vJogadores(){
-  var t=ui.timeJog, A=adm(), lista=S.jog.filter(function(j){return j.team===t}).sort(function(a,b){return a.name.localeCompare(b.name)});
+  var t=ui.timeJog, A=adm(), todos=S.jog.filter(function(j){return j.team===t}).sort(function(a,b){return a.name.localeCompare(b.name)});
+  var lista=todos.filter(function(j){return !j.reserva}), res=todos.filter(function(j){return j.reserva});
   var cor=lista.filter(function(j){return j.joker}).length;
   var h='<div class="seg"><button data-a="timeJog" data-t="A" class="'+(t==="A"?"on":"")+'">'+esc(time("A"))+'</button><button data-a="timeJog" data-t="B" class="'+(t==="B"?"on":"")+'">'+esc(time("B"))+'</button></div>';
   if(A) h+='<div class="card"><div class="dica" style="margin-top:0">Nome do time</div><input type="text" data-nometime="'+t+'" value="'+esc(time(t))+'"></div>';
   h+='<div class="card"><div class="row"><h2 class="sp" style="margin:0">'+lista.length+'/20 jogadores</h2><span class="ct">⭐ '+cor+'/'+MAX_CORINGAS+' coringas</span></div>';
+  if(cap()===t&&cor<MAX_CORINGAS) h+='<div class="aviso-ouro">Capitão: toque na ⭐ para escolher os '+MAX_CORINGAS+' coringas do '+esc(time(t))+'. Depois de confirmado, não dá pra trocar.</div>';
   if(!lista.length) h+='<div class="vazio">Nenhum jogador ainda.</div>';
   lista.forEach(function(j){
     var s=stats(j.id);
-    h+='<div class="lin">'+(A?'<button class="estrela'+(j.joker?" on":"")+'" data-a="coringa" data-id="'+j.id+'">⭐</button>':(j.joker?"⭐ ":""));
+    var podeC=A||(cap()===t&&!j.joker&&cor<MAX_CORINGAS);
+    var conf=ui.excluir==="C"+j.id;
+    h+='<div class="lin'+(j.joker?" lin-ouro":"")+'">'+(podeC?'<button class="estrela'+(j.joker?" on":"")+(conf?" conf":"")+'" data-a="coringa" data-id="'+j.id+'">'+(conf?"Confirmar ⭐":"⭐")+'</button>':(j.joker?'<span class="estrela on">⭐</span>':'<span class="estrela"></span>'));
     if(A&&ui.editando===j.id) h+='<input type="text" data-nome="'+j.id+'" value="'+esc(j.name)+'">';
     else h+='<span class="nm"'+(A?' data-a="editar" data-id="'+j.id+'"':'')+'>'+esc(j.name)+'</span>';
     h+='<span class="ct'+(s.N>=2?" ok":"")+'">S'+s.S+' D'+s.D+(j.joker?' X'+s.X:'')+'</span>';
+    if(A&&!s.N&&!s.X&&!j.joker) h+='<button class="btn s" data-a="reserva" data-id="'+j.id+'">Reserva</button>';
     if(A) h+='<button class="x'+(ui.excluir===j.id?" conf":"")+'" data-a="del" data-id="'+j.id+'">'+(ui.excluir===j.id?"Excluir?":"✕")+'</button>';
     h+='</div>';
   });
+  if(res.length){
+    h+='<h3>Reserva (fora da escalação)</h3>';
+    res.forEach(function(j){ h+='<div class="lin"><span class="estrela"></span><span class="nm" style="color:var(--mut)">'+esc(j.name)+'</span>'+(A?'<button class="btn s v" data-a="reserva" data-id="'+j.id+'">Ativar</button>':'<span class="ct">reserva</span>')+'</div>'; });
+  }
   h+='<div class="dica">S/D = simples/duplas escaladas · X = entradas extras do coringa'+(A?' · toque no nome para editar · ⭐ marca coringa':'')+'</div></div>';
   if(A) h+='<div class="card"><h2>Adicionar ao '+esc(time(t))+'</h2><textarea id="novos" placeholder="Um nome por linha (pode colar a lista inteira)"></textarea><div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn p" data-a="addJog">Adicionar</button></div></div>';
   return h;
@@ -532,7 +607,7 @@ function vJogadores(){
 function vRelatorio(){
   var h="";
   ["A","B"].forEach(function(t){
-    var l=S.jog.filter(function(j){return j.team===t}).sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(j){return {j:j,s:stats(j.id)}});
+    var l=S.jog.filter(function(j){return j.team===t&&!j.reserva}).sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(j){return {j:j,s:stats(j.id)}});
     var g=function(f){var x=l.filter(f);return x.length?'<div class="chips">'+x.map(function(o){return '<span class="chip">'+esc(o.j.name)+'</span>'}).join("")+'</div>':'<div class="dica">—</div>'};
     h+='<div class="card"><h2>'+esc(time(t))+'</h2><h3>Partidas por jogador</h3>';
     l.forEach(function(o){h+='<div class="lin"><span class="nm">'+(o.j.joker?"⭐ ":"")+esc(o.j.name)+'</span><span class="ct">escalado '+o.s.N+'/2'+(o.j.joker?' · extra '+o.s.X+'/2':'')+' · jogou '+o.s.jogou+' · venceu '+o.s.venceu+'</span></div>'});
@@ -573,7 +648,7 @@ function render(){
 document.addEventListener("click",function(e){
   var n=e.target.closest("nav button"); if(n){act("tab",{v:n.dataset.tab});return;}
   var b=e.target.closest("[data-a]"); if(!b||b.tagName==="SELECT"||b.type==="checkbox"||b.tagName==="A") return;
-  if(b.dataset.a!=="del"&&b.dataset.a!=="zerar") ui.excluir=null;
+  if(b.dataset.a!=="del"&&b.dataset.a!=="zerar"&&b.dataset.a!=="coringa") ui.excluir=null;
   act(b.dataset.a,b.dataset);
 });
 document.addEventListener("change",function(e){
