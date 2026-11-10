@@ -302,16 +302,19 @@ function comemorar(lado){
 /* ---------- horário e cronômetro ---------- */
 function durMin(){return +S.dur||12}
 function horario(k){var p=(S.inicio||"07:00").split(":"),t=(+p[0])*60+(+p[1])+k*durMin();return ("0"+Math.floor(t/60)%24).slice(-2)+":"+("0"+t%60).slice(-2)}
-function emQuadra(){for(var k=0;k<NCONF*3;k++){var m=partida(k);if(!m.win&&cheio(m,"A")&&cheio(m,"B"))return k}return -1}
+function emQuadra(){for(var k=0;k<NCONF*3;k++){if(!partida(k).win)return k}return -1}
 function restante(m){return m.ini?durMin()*60000-(Date.now()-m.ini):null}
 function fmt(ms){var neg=ms<0;ms=Math.abs(ms);var s=Math.floor(ms/1000);return (neg?"+":"")+Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
 function vQuadra(){
   var k=emQuadra(); if(k<0) return "";
-  var m=partida(k), ci=Math.floor(k/3), r=restante(m);
-  var h='<div class="card quadra"><div class="row"><span class="badge vz">🎾 Em quadra</span><span class="dica sp" style="margin:0 0 0 6px">Confronto '+(ci+1)+' · '+m.lb+' · previsto '+horario(k)+'</span></div>'+
-    '<div class="qd"><div class="qa">'+esc(m.A.map(nome).join(" / "))+'</div><div class="qx">×</div><div class="qb">'+esc(m.B.map(nome).join(" / "))+'</div></div>'+
+  var m=partida(k), ci=Math.floor(k/3), r=restante(m), pronto=cheio(m,"A")&&cheio(m,"B");
+  var lado=function(t){return m[t].some(Boolean)?esc(m[t].map(nome).join(" / ")):'<span class="esp">a escalar</span>'};
+  var h='<div class="card quadra"><div class="row"><span class="badge vz">'+(pronto?"🎾 Em quadra":"⏳ Próximo jogo")+'</span><span class="dica sp" style="margin:0 0 0 6px">Confronto '+(ci+1)+' · '+m.lb+' · previsto '+horario(k)+'</span></div>'+
+    '<div class="qd"><div class="qa">'+lado("A")+'</div><div class="qx">×</div><div class="qb">'+lado("B")+'</div></div>'+
     '<div class="crono'+(r!==null&&r<=0?" fim":r!==null&&r<120000?" quase":"")+'" data-crono="'+k+'">'+(r===null?fmt(durMin()*60000):r<=0?"TEMPO!":fmt(r))+'</div>';
-  if(pode()){
+  if(!pronto){
+    h+='<div class="dica" style="text-align:center">⏳ Aguardando a escalação deste jogo'+(pode()?' (aba 🎾 Escalação)':'')+'. O tempo libera quando os dois lados estiverem escalados.</div>';
+  }else if(pode()){
     h+='<div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">'+(m.ini?'<button class="btn s" data-a="crono0" data-c="'+ci+'" data-m="'+(k%3)+'">↺ Zerar tempo</button>':'<button class="btn v" data-a="crono" data-c="'+ci+'" data-m="'+(k%3)+'">▶ Iniciar '+durMin()+' min</button>')+'</div>'+vRes(ci,k%3);
   }
   var atraso=Math.round((Date.now()-hojeMin(horario(k)))/60000);
