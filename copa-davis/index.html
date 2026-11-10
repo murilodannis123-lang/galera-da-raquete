@@ -111,6 +111,12 @@ textarea{min-height:110px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#1e1830;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:9;opacity:0;transition:.2s;pointer-events:none;max-width:90%;text-align:center}
 .toast.on{opacity:1}
 .hide{display:none}
+.nv{display:inline-block;min-width:18px;text-align:center;font-size:11px;font-weight:900;border-radius:5px;padding:1px 4px;margin-right:5px;vertical-align:1px}
+.nvA{background:#e0b400;color:#1e1830}.nvB{background:#9aa3ad;color:#fff}
+.chip-j .nv{margin-right:2px}
+.nvbox{display:inline-flex;gap:3px;margin-right:4px}
+.nvb{border:1.5px solid var(--lin);background:#fff;color:var(--mut);border-radius:7px;font-weight:900;font-size:12px;width:28px;height:26px;padding:0}
+.nvb.on[data-n=A]{background:#e0b400;border-color:#e0b400;color:#1e1830}.nvb.on[data-n=B]{background:#9aa3ad;border-color:#9aa3ad;color:#fff}
 .resg{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-top:10px;text-align:center}
 .rn{font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:4px}.rn.a{color:var(--roxo)}.rn.b{color:var(--verde)}
 .rx{font-size:20px;font-weight:900;color:#b8901f;padding-bottom:10px}
@@ -232,6 +238,7 @@ function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.
 var S=(function(){try{var o=JSON.parse(lsGet(KEY));if(valido(o))return o}catch(e){}return novo()})();
 
 var ui={tab:"placar",aberto:null,timeJog:"A",excluir:null,editando:null,login:false};
+var NIV={};
 var net={sb:null,versao:-1,on:false,rt:false,ultimo:0,salvando:false,pendente:false,papel:null,pin:lsGet(KPIN)};
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -239,6 +246,8 @@ function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTi
 function jog(id){for(var i=0;i<S.jog.length;i++) if(S.jog[i].id===id) return S.jog[i]; return null}
 function nome(sl){if(!sl) return "—"; var j=jog(sl.id); return (j?j.name:"?")+(sl.x?" ⭐":"")}
 function time(t){return S.nomes[t]}
+function nivTag(id){var n=pode()&&NIV[id];return n?'<span class="nv nv'+n+'">'+n+'</span>':""}
+function nomeN(sl){if(!sl) return "—"; return nivTag(sl.id)+esc(nome(sl))}
 function outro(t){return t==="A"?"B":"A"}
 function adm(){return net.papel==="admin"}
 function cap(){return net.papel==="A"||net.papel==="B"?net.papel:null}
@@ -396,11 +405,12 @@ function act(a,d){
   var soAdm={recomecar:1,autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
   if(soAdm[a]&&!adm()){toast("Só o organizador faz isso");return;}
   switch(a){
+    case "nivel": setNivel(d.id,d.n); return;
     case "tab": ui.tab=d.v; ui.login=false; window.scrollTo(0,0); render(); return;
     case "abrir": ui.aberto=(ui.aberto===+d.c?-1:+d.c); render(); return;
     case "login": ui.login=!ui.login; render(); if(ui.login) setTimeout(function(){var p=$("pin");p&&p.focus()},50); return;
     case "entrar": entrar($("pin").value.trim()); return;
-    case "sair": net.papel=null; net.pin=null; lsSet(KPIN,null); ui.login=false; toast("Saiu"); render(); return;
+    case "sair": NIV={}; net.papel=null; net.pin=null; lsSet(KPIN,null); ui.login=false; toast("Saiu"); render(); return;
     case "timeJog": ui.timeJog=d.t; ui.excluir=null; render(); return;
     case "sorteio":
       if(S.sorteio){toast("Sorteio já feito");return;}
@@ -531,12 +541,25 @@ function enviar(){
     net.versao=r.data; if(net.pendente) enviar();
   },function(){net.salvando=false;net.pendente=false;toast("Sem internet: não salvou");baixar(true);});
 }
+function baixarNiveis(){
+  if(!net.sb||!net.pin) return;
+  net.sb.rpc("copa_niveis",{p_pin:net.pin}).then(function(r){
+    if(r.error||!r.data) return; var a=JSON.stringify(NIV), b=JSON.stringify(r.data);
+    if(a!==b){NIV=r.data; var f=document.activeElement&&document.activeElement.dataset&&(document.activeElement.dataset.pt||document.activeElement.dataset.placar); if(!f) render();}
+  },function(){});
+}
+function setNivel(id,n){
+  var j=jog(id); if(!j) return;
+  if(!adm()&&cap()!==j.team){toast("Só o capitão do "+time(j.team));return;}
+  var novo=NIV[id]===n?"":n; if(novo) NIV[id]=novo; else delete NIV[id]; render();
+  net.sb.rpc("copa_nivel_set",{p_pin:net.pin,p_jog:id,p_nivel:novo}).then(function(r){ if(r.error){toast("Não salvou o nível: "+r.error.message);} baixarNiveis(); },function(){toast("Sem internet");});
+}
 function entrar(pin){
   if(!pin) return;
   if(!net.sb){toast("Sem conexão");return;}
   net.sb.rpc("copa_papel",{p_pin:pin}).then(function(r){
     if(r.error||!r.data){toast("PIN inválido");return;}
-    net.pin=pin; net.papel=r.data; lsSet(KPIN,pin); ui.login=false;
+    net.pin=pin; net.papel=r.data; lsSet(KPIN,pin); ui.login=false; baixarNiveis();
     toast(r.data==="admin"?"Entrou como organizador":"Entrou como capitão do "+time(r.data));
     if(r.data!=="admin") ui.tab="confrontos";
     render();
@@ -547,13 +570,14 @@ function iniciar(){
   net.sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   status();
   baixar(true).then(function(){
-    if(net.pin) net.sb.rpc("copa_papel",{p_pin:net.pin}).then(function(r){ if(r.data){net.papel=r.data;render();} else {net.pin=null;lsSet(KPIN,null);} });
+    if(net.pin) net.sb.rpc("copa_papel",{p_pin:net.pin}).then(function(r){ if(r.data){net.papel=r.data;baixarNiveis();render();} else {net.pin=null;lsSet(KPIN,null);} });
   });
   net.sb.channel("copa-davis").on("postgres_changes",{event:"UPDATE",schema:"public",table:"copa_davis"},function(p){net.ultimo=Date.now();aplicar(p.new,false)})
     .subscribe(function(st){ net.rt=(st==="SUBSCRIBED"); if(net.rt){net.on=true;status();baixar(false);} });
   setInterval(function(){
     if(document.hidden) return;
     if(!net.rt||Date.now()-net.ultimo>30000) baixar(false);
+    if(net.pin&&(!net.ultNiv||Date.now()-net.ultNiv>8000)){net.ultNiv=Date.now();baixarNiveis();}
   },4000);
   document.addEventListener("visibilitychange",function(){if(!document.hidden)baixar(false)});
   window.addEventListener("online",function(){baixar(false)});
@@ -616,7 +640,7 @@ function chip(ci,mi,t,j){
   var cl=okN?(s.N===0?"verde":"meio"):okX?"extra":"off";
   var info=okN||!j.joker?s.N+"/2":"extra "+s.X+"/2";
   if(j.joker&&okN&&s.X) info+=" · X"+s.X;
-  return '<button class="chip-j '+cl+(j.joker?" ouro":"")+'"'+(okN||okX?' data-a="pegar" data-id="'+j.id+'"':' disabled')+'>'+(j.joker?"⭐ ":"")+esc(j.name)+'<small>'+info+'</small></button>';
+  return '<button class="chip-j '+cl+(j.joker?" ouro":"")+'"'+(okN||okX?' data-a="pegar" data-id="'+j.id+'"':' disabled')+'>'+nivTag(j.id)+(j.joker?"⭐ ":"")+esc(j.name)+'<small>'+info+'</small></button>';
 }
 function vPicker(ci,mi){
   var v=vez(); if(!v) return "";
@@ -639,7 +663,7 @@ function vStatus(){
   var m=partida(k), ci=Math.floor(k/3), f=primeiro(k), resp=v!==f;
   var minha=eu&&eu===v;
   h='<div class="card'+(minha?" vez":"")+'"><div class="grande">'+(minha?"👉 <b>Sua vez!</b> ":"")+'Confronto '+(ci+1)+' · '+m.lb+'<br>Vez do <b>'+esc(time(v))+'</b> '+(resp?"responder com o adversário":"escolher primeiro")+'</div>';
-  if(resp) h+='<div class="dica">'+esc(time(f))+' escalou: <b>'+esc(m[f].map(nome).join(" / "))+'</b></div>';
+  if(resp) h+='<div class="dica">'+esc(time(f))+' escalou: <b>'+m[f].map(nomeN).join(" / ")+'</b></div>';
   if(minha||adm()) h+='<div class="row" style="margin-top:6px"><button class="btn s" data-a="sugestao">🎲 Sugerir jogador'+(m.t==="D"?"es":"")+'</button></div>';
   if(!pode()) h+='<div class="dica">Só acompanhando. Atualiza sozinho.</div>';
   return h+'</div>';
@@ -661,11 +685,11 @@ function vConfrontos(){
           h+='<div class="lado '+t.toLowerCase()+'"><div class="tn">'+esc(time(t))+'</div>';
           m[t].forEach(function(sl,pi){
             if(kk===k&&sl){
-              h+='<div class="pill'+(sl.x?" ouro":"")+'">'+esc(nome(sl))+(podeSlot(ci,mi,t,pi)?' <button class="tira" data-a="tirar" data-c="'+ci+'" data-m="'+mi+'" data-t="'+t+'" data-p="'+pi+'">✕</button>':'')+'</div>';
+              h+='<div class="pill'+(sl.x?" ouro":"")+'">'+nomeN(sl)+(podeSlot(ci,mi,t,pi)?' <button class="tira" data-a="tirar" data-c="'+ci+'" data-m="'+mi+'" data-t="'+t+'" data-p="'+pi+'">✕</button>':'')+'</div>';
             }else if(kk!==k&&adm()&&podeSlot(ci,mi,t,pi)){
               var err=erroSlot(ci,mi,t,pi,sl);
               h+='<select data-slot="'+ci+','+mi+','+t+','+pi+'" class="'+(err?"bad":sl&&sl.x?"ex":"")+'">'+opcoes(ci,mi,t,pi,sl)+'</select>';
-            }else h+='<div class="nomej">'+(sl?esc(nome(sl)):'<span class="esp">'+(kk===k&&vez()===t?"escolhendo…":"—")+'</span>')+'</div>';
+            }else h+='<div class="nomej">'+(sl?nomeN(sl):'<span class="esp">'+(kk===k&&vez()===t?"escolhendo…":"—")+'</span>')+'</div>';
           });
           h+='</div>';
         });
@@ -699,6 +723,10 @@ function vJogadores(){
     h+='<div class="lin'+(j.joker?" lin-ouro":"")+'">'+(podeC?'<button class="estrela'+(j.joker?" on":"")+(conf?" conf":"")+'" data-a="coringa" data-id="'+j.id+'">'+(conf?"Confirmar ⭐":"⭐")+'</button>':(j.joker?'<span class="estrela on">⭐</span>':'<span class="estrela"></span>'));
     if(A&&ui.editando===j.id) h+='<input type="text" data-nome="'+j.id+'" value="'+esc(j.name)+'">';
     else h+='<span class="nm"'+(A?' data-a="editar" data-id="'+j.id+'"':'')+'>'+esc(j.name)+'</span>';
+    if(pode()){
+      if(A||cap()===t) h+='<span class="nvbox"><button class="nvb'+(NIV[j.id]==="A"?" on":"")+'" data-a="nivel" data-id="'+j.id+'" data-n="A">A</button><button class="nvb'+(NIV[j.id]==="B"?" on":"")+'" data-a="nivel" data-id="'+j.id+'" data-n="B">B</button></span>';
+      else h+=nivTag(j.id);
+    }
     h+='<span class="ct'+(s.N>=2?" ok":"")+'">S'+s.S+' D'+s.D+(j.joker?' X'+s.X:'')+'</span>';
     if(A&&!s.N&&!s.X&&!j.joker) h+='<button class="btn s" data-a="reserva" data-id="'+j.id+'">Reserva</button>';
     if(A) h+='<button class="x'+(ui.excluir===j.id?" conf":"")+'" data-a="del" data-id="'+j.id+'">'+(ui.excluir===j.id?"Excluir?":"✕")+'</button>';
@@ -708,6 +736,7 @@ function vJogadores(){
     h+='<h3>Reserva (fora da escalação)</h3>';
     res.forEach(function(j){ h+='<div class="lin"><span class="estrela"></span><span class="nm" style="color:var(--mut)">'+esc(j.name)+'</span>'+(A?'<button class="btn s v" data-a="reserva" data-id="'+j.id+'">Ativar</button>':'<span class="ct">reserva</span>')+'</div>'; });
   }
+  if(pode()) h+='<div class="dica">🔒 Nível A/B: só capitães e organizador veem. Cada capitão marca o do seu time.</div>';
   h+='<div class="dica">S/D = simples/duplas escaladas · X = entradas extras do coringa'+(A?' · toque no nome para editar · ⭐ marca coringa':'')+'</div></div>';
   if(A) h+='<div class="card"><h2>Adicionar ao '+esc(time(t))+'</h2><textarea id="novos" placeholder="Um nome por linha (pode colar a lista inteira)"></textarea><div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn p" data-a="addJog">Adicionar</button></div></div>';
   return h;
