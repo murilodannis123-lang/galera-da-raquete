@@ -111,6 +111,11 @@ textarea{min-height:110px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#1e1830;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:9;opacity:0;transition:.2s;pointer-events:none;max-width:90%;text-align:center}
 .toast.on{opacity:1}
 .hide{display:none}
+.resg{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-top:10px;text-align:center}
+.rn{font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:4px}.rn.a{color:var(--roxo)}.rn.b{color:var(--verde)}
+.rx{font-size:20px;font-weight:900;color:#b8901f;padding-bottom:10px}
+input.pt{font-size:30px;font-weight:900;text-align:center;padding:6px;border-width:2px;border-radius:12px}
+input.pt.a{border-color:#8fd3a8}input.pt.b{border-color:#9fb2e6}
 .quadra{border:2px solid #e0b400;background:linear-gradient(180deg,#fffbe8,#fff)}
 .qd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:10px 0 4px;text-align:center;font-weight:800;font-size:15px}
 .qa{color:var(--roxo)}.qb{color:var(--verde)}.qx{color:#b8901f;font-size:20px}
@@ -297,13 +302,21 @@ function vQuadra(){
     '<div class="qd"><div class="qa">'+esc(m.A.map(nome).join(" / "))+'</div><div class="qx">×</div><div class="qb">'+esc(m.B.map(nome).join(" / "))+'</div></div>'+
     '<div class="crono'+(r!==null&&r<=0?" fim":r!==null&&r<120000?" quase":"")+'" data-crono="'+k+'">'+(r===null?fmt(durMin()*60000):r<=0?"TEMPO!":fmt(r))+'</div>';
   if(pode()){
-    h+='<div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">'+(m.ini?'<button class="btn s" data-a="crono0" data-c="'+ci+'" data-m="'+(k%3)+'">↺ Zerar tempo</button>':'<button class="btn v" data-a="crono" data-c="'+ci+'" data-m="'+(k%3)+'">▶ Iniciar '+durMin()+' min</button>')+'</div>'+
-      '<div class="res" style="margin-top:8px"><input type="text" placeholder="Placar (ex: 10-7)" value="'+esc(m.placar)+'" data-placar="'+ci+','+(k%3)+'">'+
-      '<button class="wbtn a" data-a="win" data-c="'+ci+'" data-m="'+(k%3)+'" data-t="A">'+esc(time("A"))+'</button><button class="wbtn b" data-a="win" data-c="'+ci+'" data-m="'+(k%3)+'" data-t="B">'+esc(time("B"))+'</button></div>';
+    h+='<div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">'+(m.ini?'<button class="btn s" data-a="crono0" data-c="'+ci+'" data-m="'+(k%3)+'">↺ Zerar tempo</button>':'<button class="btn v" data-a="crono" data-c="'+ci+'" data-m="'+(k%3)+'">▶ Iniciar '+durMin()+' min</button>')+'</div>'+vRes(ci,k%3);
   }
   var atraso=Math.round((Date.now()-hojeMin(horario(k)))/60000);
   if(atraso>2&&atraso<180&&!m.ini) h+='<div class="dica" style="text-align:center">⏱ '+atraso+' min atrasado em relação ao previsto</div>';
   return h+'</div>';
+}
+function vRes(ci,mi){
+  var m=S.conf[ci].m[mi], p=(m.placar||"").split("-");
+  var a=m.win&&p.length===2?p[0]:"", b=m.win&&p.length===2?p[1]:"";
+  return '<div class="resg"><div><div class="rn a">'+esc(time("A"))+'</div><input type="number" inputmode="numeric" min="0" max="99" class="pt a" data-pt="'+ci+','+mi+',A" value="'+esc(a)+'" placeholder="0"></div>'+
+    '<div class="rx">×</div>'+
+    '<div><div class="rn b">'+esc(time("B"))+'</div><input type="number" inputmode="numeric" min="0" max="99" class="pt b" data-pt="'+ci+','+mi+',B" value="'+esc(b)+'" placeholder="0"></div></div>'+
+    '<div class="row" style="justify-content:center;gap:8px;margin-top:8px"><button class="btn v" data-a="gravar" data-c="'+ci+'" data-m="'+mi+'">✔ Gravar resultado</button>'+
+    (m.win?'<button class="btn s" data-a="desfazer" data-c="'+ci+'" data-m="'+mi+'">Desfazer</button>':'')+'</div>'+
+    (m.win?'<div class="dica" style="text-align:center">✅ Ponto para <b>'+esc(time(m.win))+'</b> ('+esc(m.placar)+')</div>':'');
 }
 function hojeMin(hhmm){var d=new Date(),p=hhmm.split(":");d.setHours(+p[0],+p[1],0,0);return d.getTime()}
 setInterval(function(){
@@ -419,6 +432,16 @@ function act(a,d){
       S.conf[d.c].m.forEach(function(mm){if(mm.win)return;mm.A=mm.A.map(function(){return null});mm.B=mm.B.map(function(){return null})}); break;
     case "crono": m=S.conf[d.c].m[d.m]; m.ini=Date.now(); toast("⏱ Valendo! "+durMin()+" minutos"); break;
     case "crono0": m=S.conf[d.c].m[d.m]; delete m.ini; break;
+    case "gravar":
+      m=S.conf[d.c].m[d.m]; if(!cheio(m,"A")||!cheio(m,"B")){toast("Escalação incompleta");return;}
+      var ia=document.querySelector('[data-pt="'+d.c+','+d.m+',A"]'), ib=document.querySelector('[data-pt="'+d.c+','+d.m+',B"]');
+      var va=parseInt(ia&&ia.value,10), vb=parseInt(ib&&ib.value,10);
+      if(isNaN(va)||isNaN(vb)){toast("Preencha os pontos dos dois times");return;}
+      if(va===vb){toast("Empate: alguém tem que ter mais pontos");return;}
+      m.placar=va+"-"+vb; m.win=va>vb?"A":"B"; if(document.activeElement) document.activeElement.blur();
+      toast("✅ Ponto para "+time(m.win)+" ("+m.placar+")"); break;
+    case "desfazer":
+      m=S.conf[d.c].m[d.m]; m.win=null; m.placar=""; break;
     case "win":
       m=S.conf[d.c].m[d.m]; if(!cheio(m,"A")||!cheio(m,"B")){toast("Escalação incompleta");return;}
       m.win=(m.win===d.t?null:d.t); break;
@@ -651,9 +674,7 @@ function vConfrontos(){
         h+='</div>';
         if(kk===k) h+=vPicker(ci,mi);
         if(cheio(m,"A")&&cheio(m,"B")){
-          if(pode()) h+='<div class="res"><input type="text" placeholder="Placar (ex: 10-7)" value="'+esc(m.placar)+'" data-placar="'+ci+','+mi+'">'+
-            '<button class="wbtn a'+(m.win==="A"?" on":"")+'" data-a="win" data-c="'+ci+'" data-m="'+mi+'" data-t="A">'+esc(time("A"))+'</button>'+
-            '<button class="wbtn b'+(m.win==="B"?" on":"")+'" data-a="win" data-c="'+ci+'" data-m="'+mi+'" data-t="B">'+esc(time("B"))+'</button></div>';
+          if(pode()) h+=vRes(ci,mi);
           else if(m.placar) h+='<div class="dica">Placar: <b>'+esc(m.placar)+'</b></div>';
         }
         h+='</div>';
@@ -726,7 +747,7 @@ function render(){
   var jg=p.A+p.B;
   $("lider").textContent=(p.A>=16||p.B>=16)?"🏆 "+time(p.A>=16?"A":"B")+" campeão!"+(jg<30?" · "+(30-jg)+" partida(s) restantes":""):jg?(p.A===p.B?"Empate":"Vantagem "+time(p.A>p.B?"A":"B"))+" · "+(30-jg)+" partida(s) restantes":"30 partidas · 10 confrontos";
   $("quem").textContent=net.papel?(adm()?"👑 Organizador":"🎾 Capitão "+time(net.papel)):"🔑 Entrar";
-  var foco=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.placar;
+  var foco=document.activeElement&&document.activeElement.dataset&&(document.activeElement.dataset.placar||document.activeElement.dataset.pt);
   if(foco) return;
   var y=window.scrollY;
   $("app").innerHTML=vLogin()+{placar:vPlacar,confrontos:vConfrontos,jogadores:vJogadores,relatorio:vRelatorio}[ui.tab]();
@@ -753,12 +774,14 @@ document.addEventListener("change",function(e){
 document.addEventListener("focusout",function(e){
   var t=e.target;
   if(t.dataset&&t.dataset.placar){setTimeout(render,0);return;}
+  if(t.dataset&&t.dataset.pt){setTimeout(function(){var a=document.activeElement;if(!(a&&a.dataset&&a.dataset.pt))render()},250);return;}
   if(!t.dataset||!t.dataset.nome) return;
   var j=jog(t.dataset.nome), v=t.value.trim(); if(j&&v&&v!==j.name){j.name=v;save();}
   ui.editando=null; setTimeout(render,0);
 });
 document.addEventListener("keydown",function(e){
   var d=e.target.dataset||{};
+  if(e.key==="Enter"&&d.pt){var q=d.pt.split(",");e.target.blur();act("gravar",{c:q[0],m:q[1]});return;}
   if(e.key==="Enter"){ if(e.target.id==="pin") act("entrar",{}); else if(d.nome||d.placar) e.target.blur(); }
 });
 (function(){
