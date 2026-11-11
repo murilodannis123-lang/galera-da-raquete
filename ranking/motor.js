@@ -152,7 +152,9 @@ export function tabelaChave(ids, jogos) {
     if (!A || !B || !g.sets) return;
     const r = resultado(g.sets);
     A.j++; B.j++;
-    A.tp += r.ptsA; B.tp += r.ptsB;
+    // WO (Finals): quem venceu leva os pontos de WO e quem deu o WO fica com 0; sets e games contam como 6×0 6×0
+    const wo = g.woDe ? (g.woPts || pontosWO('')) : 0;
+    A.tp += g.woDe ? (r.aVenceu ? wo : 0) : r.ptsA; B.tp += g.woDe ? (r.aVenceu ? 0 : wo) : r.ptsB;
     if (r.aVenceu) { A.vi++; B.de++; } else { B.vi++; A.de++; }
     A.sp += r.setsA; A.sc += r.setsB; B.sp += r.setsB; B.sc += r.setsA;
     A.gp += r.gamesA; A.gc += r.gamesB; B.gp += r.gamesB; B.gc += r.gamesA;

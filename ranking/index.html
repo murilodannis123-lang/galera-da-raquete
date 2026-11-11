@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261106133644"></script>
+<script src="redireciona.js?v=20261111121417"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -275,6 +275,9 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .top4 .g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .top4 .g div{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.08);border-radius:8px;padding:9px 10px;font-size:13px;min-width:0}
 .top4 .g span{flex-grow:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#carrossel{touch-action:pan-y;-webkit-user-select:none;user-select:none}#carrossel a,#carrossel img{-webkit-user-drag:none}#carrossel img{pointer-events:none}
+.vem-dir{animation:vemDir .35s ease}.vem-esq{animation:vemEsq .35s ease}
+@keyframes vemDir{from{opacity:.3;transform:translateX(40px)}to{opacity:1;transform:none}}@keyframes vemEsq{from{opacity:.3;transform:translateX(-40px)}to{opacity:1;transform:none}}
 .pontos{display:flex;justify-content:center;gap:5px;margin-top:6px}
 .pontos i{height:5px;border-radius:999px;background:#D8D0E8}
 .faixa{margin-top:auto;height:26px;background:#000;overflow:hidden;display:flex;align-items:center;padding-bottom:calc(env(safe-area-inset-bottom) * .45);box-sizing:content-box}
@@ -347,6 +350,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261106133644"></script>
+<script type="module" src="app.js?v=20261111121417"></script>
 </body>
 </html>
