@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111135023';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111135023';
-import { REGULAMENTO } from './regulamento.js?v=20261111135023';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111135023';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111135023';
+import * as M from './motor.js?v=20261111135247';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111135247';
+import { REGULAMENTO } from './regulamento.js?v=20261111135247';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111135247';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111135247';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -575,7 +575,7 @@ function telaInicio() {
     <div class="topo-linha">
       ${eu.admin ? `<a class="ic-btn" href="#/admin" aria-label="Admin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>` : '<span style="width:44px"></span>'}
       <button class="logo-btn" data-acao="abertura" aria-label="Ver a abertura de novo"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></button>
-      ${foraDoRanking() ? '<span style="width:44px"></span>' : `<a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>`}
+      <div class="sino-box">${S.novaVersao ? BTN_ATUALIZAR : ''}${foraDoRanking() ? '<span style="width:44px"></span>' : `<a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>`}</div>
     </div>
     <h1 class="titulo">Portal do Lago Open de Tênis</h1>
     <p class="sub-ranking">RANKING</p>
@@ -2622,6 +2622,7 @@ const ACOES = {
   cancelarRodar: () => { S.admin.confirmar = false; render(); },
   rodar: () => { const abrir = !!(document.getElementById('abrirProx') || {}).checked && !(S.mesAtual && /-(10|11|12)$/.test(S.mesAtual.id)); comTrava('Encerrando o mês…', async () => { S.admin.confirmar = false; await rodarMes(abrir); }, abrir ? 'Mês encerrado e próximo aberto.' : 'Mês encerrado.'); },
   abrirMes: () => comTrava('Abrindo…', () => abrirMes(document.getElementById('novoMes').value), 'Mês aberto com os confrontos.'),
+  atualizarApp: (el) => { el.disabled = true; el.querySelector('small').textContent = 'Atualizando'; location.reload(); },
   desfazerWoF: (el) => comTrava('', async () => { const r = await sb.from('finals_jogos').update({ sets: null, wo_de: null, wo_motivo: null, wo_obs: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/finals'; }, 'WO desfeito. O jogo voltou a ficar pendente.'),
   desfazerWo: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; }, 'WO desfeito.'),
   woResp: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_status: el.dataset.v }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; },
@@ -3388,7 +3389,7 @@ new MutationObserver(() => colocarOlhos(document)).observe(document.body, { chil
 const VERSAO_APP = (import.meta.url.match(/[?&]v=(\d{14})/) || [])[1] || '';
 let checandoVersao = false;
 async function checarVersao() {
-  if (!VERSAO_APP || checandoVersao || document.getElementById('nova-versao') || window.__SB__) return;
+  if (!VERSAO_APP || checandoVersao || S.novaVersao || window.__SB__) return;
   checandoVersao = true;
   try {
     const url = new URL('index.html', location.href.split('#')[0]);
@@ -3399,14 +3400,12 @@ async function checarVersao() {
   } catch (e) { /* sem internet: confere de novo depois */ } finally { checandoVersao = false; }
 }
 function mostrarNovaVersao() {
-  if (document.getElementById('nova-versao')) return;
-  const b = document.createElement('button');
-  b.id = 'nova-versao'; b.type = 'button';
-  b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>Atualizar';
-  b.setAttribute('aria-label', 'Tem versão nova do app. Toque para atualizar');
-  b.addEventListener('click', () => { b.disabled = true; b.textContent = 'Atualizando…'; location.reload(); });
-  document.body.appendChild(b);
+  S.novaVersao = true;
+  const box = document.querySelector('.sino-box');
+  if (box && !box.querySelector('.btn-atualizar')) box.insertAdjacentHTML('afterbegin', BTN_ATUALIZAR);
 }
+// fica do lado do sino, lá em cima na tela inicial; um toque recarrega com a versão nova
+const BTN_ATUALIZAR = '<button type="button" class="btn-atualizar" data-acao="atualizarApp" aria-label="Tem versão nova do app. Toque para atualizar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg><small>Atualizar</small></button>';
 window.__mostrarNovaVersao = mostrarNovaVersao;
 setTimeout(checarVersao, 8000);
 setInterval(checarVersao, 3 * 60 * 1000);
