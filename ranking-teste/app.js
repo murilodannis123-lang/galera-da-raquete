@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111135904';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111135904';
-import { REGULAMENTO } from './regulamento.js?v=20261111135904';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111135904';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111135904';
+import * as M from './motor.js?v=20261111140301';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111140301';
+import { REGULAMENTO } from './regulamento.js?v=20261111140301';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111140301';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111140301';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -3417,7 +3417,7 @@ function mostrarNovaVersao() {
   if (box && !box.querySelector('.btn-atualizar')) box.insertAdjacentHTML('afterbegin', BTN_ATUALIZAR);
 }
 // fica do lado do sino, lá em cima na tela inicial; um toque recarrega com a versão nova
-const BTN_ATUALIZAR = '<button type="button" class="btn-atualizar" data-acao="atualizarApp" aria-label="Tem versão nova do app. Toque para atualizar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg><small>Atualizar</small></button>';
+const BTN_ATUALIZAR = '<button type="button" class="btn-atualizar" data-acao="atualizarApp" aria-label="Tem versão nova do app. Toque para atualizar"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg><small>Atualizar</small></button>';
 window.__mostrarNovaVersao = mostrarNovaVersao;
 setTimeout(checarVersao, 8000);
 setInterval(checarVersao, 3 * 60 * 1000);
