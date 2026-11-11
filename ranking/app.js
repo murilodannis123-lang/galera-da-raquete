@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111132648';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111132648';
-import { REGULAMENTO } from './regulamento.js?v=20261111132648';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111132648';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111132648';
+import * as M from './motor.js?v=20261111140901';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111140901';
+import { REGULAMENTO } from './regulamento.js?v=20261111140901';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111140901';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111140901';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -575,7 +575,7 @@ function telaInicio() {
     <div class="topo-linha">
       ${eu.admin ? `<a class="ic-btn" href="#/admin" aria-label="Admin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>` : '<span style="width:44px"></span>'}
       <button class="logo-btn" data-acao="abertura" aria-label="Ver a abertura de novo"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></button>
-      ${foraDoRanking() ? '<span style="width:44px"></span>' : `<a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>`}
+      <div class="sino-box">${S.novaVersao ? BTN_ATUALIZAR : ''}${foraDoRanking() ? '<span style="width:44px"></span>' : `<a class="ic-btn" href="#/avisos" aria-label="Avisos da coordenação"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${naoLidos ? `<span class="badge" aria-label="${naoLidos} aviso(s) novo(s)">${naoLidos > 9 ? '9+' : naoLidos}</span>` : ''}</a>`}</div>
     </div>
     <h1 class="titulo">Portal do Lago Open de Tênis</h1>
     <p class="sub-ranking">RANKING</p>
@@ -839,10 +839,10 @@ async function telaPlacar(id, fin) {
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
+    <p id="placar-msg" role="status" style="margin:0"></p>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
     ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">Cancelar placar</button>` : ''}
     ${!fechado ? `<a class="btn btn-linha" href="#/${fin ? 'fwo' : 'wo'}/${g.id}" style="color:var(--verm);gap:6px">${IC_WO} ${fin && g.wo_de ? 'Ver WO (' + esc(woTxtF(g)) + ')' : 'Não teve jogo? Lançar WO'}</a>` : ''}
-    <p id="placar-msg" role="status"></p>
   </form>`;
 }
 // tie-break só abre quando cada um venceu um set
@@ -868,8 +868,13 @@ function previaPlacar(form) {
   const abre = empatou(form);
   ['a2', 'b2'].forEach((k) => { if (!abre) form[k].value = ''; form[k].disabled = !abre || form.a0.disabled; form[k].closest('.set').style.opacity = abre ? '1' : '.45'; });
   const { r, erro } = lerSets(form);
-  const meio = form.a1.value !== '' && form.b1.value !== '';
-  if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
+  // placar incompleto: só aparece a tarja (com a dica do que falta) depois que a pessoa tentou gravar
+  if (erro || !r) {
+    el.hidden = form.dataset.tentou !== '1';
+    el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`;
+    return;
+  }
+  el.hidden = false;
   const ven = g.dupla_a ? { nome: nomeDuplaTxt(r.aVenceu ? g.dupla_a : g.dupla_b) } : porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
   el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0 <span style="display:inline-flex;vertical-align:-4px">' + PNEU(18) + '</span>' : ''}</div>`;
@@ -2622,6 +2627,7 @@ const ACOES = {
   cancelarRodar: () => { S.admin.confirmar = false; render(); },
   rodar: () => { const abrir = !!(document.getElementById('abrirProx') || {}).checked && !(S.mesAtual && /-(10|11|12)$/.test(S.mesAtual.id)); comTrava('Encerrando o mês…', async () => { S.admin.confirmar = false; await rodarMes(abrir); }, abrir ? 'Mês encerrado e próximo aberto.' : 'Mês encerrado.'); },
   abrirMes: () => comTrava('Abrindo…', () => abrirMes(document.getElementById('novoMes').value), 'Mês aberto com os confrontos.'),
+  atualizarApp: (el) => { el.disabled = true; el.querySelector('small').textContent = 'Atualizando'; location.reload(); },
   desfazerWoF: (el) => comTrava('', async () => { const r = await sb.from('finals_jogos').update({ sets: null, wo_de: null, wo_motivo: null, wo_obs: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/finals'; }, 'WO desfeito. O jogo voltou a ficar pendente.'),
   desfazerWo: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; }, 'WO desfeito.'),
   woResp: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_status: el.dataset.v }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; },
@@ -2719,7 +2725,13 @@ const FORMS = {
   }, 'Patrocinador adicionado. Já aparece no carrossel.'),
   placar: async (f) => {
     const { sets, r, erro } = lerSets(f); const msg = document.getElementById('placar-msg');
-    if (erro) { msg.className = 'erro'; msg.textContent = erro; return; }
+    if (erro) {
+      f.dataset.tentou = '1'; previaPlacar(f);
+      // marca de vermelho as casas que faltam (1º e 2º set sempre; tie-break só quando ele está aberto)
+      [0, 1, 2].forEach((i) => { const x = f['a' + i], y = f['b' + i]; if (x.disabled || (i === 2 && x.closest('.set').style.opacity === '.45')) return; [x, y].forEach((c) => { if (c.value === '') c.classList.add('faltou'); }); });
+      const p1 = f.querySelector('.faltou'); if (p1) p1.focus();
+      return;
+    }
     const fin = f.dataset.tabela === 'finals_jogos', tor = f.dataset.tabela === 'torneio_jogos';
     const { error } = await sb.from(f.dataset.tabela).update(fin || tor ? { sets } : { sets, wo_de: null }).eq('id', f.dataset.id);
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
@@ -2867,7 +2879,11 @@ async function trocarFoto(file) {
 }
 document.addEventListener('change', (ev) => { if (ev.target.matches && ev.target.matches('input[data-foto]')) trocarFoto(ev.target.files[0]); });
 document.addEventListener('input', (ev) => { if (ev.target.matches('[data-busca]')) { S.busca[telaAtual()] = ev.target.value; aplicarBusca(); } });
-document.addEventListener('input', (ev) => { const f = ev.target.closest('form[data-form="placar"]'); if (f) previaPlacar(f); });
+document.addEventListener('input', (ev) => {
+  const f = ev.target.closest('form[data-form="placar"]'); if (!f) return;
+  ev.target.classList.remove('faltou');
+  previaPlacar(f);
+});
 document.addEventListener('submit', async (ev) => {
   const f = ev.target.closest('form[data-form]'); if (!f) return;
   ev.preventDefault();
@@ -3382,3 +3398,30 @@ function colocarOlhos(raiz) {
 }
 colocarOlhos(document);
 new MutationObserver(() => colocarOlhos(document)).observe(document.body, { childList: true, subtree: true });
+
+// Aviso de versão nova: o app confere o site de tempos em tempos (e quando volta a ficar aberto na tela).
+// Tendo versão nova, aparece um botãozinho no canto; um toque recarrega já com a versão nova.
+const VERSAO_APP = (import.meta.url.match(/[?&]v=(\d{14})/) || [])[1] || '';
+let checandoVersao = false;
+async function checarVersao() {
+  if (!VERSAO_APP || checandoVersao || S.novaVersao || window.__SB__) return;
+  checandoVersao = true;
+  try {
+    const url = new URL('index.html', location.href.split('#')[0]);
+    url.searchParams.set('checar', Date.now());
+    const r = await fetch(url, { cache: 'no-store' });
+    const v = r.ok && ((await r.text()).match(/app\.js\?v=(\d{14})/) || [])[1];
+    if (v && v > VERSAO_APP) mostrarNovaVersao();
+  } catch (e) { /* sem internet: confere de novo depois */ } finally { checandoVersao = false; }
+}
+function mostrarNovaVersao() {
+  S.novaVersao = true;
+  const box = document.querySelector('.sino-box');
+  if (box && !box.querySelector('.btn-atualizar')) box.insertAdjacentHTML('afterbegin', BTN_ATUALIZAR);
+}
+// fica do lado do sino, lá em cima na tela inicial; um toque recarrega com a versão nova
+const BTN_ATUALIZAR = '<button type="button" class="btn-atualizar" data-acao="atualizarApp" aria-label="Tem versão nova do app. Toque para atualizar"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg><small>Atualizar</small></button>';
+window.__mostrarNovaVersao = mostrarNovaVersao;
+setTimeout(checarVersao, 8000);
+setInterval(checarVersao, 3 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checarVersao(); });
