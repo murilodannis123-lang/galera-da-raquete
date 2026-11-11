@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111140301';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111140301';
-import { REGULAMENTO } from './regulamento.js?v=20261111140301';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111140301';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111140301';
+import * as M from './motor.js?v=20261111140523';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111140523';
+import { REGULAMENTO } from './regulamento.js?v=20261111140523';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111140523';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111140523';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -868,9 +868,13 @@ function previaPlacar(form) {
   const abre = empatou(form);
   ['a2', 'b2'].forEach((k) => { if (!abre) form[k].value = ''; form[k].disabled = !abre || form.a0.disabled; form[k].closest('.set').style.opacity = abre ? '1' : '.45'; });
   const { r, erro } = lerSets(form);
-  // placar ainda incompleto: não mostra nada; o aviso só aparece se tentar gravar faltando algo
-  el.hidden = !!(erro || !r);
-  if (el.hidden) return;
+  // placar incompleto: só aparece a tarja (com a dica do que falta) depois que a pessoa tentou gravar
+  if (erro || !r) {
+    el.hidden = form.dataset.tentou !== '1';
+    el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`;
+    return;
+  }
+  el.hidden = false;
   const ven = g.dupla_a ? { nome: nomeDuplaTxt(r.aVenceu ? g.dupla_a : g.dupla_b) } : porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
   el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0 <span style="display:inline-flex;vertical-align:-4px">' + PNEU(18) + '</span>' : ''}</div>`;
@@ -2722,7 +2726,7 @@ const FORMS = {
   placar: async (f) => {
     const { sets, r, erro } = lerSets(f); const msg = document.getElementById('placar-msg');
     if (erro) {
-      msg.className = 'erro'; msg.textContent = erro;
+      f.dataset.tentou = '1'; previaPlacar(f);
       // marca de vermelho as casas que faltam (1º e 2º set sempre; tie-break só quando ele está aberto)
       [0, 1, 2].forEach((i) => { const x = f['a' + i], y = f['b' + i]; if (x.disabled || (i === 2 && x.closest('.set').style.opacity === '.45')) return; [x, y].forEach((c) => { if (c.value === '') c.classList.add('faltou'); }); });
       const p1 = f.querySelector('.faltou'); if (p1) p1.focus();
@@ -2878,7 +2882,6 @@ document.addEventListener('input', (ev) => { if (ev.target.matches('[data-busca]
 document.addEventListener('input', (ev) => {
   const f = ev.target.closest('form[data-form="placar"]'); if (!f) return;
   ev.target.classList.remove('faltou');
-  const m = document.getElementById('placar-msg'); if (m && m.className === 'erro') { m.className = ''; m.textContent = ''; }
   previaPlacar(f);
 });
 document.addEventListener('submit', async (ev) => {
