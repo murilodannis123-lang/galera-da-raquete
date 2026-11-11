@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111132648';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111132648';
-import { REGULAMENTO } from './regulamento.js?v=20261111132648';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111132648';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111132648';
+import * as M from './motor.js?v=20261111133222';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111133222';
+import { REGULAMENTO } from './regulamento.js?v=20261111133222';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111133222';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111133222';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -3382,3 +3382,32 @@ function colocarOlhos(raiz) {
 }
 colocarOlhos(document);
 new MutationObserver(() => colocarOlhos(document)).observe(document.body, { childList: true, subtree: true });
+
+// Aviso de versão nova: o app confere o site de tempos em tempos (e quando volta a ficar aberto na tela).
+// Tendo versão nova, aparece um botãozinho no canto; um toque recarrega já com a versão nova.
+const VERSAO_APP = (import.meta.url.match(/[?&]v=(\d{14})/) || [])[1] || '';
+let checandoVersao = false;
+async function checarVersao() {
+  if (!VERSAO_APP || checandoVersao || document.getElementById('nova-versao') || window.__SB__) return;
+  checandoVersao = true;
+  try {
+    const url = new URL('index.html', location.href.split('#')[0]);
+    url.searchParams.set('checar', Date.now());
+    const r = await fetch(url, { cache: 'no-store' });
+    const v = r.ok && ((await r.text()).match(/app\.js\?v=(\d{14})/) || [])[1];
+    if (v && v > VERSAO_APP) mostrarNovaVersao();
+  } catch (e) { /* sem internet: confere de novo depois */ } finally { checandoVersao = false; }
+}
+function mostrarNovaVersao() {
+  if (document.getElementById('nova-versao')) return;
+  const b = document.createElement('button');
+  b.id = 'nova-versao'; b.type = 'button';
+  b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>Atualizar';
+  b.setAttribute('aria-label', 'Tem versão nova do app. Toque para atualizar');
+  b.addEventListener('click', () => { b.disabled = true; b.textContent = 'Atualizando…'; location.reload(); });
+  document.body.appendChild(b);
+}
+window.__mostrarNovaVersao = mostrarNovaVersao;
+setTimeout(checarVersao, 8000);
+setInterval(checarVersao, 3 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checarVersao(); });
