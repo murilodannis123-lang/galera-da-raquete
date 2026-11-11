@@ -238,7 +238,7 @@ function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.
 var S=(function(){try{var o=JSON.parse(lsGet(KEY));if(valido(o))return o}catch(e){}return novo()})();
 
 var ui={tab:"placar",aberto:null,timeJog:"A",excluir:null,editando:null,login:false};
-var NIV={};
+var NIV={}, PINS=null;
 var net={sb:null,versao:-1,on:false,rt:false,ultimo:0,salvando:false,pendente:false,papel:null,pin:lsGet(KPIN)};
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -409,7 +409,8 @@ function act(a,d){
   if(soAdm[a]&&!adm()){toast("Só o organizador faz isso");return;}
   switch(a){
     case "nivel": setNivel(d.id,d.n); return;
-    case "tab": ui.tab=d.v; ui.login=false; window.scrollTo(0,0); render(); return;
+    case "trocarPin": if(!adm()){toast("Só o organizador");return;} trocarPin(d.p); return;
+    case "tab": if(d.v==="relatorio") verPins(); ui.tab=d.v; ui.login=false; window.scrollTo(0,0); render(); return;
     case "abrir": ui.aberto=(ui.aberto===+d.c?-1:+d.c); render(); return;
     case "login": ui.login=!ui.login; render(); if(ui.login) setTimeout(function(){var p=$("pin");p&&p.focus()},50); return;
     case "entrar": entrar($("pin").value.trim()); return;
@@ -538,6 +539,7 @@ function enviar(){
     net.salvando=false;
     if(r.error){
       net.pendente=false;
+      if(/PIN inv/.test(r.error.message)){net.pin=null;net.papel=null;NIV={};lsSet(KPIN,null);toast("Seu PIN mudou. Entre de novo com o PIN novo.");baixar(true);return;}
       toast(/CONFLITO/.test(r.error.message)?"O outro capitão mexeu ao mesmo tempo. Tela atualizada, faça de novo.":"Não salvou: "+r.error.message);
       baixar(true); return;
     }
@@ -550,6 +552,19 @@ function baixarNiveis(){
     if(r.error||!r.data) return; var a=JSON.stringify(NIV), b=JSON.stringify(r.data);
     if(a!==b){NIV=r.data; var f=document.activeElement&&document.activeElement.dataset&&(document.activeElement.dataset.pt||document.activeElement.dataset.placar); if(!f) render();}
   },function(){});
+}
+function verPins(){
+  if(!net.sb||!adm()) return;
+  net.sb.rpc("copa_ver_pins",{p_admin:net.pin}).then(function(r){ if(!r.error&&r.data){PINS=r.data; if(ui.tab==="relatorio") render();} },function(){});
+}
+function trocarPin(papel){
+  var el=document.querySelector('[data-novopin="'+papel+'"]'), v=(el&&el.value||"").trim();
+  if(!/^[0-9]{4,8}$/.test(v)){toast("O PIN precisa ter de 4 a 8 números");return;}
+  net.sb.rpc("copa_trocar_pin",{p_admin:net.pin,p_papel:papel,p_novo:v}).then(function(r){
+    if(r.error){toast(r.error.message.replace(/^.*?: /,""));return;}
+    if(papel==="admin"){net.pin=v;lsSet(KPIN,v);}
+    toast("PIN "+(papel==="admin"?"do organizador":"do capitão "+time(papel))+" agora é "+v); verPins();
+  },function(){toast("Sem internet");});
 }
 function setNivel(id,n){
   var j=jog(id); if(!j) return;
@@ -744,6 +759,13 @@ function vJogadores(){
   if(A) h+='<div class="card"><h2>Adicionar ao '+esc(time(t))+'</h2><textarea id="novos" placeholder="Um nome por linha (pode colar a lista inteira)"></textarea><div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn p" data-a="addJog">Adicionar</button></div></div>';
   return h;
 }
+function vPins(){
+  if(!adm()) return "";
+  var lin=function(papel,rot){ var atual=PINS&&PINS[papel]?PINS[papel]:"…";
+    return '<div class="lin" style="gap:8px"><span class="nm">'+rot+' · <b>'+esc(atual)+'</b></span><input type="text" inputmode="numeric" maxlength="8" placeholder="novo PIN" data-novopin="'+papel+'" style="width:110px;padding:6px"><button class="btn s p" data-a="trocarPin" data-p="'+papel+'">Trocar</button></div>'; };
+  return '<h3 style="margin-top:4px">PINs</h3>'+lin("A","Capitão "+esc(time("A")))+lin("B","Capitão "+esc(time("B")))+lin("admin","Organizador (você)")+
+    '<div class="dica">4 a 8 números. Quem estiver usando o PIN antigo vai ser desconectado e precisa entrar de novo com o novo.</div>';
+}
 function vRelatorio(){
   var h="";
   ["A","B"].forEach(function(t){
@@ -760,7 +782,7 @@ function vRelatorio(){
   })});
   if(!n) h+='<div class="dica">Nenhum resultado ainda.</div>';
   h+='</div>';
-  if(adm()) h+='<div class="card"><h2>Organizador</h2><div class="row" style="margin-bottom:8px"><label class="dica" style="margin:0">Início <input type="text" data-cfg="inicio" value="'+esc(S.inicio||"07:00")+'" style="width:76px"></label><label class="dica" style="margin:0">Minutos por jogo <input type="text" inputmode="numeric" data-cfg="dur" value="'+durMin()+'" style="width:56px"></label></div><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
+  if(adm()) h+='<div class="card"><h2>Organizador</h2>'+vPins()+'<h3>Jogo</h3><div class="row" style="margin-bottom:8px"><label class="dica" style="margin:0">Início <input type="text" data-cfg="inicio" value="'+esc(S.inicio||"07:00")+'" style="width:76px"></label><label class="dica" style="margin:0">Minutos por jogo <input type="text" inputmode="numeric" data-cfg="dur" value="'+durMin()+'" style="width:56px"></label></div><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
     '<textarea id="bk" class="hide" placeholder="Cole aqui um backup para restaurar"></textarea>'+
     '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Colar backup</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
     '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button></div></div>';
@@ -777,7 +799,7 @@ function render(){
   var jg=p.A+p.B;
   $("lider").textContent=(p.A>=16||p.B>=16)?"🏆 "+time(p.A>=16?"A":"B")+" campeão!"+(jg<30?" · "+(30-jg)+" partida(s) restantes":""):jg?(p.A===p.B?"Empate":"Vantagem "+time(p.A>p.B?"A":"B"))+" · "+(30-jg)+" partida(s) restantes":"30 partidas · 10 confrontos";
   $("quem").textContent=net.papel?(adm()?"👑 Organizador":"🎾 Capitão "+time(net.papel)):"🔑 Entrar";
-  var foco=document.activeElement&&document.activeElement.dataset&&(document.activeElement.dataset.placar||document.activeElement.dataset.pt);
+  var foco=document.activeElement&&document.activeElement.dataset&&(document.activeElement.dataset.placar||document.activeElement.dataset.pt||document.activeElement.dataset.novopin);
   if(foco) return;
   var y=window.scrollY;
   $("app").innerHTML=vLogin()+{placar:vPlacar,confrontos:vConfrontos,jogadores:vJogadores,relatorio:vRelatorio}[ui.tab]();
