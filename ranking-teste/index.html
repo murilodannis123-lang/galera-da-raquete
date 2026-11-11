@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261111135247"></script>
+<script src="redireciona.js?v=20261111135904"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -348,6 +348,8 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 .btn-atualizar{position:absolute;right:52px;top:0;width:44px;height:44px;border:0;border-radius:12px;background:#D8F145;color:#2A1A4A;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 0 0 rgba(216,241,69,.6);animation:novaVersao 1.8s ease-out infinite}
 .btn-atualizar small{position:absolute;top:48px;left:50%;transform:translateX(-50%);font:800 10px/1 Inter,system-ui,sans-serif;letter-spacing:.3px;color:#D8F145;white-space:nowrap}
 @keyframes novaVersao{0%{box-shadow:0 0 0 0 rgba(216,241,69,.6)}70%,100%{box-shadow:0 0 0 10px rgba(216,241,69,0)}}
+#previa[hidden]{display:none}
+.campo.faltou{border-color:var(--verm);background:#FDECEC;box-shadow:0 0 0 3px rgba(229,72,77,.18)}
 .selo-teste{position:fixed;top:0;left:0;right:0;z-index:9999;height:calc(22px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);display:flex;align-items:center;justify-content:center;background:#E5484D;color:#fff;font:800 11px/1 Inter,system-ui,sans-serif;letter-spacing:2px;pointer-events:none}body.teste{padding-top:22px}
 .zoom-zap{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:8px 14px 8px 10px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:15px;font-weight:700;text-decoration:none;letter-spacing:.3px}.zoom-zap:active{background:rgba(255,255,255,.26)}
 </style>
@@ -355,6 +357,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261111135247"></script>
+<script type="module" src="app.js?v=20261111135904"></script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111135247';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111135247';
-import { REGULAMENTO } from './regulamento.js?v=20261111135247';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111135247';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111135247';
+import * as M from './motor.js?v=20261111135904';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111135904';
+import { REGULAMENTO } from './regulamento.js?v=20261111135904';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111135904';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111135904';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -839,10 +839,10 @@ async function telaPlacar(id, fin) {
         <input class="campo" name="b${i}" type="number" inputmode="numeric" min="0" max="${mx}" value="${s[1] ?? ''}" aria-label="${rot}, ${tb ? 'pontos' : 'games'} de ${esc(b.nome)}" ${fechado ? 'disabled' : ''}></div>`; }).join('')}
     </div>
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
+    <p id="placar-msg" role="status" style="margin:0"></p>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
     ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">Cancelar placar</button>` : ''}
     ${!fechado ? `<a class="btn btn-linha" href="#/${fin ? 'fwo' : 'wo'}/${g.id}" style="color:var(--verm);gap:6px">${IC_WO} ${fin && g.wo_de ? 'Ver WO (' + esc(woTxtF(g)) + ')' : 'Não teve jogo? Lançar WO'}</a>` : ''}
-    <p id="placar-msg" role="status"></p>
   </form>`;
 }
 // tie-break só abre quando cada um venceu um set
@@ -868,8 +868,9 @@ function previaPlacar(form) {
   const abre = empatou(form);
   ['a2', 'b2'].forEach((k) => { if (!abre) form[k].value = ''; form[k].disabled = !abre || form.a0.disabled; form[k].closest('.set').style.opacity = abre ? '1' : '.45'; });
   const { r, erro } = lerSets(form);
-  const meio = form.a1.value !== '' && form.b1.value !== '';
-  if (erro || !r) { el.innerHTML = `<b class="cond" style="font-size:20px">Resultado: incompleto</b>${erro && meio ? `<div style="font-size:13px;color:#FFB4B4">${esc(erro)}</div>` : ''}`; return; }
+  // placar ainda incompleto: não mostra nada; o aviso só aparece se tentar gravar faltando algo
+  el.hidden = !!(erro || !r);
+  if (el.hidden) return;
   const ven = g.dupla_a ? { nome: nomeDuplaTxt(r.aVenceu ? g.dupla_a : g.dupla_b) } : porId(r.aVenceu ? g.jogador_a : g.jogador_b);
   const pneu = form && [0, 1, 2].some((i) => { const x = form['a' + i].value, y = form['b' + i].value; return (x === '6' && y === '0') || (x === '0' && y === '6'); });
   el.innerHTML = `<b class="cond" style="font-size:20px">${esc(ven ? ven.nome : '')} venceu ${r.setsA > r.setsB ? r.setsA + '×' + r.setsB : r.setsB + '×' + r.setsA}</b><div style="font-size:13px;color:var(--bola)">+${r.aVenceu ? r.ptsA : r.ptsB} vencedor / +${r.aVenceu ? r.ptsB : r.ptsA} perdedor${pneu ? ' · PNEU 6×0 <span style="display:inline-flex;vertical-align:-4px">' + PNEU(18) + '</span>' : ''}</div>`;
@@ -2720,7 +2721,13 @@ const FORMS = {
   }, 'Patrocinador adicionado. Já aparece no carrossel.'),
   placar: async (f) => {
     const { sets, r, erro } = lerSets(f); const msg = document.getElementById('placar-msg');
-    if (erro) { msg.className = 'erro'; msg.textContent = erro; return; }
+    if (erro) {
+      msg.className = 'erro'; msg.textContent = erro;
+      // marca de vermelho as casas que faltam (1º e 2º set sempre; tie-break só quando ele está aberto)
+      [0, 1, 2].forEach((i) => { const x = f['a' + i], y = f['b' + i]; if (x.disabled || (i === 2 && x.closest('.set').style.opacity === '.45')) return; [x, y].forEach((c) => { if (c.value === '') c.classList.add('faltou'); }); });
+      const p1 = f.querySelector('.faltou'); if (p1) p1.focus();
+      return;
+    }
     const fin = f.dataset.tabela === 'finals_jogos', tor = f.dataset.tabela === 'torneio_jogos';
     const { error } = await sb.from(f.dataset.tabela).update(fin || tor ? { sets } : { sets, wo_de: null }).eq('id', f.dataset.id);
     if (error) { msg.className = 'erro'; msg.textContent = error.message; return; }
@@ -2868,7 +2875,12 @@ async function trocarFoto(file) {
 }
 document.addEventListener('change', (ev) => { if (ev.target.matches && ev.target.matches('input[data-foto]')) trocarFoto(ev.target.files[0]); });
 document.addEventListener('input', (ev) => { if (ev.target.matches('[data-busca]')) { S.busca[telaAtual()] = ev.target.value; aplicarBusca(); } });
-document.addEventListener('input', (ev) => { const f = ev.target.closest('form[data-form="placar"]'); if (f) previaPlacar(f); });
+document.addEventListener('input', (ev) => {
+  const f = ev.target.closest('form[data-form="placar"]'); if (!f) return;
+  ev.target.classList.remove('faltou');
+  const m = document.getElementById('placar-msg'); if (m && m.className === 'erro') { m.className = ''; m.textContent = ''; }
+  previaPlacar(f);
+});
 document.addEventListener('submit', async (ev) => {
   const f = ev.target.closest('form[data-form]'); if (!f) return;
   ev.preventDefault();
