@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261110230334';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261110230334';
-import { REGULAMENTO } from './regulamento.js?v=20261110230334';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261110230334';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261110230334';
+import * as M from './motor.js?v=20261111121417';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111121417';
+import { REGULAMENTO } from './regulamento.js?v=20261111121417';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111121417';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111121417';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -223,7 +223,7 @@ const anoRanking = () => { const anos = S.meses.map((m) => Number(m.id.slice(0, 
 const anoFinals = () => (S.finals.length ? Math.max(...S.finals.map((x) => x.ano)) : ANO());
 const FASE_ORD = { grupos: 1, semi: 2, final: 3 };
 const FASES = { grupos: 'Fase de grupos', semi: 'Semifinais', final: 'Final', encerrado: 'Encerrado' };
-const pg = (g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets });
+const pg = (g) => ({ a: g.jogador_a, b: g.jogador_b, sets: g.sets, woDe: g.wo_de, woPts: M.pontosWO(g.ano + '-12') });
 function minhaVaga() { const a = anoFinals(); return S.eu && S.fvagas.find((v) => v.ano === a && v.jogador === S.eu.id); }
 // Confirmação do Finals: a partir de 31/10 os 8 primeiros de cada grupo dizem se vão jogar.
 // Quem diz que não vai sai da lista e o próximo do ranking entra (e passa a ver a pergunta). Fecha quando a coordenação monta o Finals do grupo.
@@ -414,7 +414,7 @@ function recarregarDepois(p) {
 
 // ---------- regras de exibição ----------
 // WO confirmado: vence quem não deu o WO (regra 2.6); anulado ou em análise: ninguém
-function vencedor(g) { if (g.wo_de) return g.wo_status === 'confirmado' ? (g.wo_de === g.jogador_a ? g.jogador_b : g.jogador_a) : null; if (!g.sets) return null; const r = M.resultado(g.sets); return r.aVenceu ? g.jogador_a : g.jogador_b; }
+function vencedor(g) { if (g.wo_de && g.wo_status !== undefined) return g.wo_status === 'confirmado' ? (g.wo_de === g.jogador_a ? g.jogador_b : g.jogador_a) : null; if (!g.sets) return null; const r = M.resultado(g.sets); return r.aVenceu ? g.jogador_a : g.jogador_b; }
 // regra 8.1: quem está classificado abaixo traz as bolinhas
 function trazBola(g) {
   if (!g || !g.jogador_b) return null;
@@ -492,14 +492,15 @@ function telaInicio() {
           <div class="vs">
             <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${esc(fg.fase === 'grupos' ? etapa.charAt(0) + etapa.slice(1).toLowerCase() : FASES[fg.fase])}</small></div>
             <div class="lado"><span class="fin-vs-tag">FINALS</span><span class="vs-txt" aria-hidden="true">VS</span>${fg.sets
-              ? `<small class="${ven === eu.id ? '' : 'derrota-pisca'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${ven === eu.id ? 'VITÓRIA' : 'DERROTA'}</small><b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(sets))}${pneuTag(sets, 14)}</b>`
+              ? `<small class="${ven === eu.id ? '' : 'derrota-pisca'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${ven === eu.id ? 'VITÓRIA' : 'DERROTA'}</small><b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${fg.wo_de ? 'WO' : esc(placarTxt(sets)) + pneuTag(sets, 14)}</b>${fg.wo_de ? `<small style="font-size:10px;color:rgba(255,255,255,.6)">${fg.wo_de === eu.id ? 'você deu WO' : 'WO de ' + esc(adv ? adv.nome : '?')}</small>` : ''}`
               : `<small class="brilho" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${bola === eu.id ? 'VOCÊ TRAZ AS BOLAS' : 'ELE TRAZ AS BOLAS'}</small>`}</div>
             <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">Grupo ${esc(v.grupo)}</small></div>
           </div>
           ${!fg.sets ? `<div class="acoes" style="grid-template-columns:1fr 1fr">
             ${link ? `<a class="btn btn-zap" href="${esc(link)}" target="_blank" rel="noopener">WhatsApp</a>` : `<button class="btn btn-linha" disabled title="Adversário sem celular cadastrado">Sem celular</button>`}
-            ${pode ? `<a class="btn btn-bola" href="#/fplacar/${fg.id}">Gravar placar</a>` : '<button class="btn btn-linha" disabled>Aguardando a fase</button>'}</div>`
-            : `<div class="acoes" style="grid-template-columns:1fr${pode ? ' 1fr' : ''}"><a class="btn btn-linha" href="#/finals">Ver chave</a>${pode ? `<a class="btn btn-linha" href="#/fplacar/${fg.id}">Corrigir</a>` : ''}</div>`}
+            ${pode ? `<a class="btn btn-bola" href="#/fplacar/${fg.id}">Gravar placar</a>` : '<button class="btn btn-linha" disabled>Aguardando a fase</button>'}</div>
+            ${pode ? `<a href="#/fwo/${fg.id}" style="display:block;text-align:center;margin-top:8px;font-size:13px;font-weight:600;color:#FFB4B4">Não vai dar pra jogar? Registrar WO</a>` : ''}`
+            : `<div class="acoes" style="grid-template-columns:1fr${pode ? ' 1fr' : ''}"><a class="btn btn-linha" href="#/finals">Ver chave</a>${pode ? `<a class="btn btn-linha" href="#/${fg.wo_de ? 'fwo' : 'fplacar'}/${fg.id}">${fg.wo_de ? 'Ver WO' : 'Corrigir'}</a>` : ''}</div>`}
         </div>`;
       };
       const ini = Math.max(0, meus.indexOf(pend[0] || meus[meus.length - 1]));
@@ -621,6 +622,12 @@ const woBloco = (g, editar) => {
       <span>${editar ? `<a href="#/wo/${g.id}">de ${quem}</a>` : 'de ' + quem}</span></div>
     ${g.wo_obs ? `<p class="wo-obs">“${esc(g.wo_obs)}”</p>` : ''}</div>`;
 };
+// WO no Finals: vale na hora (sem aceitar/contestar); quem lançou ou a coordenação desfaz enquanto a fase estiver aberta
+const woTxtF = (g) => 'WO de ' + ((porId(g.wo_de) || {}).nome || '?') + ' · ' + (g.wo_motivo === 'lesao' ? 'lesão' : 'não comparecimento');
+const woBlocoF = (g, editar) => `<div class="wo-bloco">
+    <div class="wo-linha"><span class="tag" style="background:#FDECEC;color:var(--verm)">WO · ${g.wo_motivo === 'lesao' ? 'LESÃO' : 'AUSÊNCIA'}</span>
+      <span>${editar ? `<a href="#/fwo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome || '?')}</a>` : 'de ' + esc((porId(g.wo_de) || {}).nome || '?')}</span></div>
+    ${g.wo_obs ? `<p class="wo-obs">“${esc(g.wo_obs)}”</p>` : ''}</div>`;
 const IC = (d) => `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const MENU = [
   { nome: 'Meu perfil', href: () => '#/perfil', ic: IC('<circle cx="12" cy="12" r="10.5" stroke-opacity=".35"/><circle cx="12" cy="9" r="3.6" fill="currentColor" fill-opacity=".22"/><path d="M5.6 19.2c1-3 3.4-4.7 6.4-4.7s5.4 1.7 6.4 4.7" fill="currentColor" fill-opacity=".22"/>') },
@@ -678,11 +685,11 @@ function noticiasFinals() {
   const andamento = fzs.filter((f) => f.fase !== 'encerrado');
   if (andamento.length) out.push(['🔥 FINALS ' + ano, andamento.map((f) => 'Grupo ' + f.grupo + ': ' + FASES[f.fase].toLowerCase()).join(' · '), R]);
   // campeões
-  fzs.forEach((f) => { const { final } = dadosFinals(ano, f.grupo); if (final && final.sets) out.push(['🏆 CAMPEÃO FINALS ' + ano + ' · GRUPO ' + f.grupo, nome(vencedor(final)) + ' venceu ' + nome(vencedor(final) === final.jogador_a ? final.jogador_b : final.jogador_a) + ' ' + placarTxt(vencedor(final) === final.jogador_a ? final.sets : final.sets.map(([x, y]) => [y, x])), R]); });
+  fzs.forEach((f) => { const { final } = dadosFinals(ano, f.grupo); if (final && final.sets) out.push(['🏆 CAMPEÃO FINALS ' + ano + ' · GRUPO ' + f.grupo, nome(vencedor(final)) + ' venceu ' + nome(vencedor(final) === final.jogador_a ? final.jogador_b : final.jogador_a) + ' ' + (final.wo_de ? 'por WO' : placarTxt(vencedor(final) === final.jogador_a ? final.sets : final.sets.map(([x, y]) => [y, x]))), R]); });
   // resultados, do mais recente pro mais antigo
   S.fjogos.filter((g) => g.ano === ano && g.sets && g.fase !== 'final')
     .sort((x, y) => String(y.gravado_em || y.criado_em).localeCompare(String(x.gravado_em || x.criado_em))).slice(0, 12)
-    .forEach((g) => { const v = vencedor(g), a = v === g.jogador_a; out.push(['FINALS · ' + fase(g) + ' · GRUPO ' + g.grupo, nome(v) + ' venceu ' + nome(a ? g.jogador_b : g.jogador_a) + ' ' + placarTxt(a ? g.sets : g.sets.map(([x, y]) => [y, x])), R]); });
+    .forEach((g) => { const v = vencedor(g), a = v === g.jogador_a; out.push(['FINALS · ' + fase(g) + ' · GRUPO ' + g.grupo, nome(v) + ' venceu ' + nome(a ? g.jogador_b : g.jogador_a) + ' ' + (g.wo_de ? 'por WO' : placarTxt(a ? g.sets : g.sets.map(([x, y]) => [y, x]))), R]); });
   // semifinais e finais marcadas (ainda sem placar)
   S.fjogos.filter((g) => g.ano === ano && !g.sets && g.fase !== 'grupos')
     .forEach((g) => out.push(['FINALS · ' + fase(g) + ' · GRUPO ' + g.grupo, nome(g.jogador_a) + ' x ' + nome(g.jogador_b), R]));
@@ -907,6 +914,45 @@ async function telaWo(id) {
   </form>`;
 }
 
+// WO no Finals: vale na hora (os prazos do Finals são curtos, não tem aceitar/contestar). Vira 6×0 6×0 pra quem não deu o WO,
+// a chave anda sozinha e na fase de grupos quem venceu leva os pontos de WO (quem deu fica com 0). Quem lançou ou a coordenação desfaz.
+function telaWOFinals(id) {
+  const g = S.fjogos.find((x) => x.id === id);
+  if (!g) return voltar('WO') + '<div class="conteudo"><p class="erro">Jogo não encontrado.</p></div>';
+  const participa = g.jogador_a === S.eu.id || g.jogador_b === S.eu.id;
+  if (!participa && !S.eu.admin) return voltar('WO') + '<div class="conteudo"><p class="erro">Só os jogadores do jogo podem dar WO.</p></div>';
+  const fz = S.finals.find((x) => x.ano === g.ano && x.grupo === g.grupo);
+  const fechado = !S.eu.admin && (!fz || fz.fase !== g.fase);
+  const a = porId(g.jogador_a), b = porId(g.jogador_b), eu = participa ? S.eu.id : null, adv = participa ? (g.jogador_a === eu ? b : a) : null;
+  const tit = 'Finals ' + g.ano + ' · ' + (g.fase === 'grupos' ? 'Grupos' : FASES[g.fase]);
+  if (g.wo_de) {
+    const trava = fechado || (!S.eu.admin && g.gravado_por !== S.uid);
+    return voltar('WO', tit) + `<div class="conteudo">
+      <div class="card" style="border:2px solid var(--verm)"><b class="cond" style="font-size:20px;color:var(--verm)">${esc(woTxtF(g))}</b>
+        ${g.wo_obs ? `<p class="dica" style="margin-top:6px;white-space:pre-line">${esc(g.wo_obs)}</p>` : ''}</div>
+      ${trava ? `<p class="dica">${fechado ? 'Essa fase do Finals já fechou. Só a coordenação altera.' : 'Só quem lançou o WO ou a coordenação pode desfazer.'}</p>`
+        : `<button class="btn btn-linha" data-acao="desfazerWoF" data-id="${g.id}">Desfazer WO (o jogo volta a ficar pendente)</button>`}
+    </div>`;
+  }
+  if (g.sets && gravadoPorOutro(g)) return voltar('WO') + `<div class="conteudo"><p class="erro">Esse jogo já tem placar gravado por ${esc(gravadoPorOutro(g))}. Se estiver errado, fale com a coordenação.</p></div>`;
+  const pts = g.fase === 'grupos' ? ' ganha ' + M.pontosWO(g.ano + '-12') + ' pontos na chave e' : '';
+  const opc = (v, tit, txt, marcado) => `<label class="card" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="tipo" value="${v}" ${marcado ? 'checked' : ''} required style="margin-top:4px;accent-color:var(--roxo)"><span><b style="font-size:15px">${tit}</b><br><span class="dica">${txt}</span></span></label>`;
+  return voltar('Não vou poder jogar', 'WO · ' + tit) + `
+  <form class="conteudo" data-form="fwo" data-id="${g.id}">
+    ${fechado ? '<p class="erro">Essa fase do Finals já fechou. Só a coordenação registra WO agora.</p>' : ''}
+    ${participa ? `
+    ${opc('eu-lesao', 'Estou lesionado', 'Você dá o WO e fica com 0. ' + esc(adv && adv.nome) + pts + ' passa como vitória por 6×0 6×0.', true)}
+    ${opc('eu-ausencia', 'Não vou poder comparecer', 'Você dá o WO e fica com 0. ' + esc(adv && adv.nome) + pts + ' passa como vitória por 6×0 6×0.')}
+    ${opc('ele-ausencia', 'Meu adversário não compareceu', 'Vale na hora: você' + pts + ' passa como vitória por 6×0 6×0. Explique abaixo; se ele discordar, a coordenação decide.')}`
+    : `${opc('a-lesao', esc(a && a.nome) + ': lesão', 'WO de ' + esc(a && a.nome), true)}${opc('a-ausencia', esc(a && a.nome) + ': não compareceu', 'WO de ' + esc(a && a.nome))}
+       ${opc('b-lesao', esc(b && b.nome) + ': lesão', 'WO de ' + esc(b && b.nome))}${opc('b-ausencia', esc(b && b.nome) + ': não compareceu', 'WO de ' + esc(b && b.nome))}`}
+    <label class="rot">Justificativa${participa ? ' (obrigatória se for WO do adversário)' : ''}<textarea class="campo" name="obs" rows="3" maxlength="500" placeholder="Ex.: combinamos sábado 8h e ele não apareceu."></textarea></label>
+    <p class="dica">No Finals o WO vale na hora, sem esperar resposta. Lançou errado? Abra o jogo de novo e desfaça.</p>
+    ${fechado ? '' : '<button class="btn btn-roxo" type="submit" style="background:var(--verm)">Confirmar WO</button>'}
+    <p id="wo-msg" role="status"></p>
+  </form>`;
+}
+
 function telaPerfil() {
   const e = S.eu;
   return voltar('Meu perfil', e.email) + `
@@ -1057,7 +1103,7 @@ function linhaFinals(g, fz) {
   return `<div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
     <div class="confronto"><div class="p${v === g.jogador_a ? ' v' : ''}">${avatar(a, 30)}<span class="nm"><span>${esc(a && a.nome)}</span>${v === g.jogador_a ? VENCEU : ''}</span></div><span class="vs-mini" role="img" aria-label="contra"><span class="vs-txt" aria-hidden="true">VS</span></span>
       <div class="p${v === g.jogador_b ? ' v' : ''}" style="justify-content:flex-end"><span class="nm" style="align-items:flex-end;text-align:right"><span>${esc(b && b.nome)}</span>${v === g.jogador_b ? VENCEU : ''}</span>${avatar(b, 30)}</div></div>
-    ${g.sets ? placarTV(g.sets, pode ? '#/fplacar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;color:var(--tinta2)"><span>🎾 ${esc((porId(bolasFinals(g.ano, g.grupo)[g.id]) || {}).nome || '?')} traz as bolas</span>${pode ? `<a href="#/fplacar/${g.id}">Gravar placar</a>` : '<span>Pendente</span>'}</div>`}
+    ${g.wo_de ? woBlocoF(g, pode) : g.sets ? placarTV(g.sets, pode ? '#/fplacar/' + g.id : '') : `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;color:var(--tinta2)"><span>🎾 ${esc((porId(bolasFinals(g.ano, g.grupo)[g.id]) || {}).nome || '?')} traz as bolas</span>${pode ? `<span style="display:flex;gap:14px"><a href="#/fwo/${g.id}" style="color:var(--verm)">WO</a><a href="#/fplacar/${g.id}">Gravar placar</a></span>` : '<span>Pendente</span>'}</div>`}
   </div>`;
 }
 // colunas lado a lado das duas chaves do Finals
@@ -1081,7 +1127,7 @@ function chaveSVG({ chaves, sf, fin, campeao, titulo, ano }) {
       <text x="${x + w / 2}" y="${y + 13}" text-anchor="middle" font-size="8.5" font-weight="700" letter-spacing=".8" fill="${ven ? OURO : 'rgba(255,255,255,.55)'}">${esc(rot)}</text>
       <text x="${x + w / 2}" y="${y + 31}" text-anchor="middle" font-size="13" font-weight="700" fill="${j ? (proj ? 'rgba(255,255,255,.6)' : cor) : 'rgba(255,255,255,.35)'}"${proj ? ' font-style="italic"' : ''}>${j ? esc(nomeCurto(j)) + (proj ? '?' : '') : 'a definir'}</text>`;
   };
-  const placar = (x, y, g) => (g && g.sets ? `<text x="${x}" y="${y}" text-anchor="middle" font-size="9.5" font-weight="600" fill="rgba(255,255,255,.7)">${esc(placarTxt(g.sets))}</text>` : '');
+  const placar = (x, y, g) => (g && g.sets ? `<text x="${x}" y="${y}" text-anchor="middle" font-size="9.5" font-weight="600" fill="rgba(255,255,255,.7)">${g.wo_de ? 'WO de ' + esc(nomeCurto(porId(g.wo_de))) : esc(placarTxt(g.sets))}</text>` : '');
   const linha = (d, ok) => `<path d="${d}" fill="none" stroke="${ok ? OURO : 'rgba(255,255,255,.8)'}" stroke-width="1.5"/>`;
   const cabec = (x, t) => `<text x="${x}" y="52" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.6" fill="rgba(255,255,255,.5)">${t}</text>`;
   // colunas: chave 106 · semifinal 88 · finalista 66 · troféu 52 (simétrico)
@@ -2576,6 +2622,7 @@ const ACOES = {
   cancelarRodar: () => { S.admin.confirmar = false; render(); },
   rodar: () => { const abrir = !!(document.getElementById('abrirProx') || {}).checked && !(S.mesAtual && /-(10|11|12)$/.test(S.mesAtual.id)); comTrava('Encerrando o mês…', async () => { S.admin.confirmar = false; await rodarMes(abrir); }, abrir ? 'Mês encerrado e próximo aberto.' : 'Mês encerrado.'); },
   abrirMes: () => comTrava('Abrindo…', () => abrirMes(document.getElementById('novoMes').value), 'Mês aberto com os confrontos.'),
+  desfazerWoF: (el) => comTrava('', async () => { const r = await sb.from('finals_jogos').update({ sets: null, wo_de: null, wo_motivo: null, wo_obs: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/finals'; }, 'WO desfeito. O jogo voltou a ficar pendente.'),
   desfazerWo: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_de: null }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; }, 'WO desfeito.'),
   woResp: (el) => comTrava('', async () => { const r = await sb.from('jogos').update({ wo_status: el.dataset.v }).eq('id', el.dataset.id); if (r.error) throw r.error; location.hash = '#/'; },
     el.dataset.v === 'anulado' ? 'WO contestado: 0 pontos pros dois.' : 'WO aceito.'),
@@ -2698,6 +2745,21 @@ const FORMS = {
     const { error } = await sb.from('jogos').insert(novo);
     if (error) throw error;
   }, 'Jogo adicionado.'),
+  fwo: async (f) => {
+    const msg = document.getElementById('wo-msg'), g = S.fjogos.find((x) => x.id === f.dataset.id);
+    const tipo = (f.querySelector('[name=tipo]:checked') || {}).value || '', obs = f.obs.value.trim();
+    if (!g || !tipo) return;
+    const [quem, motivo] = tipo.split('-');
+    const outro = g.jogador_a === S.eu.id ? g.jogador_b : g.jogador_a;
+    const de = quem === 'eu' ? S.eu.id : quem === 'ele' ? outro : quem === 'a' ? g.jogador_a : g.jogador_b;
+    if (quem === 'ele' && !obs) { msg.className = 'erro'; msg.textContent = 'Explique o que aconteceu (dia, horário, se avisou).'; return; }
+    const sets = de === g.jogador_a ? [[0, 6], [0, 6]] : [[6, 0], [6, 0]];
+    const { error } = await sb.from('finals_jogos').update({ wo_de: de, wo_motivo: motivo, wo_obs: obs || null, sets }).eq('id', g.id);
+    if (error) { msg.className = 'erro'; msg.textContent = /wo_de|column/i.test(error.message) ? 'O WO do Finals ainda não foi ligado no banco. Fale com a coordenação.' : error.message; return; }
+    await carregar();
+    toast('WO registrado. A chave já foi atualizada.');
+    location.hash = '#/finals';
+  },
   wo: async (f) => {
     const g = S.jogos.find((x) => x.id === f.dataset.id); const msg = document.getElementById('wo-msg');
     if (!g) return;
@@ -3016,6 +3078,7 @@ async function render() {
       : rota === 'jogos' ? (finalsNosJogos() ? telaFinals(true) : await telaJogos())
       : rota === 'placar' ? await telaPlacar(arg)
       : rota === 'fplacar' ? await telaPlacar(arg, true)
+      : rota === 'fwo' ? telaWOFinals(arg)
       : rota === 'torneios' ? telaTorneios()
       : rota === 'duplas' ? telaTorneio(TORNEIO_10)
       : rota === 'torneio' ? telaTorneio(arg)
