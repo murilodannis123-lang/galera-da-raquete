@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111121417';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111121417';
-import { REGULAMENTO } from './regulamento.js?v=20261111121417';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111121417';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111121417';
+import * as M from './motor.js?v=20261111132648';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111132648';
+import { REGULAMENTO } from './regulamento.js?v=20261111132648';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111132648';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111132648';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -841,7 +841,7 @@ async function telaPlacar(id, fin) {
     <div id="previa" class="card" style="background:var(--noite);color:#fff;border:0"></div>
     ${fechado ? '' : '<button class="btn btn-roxo" type="submit">Gravar placar</button>'}
     ${!fechado && g.sets ? `<button class="btn btn-linha" type="button" style="color:var(--verm)" data-acao="cancelarPlacar" data-id="${g.id}" data-tabela="${fin ? 'finals_jogos' : 'jogos'}">Cancelar placar</button>` : ''}
-    ${!fin && !fechado ? `<a class="btn btn-linha" href="#/wo/${g.id}" style="color:var(--verm);gap:6px">${IC_WO} Não teve jogo? Lançar WO</a>` : ''}
+    ${!fechado ? `<a class="btn btn-linha" href="#/${fin ? 'fwo' : 'wo'}/${g.id}" style="color:var(--verm);gap:6px">${IC_WO} ${fin && g.wo_de ? 'Ver WO (' + esc(woTxtF(g)) + ')' : 'Não teve jogo? Lançar WO'}</a>` : ''}
     <p id="placar-msg" role="status"></p>
   </form>`;
 }
