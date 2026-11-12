@@ -405,7 +405,7 @@ var LIVRE={tab:1,abrir:1,timeJog:1,login:1,entrar:1,sair:1,backup:1,mostrarBk:1}
 function act(a,d){
   var m;
   if(!LIVRE[a]&&!pode()){toast("Entre com o PIN para alterar");return;}
-  var soAdm={recomecar:1,autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
+  var soAdm={zerarPlacar:1,recomecar:1,autoTudo:1,limparConf:1,estrito:1,reserva:1,editar:1,del:1,addJog:1,restaurar:1,zerar:1,resorteio:1};
   if(soAdm[a]&&!adm()){toast("Só o organizador faz isso");return;}
   switch(a){
     case "nivel": setNivel(d.id,d.n); return;
@@ -492,6 +492,10 @@ function act(a,d){
     case "restaurar":
       try{var o=JSON.parse($("bk").value); if(!valido(o)) throw 0; S=o; toast("Backup restaurado");}catch(e){toast("Backup inválido");return;}
       break;
+    case "zerarPlacar":
+      if(ui.excluir!=="ZPLACAR"){ui.excluir="ZPLACAR";render();return;}
+      S.conf.forEach(function(c){c.m.forEach(function(mm){mm.win=null;mm.placar="";delete mm.ini;})}); ui.excluir=null; ultPts=null;
+      toast("Placar zerado. Escalação mantida."); break;
     case "recomecar":
       if(ui.excluir!=="RECOMECAR"){ui.excluir="RECOMECAR";render();return;}
       var nv=novo(); S.conf=nv.conf; S.sorteio=null; S.ord=0; ui.excluir=null; toast("Escalação e resultados apagados. Jogadores e coringas mantidos."); break;
@@ -782,9 +786,10 @@ function vRelatorio(){
   })});
   if(!n) h+='<div class="dica">Nenhum resultado ainda.</div>';
   h+='</div>';
-  if(adm()) h+='<div class="card"><h2>Organizador</h2>'+vPins()+'<h3>Jogo</h3><div class="row" style="margin-bottom:8px"><label class="dica" style="margin:0">Início <input type="text" data-cfg="inicio" value="'+esc(S.inicio||"07:00")+'" style="width:76px"></label><label class="dica" style="margin:0">Minutos por jogo <input type="text" inputmode="numeric" data-cfg="dur" value="'+durMin()+'" style="width:56px"></label></div><div class="dica"><b>Recomeçar escalação</b> apaga só escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
+  if(adm()) h+='<div class="card"><h2>Organizador</h2>'+vPins()+'<h3>Jogo</h3><div class="row" style="margin-bottom:8px"><label class="dica" style="margin:0">Início <input type="text" data-cfg="inicio" value="'+esc(S.inicio||"07:00")+'" style="width:76px"></label><label class="dica" style="margin:0">Minutos por jogo <input type="text" inputmode="numeric" data-cfg="dur" value="'+durMin()+'" style="width:56px"></label></div><div class="dica"><b>Zerar placar</b> apaga só os resultados (a escalação fica). <b>Recomeçar escalação</b> apaga escalação, sorteio e resultados (jogadores e coringas ficam). Backup: tudo já fica salvo online; a cópia é só garantia extra.</div>'+
     '<textarea id="bk" class="hide" placeholder="Cole aqui um backup para restaurar"></textarea>'+
     '<div class="row wrap" style="margin-top:8px"><button class="btn p s" data-a="backup">Copiar backup</button><button class="btn s" data-a="mostrarBk">Colar backup</button><button class="btn s hide" id="btRest" data-a="restaurar">Confirmar restauração</button><span class="sp"></span>'+
+    '<button class="btn s'+(ui.excluir==="ZPLACAR"?" r":"")+'" data-a="zerarPlacar">'+(ui.excluir==="ZPLACAR"?"Confirmar: zerar placar":"Zerar placar")+'</button>'+
     '<button class="btn s'+(ui.excluir==="RECOMECAR"?" r":"")+'" data-a="recomecar">'+(ui.excluir==="RECOMECAR"?"Confirmar: apagar escalação":"Recomeçar escalação")+'</button></div></div>';
   return h;
 }
@@ -812,7 +817,7 @@ function render(){
 document.addEventListener("click",function(e){
   var n=e.target.closest("nav button"); if(n){act("tab",{v:n.dataset.tab});return;}
   var b=e.target.closest("[data-a]"); if(!b||b.tagName==="SELECT"||b.type==="checkbox"||b.tagName==="A") return;
-  if(["del","zerar","coringa","recomecar"].indexOf(b.dataset.a)<0) ui.excluir=null;
+  if(["del","zerar","coringa","recomecar","zerarPlacar"].indexOf(b.dataset.a)<0) ui.excluir=null;
   act(b.dataset.a,b.dataset);
 });
 document.addEventListener("change",function(e){
