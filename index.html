@@ -764,7 +764,7 @@ const CONFIG = {
 };
 
 /* ---------- se o celular guardou uma versão velha do convite, recarrega a nova ---------- */
-const VERSAO = "202611011654";
+const VERSAO = "202611161424";
 (async () => {
   try {
     const r = await fetch("versao.txt?t=" + Date.now(), { cache: "no-store" });
@@ -801,8 +801,17 @@ const API = (() => {
     const r = await tempo(fetch(CONFIG.api + "?acao=" + acao + "&t=" + Date.now()), 15000);
     return r.json();
   }
+  // código anônimo deste aparelho (não tem nome nem número) + tipo do aparelho, pra organização cruzar inscrição × ranking
+  const aparelho = (() => {
+    let id = ls.get("gr-aparelho", "");
+    if (!id) { id = Math.random().toString(36).slice(2, 8).toUpperCase() + Date.now().toString(36).slice(-3).toUpperCase(); ls.set("gr-aparelho", id); }
+    return id;
+  })();
+  const ua = navigator.userAgent || "";
+  const modelo = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android " + ((ua.match(/Android [\d.]+; ([^;)]+)/) || [])[1] || "").replace(/\bK\b/, "").trim() : /Windows/.test(ua) ? "PC Windows" : /Mac/.test(ua) ? "Mac" : "outro";
   async function post(dados) {
     if (!on) throw new Error("offline");
+    dados = { ...dados, aparelho, modelo: modelo.trim() };
     const r = await tempo(fetch(CONFIG.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) }), 45000);
     return r.json();
   }
@@ -1343,7 +1352,7 @@ const Ranking = (() => {
     $("hofNota").textContent = API.on ? "Ranking ao vivo com toda a galera." : "Ranking deste aparelho. O ranking geral liga quando o convite estiver no ar.";
   }
   function atualiza(r) { if (Array.isArray(r)) { lista = r; pinta(); } }
-  async function envia(nome, pontos) {
+  async function envia(nome, pontos, partida) {
     ls.set("gr-nome-jogo", nome);
     if (!API.on) {
       const k = nome.toLowerCase(), i = lista.findIndex(x => x.nome.toLowerCase() === k);
@@ -1351,7 +1360,7 @@ const Ranking = (() => {
       lista.sort((a, b) => b.pontos - a.pontos); ls.set("gr-ranking-local", lista); pinta();
       return { ok: true, local: true };
     }
-    const r = await API.post({ acao: "pontos", nome, pontos });
+    const r = await API.post({ acao: "pontos", nome, pontos, partida });
     if (r.ok) atualiza(r.ranking);
     return r;
   }
@@ -1362,7 +1371,7 @@ const Ranking = (() => {
     if (!API.on) return;
     let fila = ls.get("gr-pontos-pendentes", []);
     for (const it of fila.slice()) {
-      try { const r = await envia(it.nome, it.pontos); if (r && r.ok) fila = fila.filter(x => x !== it); } catch (_) {}
+      try { const r = await envia(it.nome, it.pontos, it.partida); if (r) fila = fila.filter(x => x !== it); } catch (_) {}
     }
     ls.set("gr-pontos-pendentes", fila);
   }, 4000);
@@ -1653,7 +1662,9 @@ const Ranking = (() => {
     painel(`<h5>TÊNIS DA<br>GALERA</h5><p>Você é o tenista de <b style="color:#b79cff">roxo</b>, embaixo. Arraste o dedo pra correr até a bola. Bater com a ponta da raquete manda a bola pro canto!</p><p>Devolução vale 10 · ponto 100 · game 500. Você tem 3 bolas.</p><span class="j-brinde">🏆 1º lugar do ranking no dia da festa ganha brinde!</span><button class="cta bola" id="jIni" type="button">COMEÇAR</button>`);
     $("jIni").onclick = comeca;
   }
+  let bilhete = null;   // o servidor marca a hora que a partida começou; pontos fora do possível pro tempo jogado são recusados
   function comeca() {
+    bilhete = API.on ? API.post({ acao: "partida" }).then(r => r && r.partida).catch(() => null) : Promise.resolve(null);
     msg.innerHTML = ""; pts = 0; vidas = 3; nivel = 1; eu = 0; cpu = 0; games = 0; ia.vel = .7; ia.x = 0; pl.x = pl.alvo = 0;
     hud(); saque("eu");
   }
@@ -1673,7 +1684,8 @@ const Ranking = (() => {
       if (pts <= 0) { $("jOk").textContent = "FAÇA PONTOS PRIMEIRO!"; return; }
       const b = $("jSalvar"); b.disabled = true; b.textContent = "SALVANDO...";
       try {
-        const r = await Ranking.envia(n, pts);
+        const partida = await bilhete;
+        const r = await Ranking.envia(n, pts, partida);
         if (!r.ok) throw new Error(r.erro);
         const p = Ranking.posicao(n);
         $("jOk").textContent = p === 1 ? "VOCÊ É O 1º! O BRINDE É SEU... POR ENQUANTO!" : p ? "VOCÊ ESTÁ EM " + p + "º LUGAR! O 1º GANHA BRINDE" : "SALVO!";
@@ -1683,7 +1695,10 @@ const Ranking = (() => {
         // mostra o motivo de verdade (antes todo erro aparecia como "sem conexão")
         const msg = e && e.message && e.message !== "Failed to fetch" && !/tempo|offline/i.test(e.message) ? e.message.toUpperCase() : "SEM CONEXÃO. TENTE DE NOVO";
         $("jOk").textContent = msg; b.disabled = false; b.textContent = "SALVAR NO RANKING";
-        try { const fila = ls.get("gr-pontos-pendentes", []); fila.push({ nome: n, pontos: pts, quando: Date.now() }); ls.set("gr-pontos-pendentes", fila.slice(-5)); } catch (_) {}
+        // só guarda pra tentar depois quando foi falta de internet (recusa do servidor não adianta repetir)
+        if (!(e && e.message && e.message !== "Failed to fetch" && !/tempo|offline/i.test(e.message))) {
+          try { const fila = ls.get("gr-pontos-pendentes", []); fila.push({ nome: n, pontos: pts, partida: await bilhete, quando: Date.now() }); ls.set("gr-pontos-pendentes", fila.slice(-5)); } catch (_) {}
+        }
       }
     };
   }
