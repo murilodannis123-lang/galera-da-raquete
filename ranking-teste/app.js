@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261111140901';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261111140901';
-import { REGULAMENTO } from './regulamento.js?v=20261111140901';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261111140901';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261111140901';
+import * as M from './motor.js?v=20261116192921';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261116192921';
+import { REGULAMENTO } from './regulamento.js?v=20261116192921';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261116192921';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261116192921';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -30,6 +30,8 @@ function toast(t) {
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
+// fotos do jogo lá em cima na tela inicial: grandes o bastante pra reconhecer sem tocar
+const AV_VS = 84;
 const avatar = (j, tam) => `<span class="avatar"${j && j.id ? ` data-ver="${esc(j.id)}"` : ''} style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px">${esc(iniciais(j && j.nome))}${j && j.foto_url ? `<img class="foto-av" src="${esc(j.foto_url)}" alt="" decoding="async">` : ''}</span>`;
 const voltar = (titulo, sub, para = '#/') => `<header class="cab"><div class="cab-linha"><a class="ic-btn" href="${para}" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div style="flex-grow:1;min-width:0"><h1>${esc(titulo)}</h1>${sub ? `<small>${esc(sub)}</small>` : ''}</div><img class="cab-logo" src="icones/logo.png" alt="Galera da Raquete Portal do Lago"></div></header>`;
 const BOLA = (t, cor = '#D8F145') => `<svg width="${t}" height="${t}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="${cor}" stroke="#B5CF22" stroke-width=".8"/><path d="M3.2 4.2c3.6 1.6 5.4 3.6 5.4 5.8s-1.8 4.2-5.4 5.8M16.8 4.2c-3.6 1.6-5.4 3.6-5.4 5.8s1.8 4.2 5.4 5.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
@@ -265,7 +267,7 @@ function responderTemporada(vai) {
 function blocoTemporada(eu, geral) {
   const T = anoRanking() + 1, r = respTemp(eu.id);
   const vs = `<div class="vs">
-      <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º em ${T - 1}</small></div>
+      <div class="lado">${avatar(eu, AV_VS)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º em ${T - 1}</small></div>
       <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${r && r.vai ? 'brilho' : ''}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${r && r.vai ? 'AGUARDANDO' : r ? 'STANDBY' : 'VAI CONTINUAR?'}</small></div>
       <div class="lado"><span class="vs-ano" aria-hidden="true">${T}</span><b>Ranking ${T}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${r && r.vai ? 'confirmado ✓' : 'temporada nova'}</small></div>
     </div>`;
@@ -490,11 +492,11 @@ function telaInicio() {
         const link = !fg.sets && adv && zap(adv.celular, 'E aí, bora marcar nosso jogo do Finals?');
         return `<div class="fin-slide" role="group" aria-label="${esc(etapa)}: você contra ${esc(adv ? adv.nome : '?')}">
           <div class="vs">
-            <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${esc(fg.fase === 'grupos' ? etapa.charAt(0) + etapa.slice(1).toLowerCase() : FASES[fg.fase])}</small></div>
+            <div class="lado">${avatar(eu, AV_VS)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${esc(fg.fase === 'grupos' ? etapa.charAt(0) + etapa.slice(1).toLowerCase() : FASES[fg.fase])}</small></div>
             <div class="lado"><span class="fin-vs-tag">FINALS</span><span class="vs-txt" aria-hidden="true">VS</span>${fg.sets
               ? `<small class="${ven === eu.id ? '' : 'derrota-pisca'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${ven === eu.id ? 'VITÓRIA' : 'DERROTA'}</small><b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${fg.wo_de ? 'WO' : esc(placarTxt(sets)) + pneuTag(sets, 14)}</b>${fg.wo_de ? `<small style="font-size:10px;color:rgba(255,255,255,.6)">${fg.wo_de === eu.id ? 'você deu WO' : 'WO de ' + esc(adv ? adv.nome : '?')}</small>` : ''}`
               : `<small class="brilho" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${bola === eu.id ? 'VOCÊ TRAZ AS BOLAS' : 'ELE TRAZ AS BOLAS'}</small>`}</div>
-            <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">Grupo ${esc(v.grupo)}</small></div>
+            <div class="lado">${avatar(adv, AV_VS)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">Grupo ${esc(v.grupo)}</small></div>
           </div>
           ${!fg.sets ? `<div class="acoes" style="grid-template-columns:1fr 1fr">
             ${link ? `<a class="btn btn-zap" href="${esc(link)}" target="_blank" rel="noopener">WhatsApp</a>` : `<button class="btn btn-linha" disabled title="Adversário sem celular cadastrado">Sem celular</button>`}
@@ -533,9 +535,9 @@ function telaInicio() {
       const sub = ultimo.wo_de ? 'WO · ' + (ultimo.wo_status === 'anulado' ? 'ANULADO' : v === eu.id ? 'VITÓRIA' : 'DERROTA') : ultimo.sets ? (v === eu.id ? 'VITÓRIA' : 'DERROTA') : 'SEM PLACAR';
       const meuLado = ultimo.jogador_a === eu.id, sets = ultimo.sets ? (meuLado ? ultimo.sets : ultimo.sets.map(([x, y]) => [y, x])) : null;
       vs = `<div class="vs">
-      <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
+      <div class="lado">${avatar(eu, AV_VS)}<b>${esc(eu.nome)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
       <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${/DERROTA$/.test(sub) ? 'derrota-pisca' : ''}" style="font-size:10px;letter-spacing:1px;color:${v === eu.id ? 'var(--bola)' : 'rgba(255,255,255,.6)'};font-weight:700">${esc(sub)}</small>${sets && !ultimo.wo_de ? `<b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(sets))}${pneuTag(sets, 14)}</b>` : ''}</div>
-      <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
+      <div class="lado">${avatar(adv, AV_VS)}<b>${esc(adv ? adv.nome : '?')}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
     </div>`;
     }
   }
@@ -544,9 +546,9 @@ function telaInicio() {
     const v = vencedor(meu);
     const sub = meu.wo_de ? 'WO · ' + (meu.wo_status === 'aguardando' ? 'AGUARDANDO' : meu.wo_status === 'anulado' ? 'CONTESTADO' : v === eu.id ? 'VITÓRIA' : 'DERROTA') : meu.sets ? (v === eu.id ? 'VITÓRIA' : 'DERROTA') : (trazBola(meu) === eu.id ? 'VOCÊ TRAZ AS BOLAS' : 'ELE TRAZ AS BOLAS');
     vs = `<div class="vs">
-      <div class="lado">${avatar(eu, 62)}<b>${esc(eu.nome)}${BOLINHA(eu.id, meu)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
+      <div class="lado">${avatar(eu, AV_VS)}<b>${esc(eu.nome)}${BOLINHA(eu.id, meu)}</b><small style="font-size:11px;color:var(--bola)">${geral[eu.id] || '–'}º lugar</small></div>
       <div class="lado"><span class="vs-txt" aria-hidden="true">VS</span><small class="${/DERROTA$/.test(sub) ? 'derrota-pisca' : meu.sets || meu.wo_de ? '' : 'brilho'}" style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.6)">${esc(sub)}</small>${meu.sets && !meu.wo_de ? `<b class="cond" style="font-size:15px;letter-spacing:.5px;color:#fff;white-space:nowrap">${esc(placarTxt(meu.sets))}${pneuTag(meu.sets, 14)}</b>` : ''}</div>
-      <div class="lado">${avatar(adv, 62)}<b>${esc(adv ? adv.nome : '?')}${BOLINHA(adv && adv.id, meu)}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
+      <div class="lado">${avatar(adv, AV_VS)}<b>${esc(adv ? adv.nome : '?')}${BOLINHA(adv && adv.id, meu)}</b><small style="font-size:11px;color:rgba(255,255,255,.7)">${(adv && geral[adv.id]) || '–'}º lugar</small></div>
     </div>`;
     if (meu.wo_de && meu.wo_status === 'aguardando' && meu.wo_de === eu.id) {
       corpo = `<div class="resultado" style="flex-direction:column;align-items:stretch;gap:8px"><div><b class="cond" style="font-size:18px;color:var(--verm)">${esc(adv ? adv.nome : '?')} lançou WO pra você</b><div class="dica">${esc(meu.wo_obs || '')}</div></div>
