@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118190500';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118190500';
-import { REGULAMENTO } from './regulamento.js?v=20261118190500';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118190500';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118190500';
+import * as M from './motor.js?v=20261118191051';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118191051';
+import { REGULAMENTO } from './regulamento.js?v=20261118191051';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118191051';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118191051';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -17,7 +17,10 @@ const soDigitos = (s) => String(s || '').replace(/\D/g, '');
 const zap = (cel, txt) => { let d = soDigitos(cel); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt); };
 const ehNoite = () => { const h = new Date().getHours(); return h >= 18 || h < 6; };
 // gorrinho de Natal no logo: de 15 a 28 de dezembro (na versão de teste aparece sempre, pra conferir)
-const ehNatal = () => { const d = new Date(); return (d.getMonth() === 11 && d.getDate() >= 15 && d.getDate() <= 28) || /\/ranking-teste\//.test(location.pathname); };
+const ehNatal = () => { const d = new Date(); return d.getMonth() === 11 && d.getDate() >= 15 && d.getDate() <= 28; };
+// Ano Novo: de 29/12 a 02/01 — fogos no topo, chapéu de festa no logo e Feliz Ano Novo na faixa (na versão de teste aparece sempre, pra conferir)
+const anoQueVem = () => { const d = new Date(); return d.getMonth() === 11 ? d.getFullYear() + 1 : d.getFullYear(); };
+const ehAnoNovo = () => { const d = new Date(); return (d.getMonth() === 11 && d.getDate() >= 29) || (d.getMonth() === 0 && d.getDate() <= 2) || /\/ranking-teste\//.test(location.pathname); };
 
 let sb = null;
 const S = {
@@ -677,6 +680,7 @@ function faixa() {
   const fin = noticiasFinals();
   itens.unshift(...fin);
   if (ehNatal()) itens.unshift(['🎄 BOAS FESTAS', 'A Galera da Raquete deseja um Feliz Natal e um ótimo 2027 a todos!', 'faixa-natal']);
+  if (ehAnoNovo()) itens.unshift(['🎆 FELIZ ' + anoQueVem(), 'Que venha um ano de muito tênis, Galera da Raquete! Feliz Ano Novo!', 'faixa-natal']);
   if (online) itens.unshift(online);   // pra coordenação, quem está online vem primeiro
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
   return itens.map(([t, x, cls]) => `<span${cls ? ` class="${cls}"` : ''}><b>${esc(t)}</b>${esc(x)}</span>`).join('');
@@ -3088,6 +3092,7 @@ async function render() {
   }
   document.body.classList.toggle('noite', ehNoite());
   document.body.classList.toggle('natal', ehNatal());
+  document.body.classList.toggle('anonovo', ehAnoNovo());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
   if (rota !== 'jogos' && rota !== 'placar' && rota !== 'wo') S.verMeses = false;
