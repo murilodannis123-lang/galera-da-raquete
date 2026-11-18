@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118193316';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118193316';
-import { REGULAMENTO } from './regulamento.js?v=20261118193316';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118193316';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118193316';
+import * as M from './motor.js?v=20261118193546';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118193546';
+import { REGULAMENTO } from './regulamento.js?v=20261118193546';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118193546';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118193546';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1074,10 +1074,38 @@ function adminProgramacao() {
   </section>`;
 }
 
+// Rei do Pneu: quem aplicou mais 6×0 no ano (jogos do ranking + Finals). Pneu de WO não conta. Prêmio: um tubo de bolas.
+async function pneusDoAno(ano) {
+  S.pneusAno = S.pneusAno || {};
+  if (!S.pneusAno[ano]) {
+    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', ano + '-01').lte('mes', ano + '-12').order('mes').order('id'));
+    if (error) throw error;
+    S.pneusAno[ano] = data;
+  }
+  const jogos = S.pneusAno[ano].concat(S.fjogos.filter((g) => g.ano === Number(ano)));
+  const cont = {};
+  jogos.forEach((g) => {
+    if (g.wo_de || !g.sets || !g.jogador_b) return;   // WO não conta
+    g.sets.forEach(([x, y]) => { if (x === 6 && y === 0) cont[g.jogador_a] = (cont[g.jogador_a] || 0) + 1; if (x === 0 && y === 6) cont[g.jogador_b] = (cont[g.jogador_b] || 0) + 1; });
+  });
+  return Object.entries(cont).map(([id, n]) => ({ j: porId(id), n })).filter((x) => x.j).sort((a, b) => b.n - a.n || a.j.nome.localeCompare(b.j.nome));
+}
+function blocoReiPneu(ano, lista) {
+  let pos = 0, ant = null;
+  const linhas = lista.slice(0, 10).map((x, i) => { if (x.n !== ant) { pos = i + 1; ant = x.n; } return { ...x, pos }; });
+  return `<section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="flex-shrink:0;display:flex">${PNEU(40)}</span><div><b class="cond" style="font-size:22px;line-height:1">Rei do Pneu ${ano}</b><br><small style="color:rgba(255,255,255,.75)">Quem aplicar mais pneus (6×0) no ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾 · pneu de WO não conta</small></div></div>
+    ${linhas.length ? linhas.map((x) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:${x.pos === 1 ? 'rgba(216,241,69,.16)' : 'rgba(255,255,255,.06)'}">
+      <b class="cond" style="width:28px;font-size:20px;color:${x.pos === 1 ? 'var(--bola)' : '#fff'}">${x.pos === 1 ? '👑' : x.pos + 'º'}</b>${avatar(x.j, 34)}
+      <span style="flex-grow:1;font-weight:600">${esc(x.j.nome)}</span><b class="cond" style="font-size:22px;color:var(--bola)">${x.n}</b><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></div>`).join('')
+      : '<p style="color:rgba(255,255,255,.75);font-size:14px">Ninguém aplicou pneu ainda.</p>'}
+  </section>`;
+}
 // sem mês aberto (Finals / fim de temporada) mostra o último mês rodado; dá pra voltar nos meses anteriores
 async function telaResumo() {
   const idx = Math.max(0, Math.min(S.meses.length - 1, S.mesResumo || 0)), mes = S.meses[idx];
   const todos = !mes ? [] : S.mesAtual && mes.id === S.mesAtual.id ? S.jogos : await jogosDoMes(mes.id).catch(() => []);
+  const anoP = mes ? mes.id.slice(0, 4) : String(ANO()), rei = await pneusDoAno(anoP).catch(() => null);
   const js = todos.filter((g) => g.jogador_b);
   const jogados = js.filter((g) => g.sets);
   const wos = js.filter((g) => g.wo_de);
@@ -1099,7 +1127,8 @@ async function telaResumo() {
       ${card('Pendentes', js.length - jogados.length - wos.length)}${card('Standby (+25)', todos.filter((g) => !g.jogador_b).length)}
       ${card('WO por lesão', wos.filter((g) => g.wo_motivo === 'lesao').length)}${card('WO por ausência', wos.filter((g) => g.wo_motivo === 'ausencia').length)}
     </div>
-    <h2 class="cond" style="font-size:20px;margin-top:8px">Quem tomou pneu</h2>
+    ${rei ? blocoReiPneu(anoP, rei) : ''}
+    <h2 class="cond" style="font-size:20px;margin-top:8px">Quem tomou pneu em ${mes ? nomeMes(mes.id).split(' ')[0].toLowerCase() : 'este mês'}</h2>
     ${pneus.map(([v, p, sets]) => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc((porId(v) || {}).nome)}</b> <span class="dica">aplicou em</span> <b>${esc((porId(p) || {}).nome)}</b><br><small class="dica">${esc(placarTxt(sets))}</small></span><span style="display:flex;align-items:center;gap:6px">${PNEU(30)}<span class="tag" style="background:var(--bola);color:var(--noite);font-size:14px">6×0</span></span></div>`).join('') || '<p class="dica">Nenhum pneu ainda neste mês.</p>'}
   </div>`;
 }
