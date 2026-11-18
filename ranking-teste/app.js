@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118190207';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118190207';
-import { REGULAMENTO } from './regulamento.js?v=20261118190207';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118190207';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118190207';
+import * as M from './motor.js?v=20261118190500';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118190500';
+import { REGULAMENTO } from './regulamento.js?v=20261118190500';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118190500';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118190500';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -676,6 +676,7 @@ function faixa() {
   // FINALS: em vermelho, na frente de tudo, com cada resultado assim que é gravado (mais recente primeiro)
   const fin = noticiasFinals();
   itens.unshift(...fin);
+  if (ehNatal()) itens.unshift(['🎄 BOAS FESTAS', 'A Galera da Raquete deseja um Feliz Natal e um ótimo 2027 a todos!', 'faixa-natal']);
   if (online) itens.unshift(online);   // pra coordenação, quem está online vem primeiro
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
   return itens.map(([t, x, cls]) => `<span${cls ? ` class="${cls}"` : ''}><b>${esc(t)}</b>${esc(x)}</span>`).join('');

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261118190207"></script>
+<script src="redireciona.js?v=20261118190500"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -44,6 +44,14 @@ a{color:var(--roxo)}
 .logo-btn{width:86px;height:86px;border-radius:50%;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
 .logo-btn img{width:80px;height:80px;display:block}
 .logo-btn{position:relative}
+/* Natal (15 a 28/12): neve caindo e varal de luzes no topo da tela inicial */
+body.natal .topo{position:relative;overflow:hidden}
+body.natal .topo>*{position:relative;z-index:1}
+body.natal .topo::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.8;background-image:radial-gradient(2.4px 2.4px at 20px 30px,#fff 50%,transparent 51%),radial-gradient(1.8px 1.8px at 80px 70px,#fff 50%,transparent 51%),radial-gradient(3px 3px at 130px 15px,rgba(255,255,255,.9) 50%,transparent 51%),radial-gradient(1.6px 1.6px at 170px 100px,#fff 50%,transparent 51%),radial-gradient(2.2px 2.2px at 50px 120px,rgba(255,255,255,.85) 50%,transparent 51%),radial-gradient(1.4px 1.4px at 110px 150px,#fff 50%,transparent 51%),radial-gradient(2px 2px at 40px 60px,#fff 50%,transparent 51%),radial-gradient(2.6px 2.6px at 150px 40px,rgba(255,255,255,.9) 50%,transparent 51%),radial-gradient(1.6px 1.6px at 210px 140px,#fff 50%,transparent 51%),radial-gradient(2.2px 2.2px at 95px 200px,#fff 50%,transparent 51%);background-size:200px 180px,200px 180px,200px 180px,200px 180px,200px 180px,200px 180px,260px 230px,260px 230px,260px 230px,260px 230px;animation:neveCai 14s linear infinite}
+body.natal .topo::after{content:"";position:absolute;left:0;right:0;top:env(safe-area-inset-top);height:30px;z-index:0;pointer-events:none;background:url(icones/luzes-natal.svg) repeat-x 0 0/120px 30px}
+@keyframes neveCai{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0}to{background-position:-40px 180px,-40px 180px,-40px 180px,-40px 180px,-40px 180px,-40px 180px,30px 230px,30px 230px,30px 230px,30px 230px}}
+@media (prefers-reduced-motion:reduce){body.natal .topo::before{animation:none}}
+.faixa .tk .faixa-natal b{color:#FF5A5A}
 body.natal .logo-btn::after{content:"";position:absolute;width:72px;height:60px;top:-32px;right:-30px;background:url(icones/gorro-natal.svg) no-repeat center/contain;transform:rotate(30deg);filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));pointer-events:none}
 .titulo{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:21px;line-height:1.1;text-align:center}
 .sub-ranking{font-family:'Barlow Semi Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:6px;color:var(--bola)}
@@ -364,6 +372,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261118190207"></script>
+<script type="module" src="app.js?v=20261118190500"></script>
 </body>
 </html>
