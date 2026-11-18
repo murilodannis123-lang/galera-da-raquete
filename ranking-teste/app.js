@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118191051';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118191051';
-import { REGULAMENTO } from './regulamento.js?v=20261118191051';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118191051';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118191051';
+import * as M from './motor.js?v=20261118191834';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118191834';
+import { REGULAMENTO } from './regulamento.js?v=20261118191834';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118191834';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118191834';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -713,12 +713,16 @@ function slides() {
   const out = []; let t = 0;
   lista.forEach((p, i) => { out.push(p); if (i % 2 === 1 && tops[t]) out.push(tops[t++]); });
   while (tops[t]) out.push(tops[t++]);
-  // Anuncie aqui abre o carrossel e volta a cada 4 slides
-  const mix = [{ tipo: 'anuncie' }];
+  // Anuncie aqui abre o carrossel e volta a cada 4 slides; até o dia da festa, a propaganda da festa vem primeiro e reveza com o Anuncie
+  const festa = hojeISO() <= FESTA_ATE;
+  const mix = festa ? [{ tipo: 'festa' }, { tipo: 'anuncie' }] : [{ tipo: 'anuncie' }];
   const cont = contagemRanking(); if (cont) mix.unshift({ tipo: 'contagem', ...cont });
-  out.forEach((x, i) => { mix.push(x); if (i % 4 === 3 && i < out.length - 1) mix.push({ tipo: 'anuncie' }); });
+  let vez = 0;
+  out.forEach((x, i) => { mix.push(x); if (i % 4 === 3 && i < out.length - 1) mix.push({ tipo: festa && vez++ % 2 === 0 ? 'festa' : 'anuncie' }); });
   return mix;
 }
+// propaganda da festa no carrossel: aparece até o dia da festa (05/12) e abre a página do convite
+const FESTA_ATE = '2026-12-05', LINK_FESTA = 'https://galeradaraquete.github.io/';
 function renderCarrossel(dir) {
   const el = document.getElementById('carrossel'); if (!el) return;
   const sl = slides(); if (!sl.length) { el.innerHTML = ''; return; }
@@ -727,6 +731,8 @@ function renderCarrossel(dir) {
   const corpo = s.tipo === 'contagem'
     ? (s.dias === 0 ? `<div class="patro contagem" role="img" aria-label="Amanhã começa o Ranking ${s.ano}"><span class="cont-t" style="text-align:center"><small>É AMANHÃ!</small><b class="cond" style="font-size:26px">Ranking ${s.ano} começa amanhã 🎾</b></span></div>`
       : `<div class="patro contagem" role="img" aria-label="Faltam ${s.dias} dias pro Ranking ${s.ano}"><span class="cont-n cond">${s.dias}</span><span class="cont-t"><small>${s.dias === 1 ? 'FALTA' : 'FALTAM'}</small><b class="cond">${s.dias === 1 ? 'dia' : 'dias'} pro Ranking ${s.ano}</b></span></div>`)
+    : s.tipo === 'festa'
+    ? `<a class="patro anuncie-img" href="${LINK_FESTA}" target="_blank" rel="noopener" aria-label="Festa de Encerramento e Finals 2026, sábado 05/12 às 18h30: toque pra abrir a página da festa"><img src="icones/festa-2026.jpg" alt="Festa de Encerramento e Finals 2026" width="1432" height="400"></a>`
     : s.tipo === 'anuncie'
     ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/anuncie-5.jpg" alt="Anuncie aqui" width="1432" height="400"></a>`
     : s.tipo === 'anuncie-velho'
