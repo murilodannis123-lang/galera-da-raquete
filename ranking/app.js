@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261116192921';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261116192921';
-import { REGULAMENTO } from './regulamento.js?v=20261116192921';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261116192921';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261116192921';
+import * as M from './motor.js?v=20261118190500';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118190500';
+import { REGULAMENTO } from './regulamento.js?v=20261118190500';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118190500';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118190500';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,6 +16,8 @@ const iniciais = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((p)
 const soDigitos = (s) => String(s || '').replace(/\D/g, '');
 const zap = (cel, txt) => { let d = soDigitos(cel); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt); };
 const ehNoite = () => { const h = new Date().getHours(); return h >= 18 || h < 6; };
+// gorrinho de Natal no logo: de 15 a 28 de dezembro (na versão de teste aparece sempre, pra conferir)
+const ehNatal = () => { const d = new Date(); return (d.getMonth() === 11 && d.getDate() >= 15 && d.getDate() <= 28) || /\/ranking-teste\//.test(location.pathname); };
 
 let sb = null;
 const S = {
@@ -674,6 +676,7 @@ function faixa() {
   // FINALS: em vermelho, na frente de tudo, com cada resultado assim que é gravado (mais recente primeiro)
   const fin = noticiasFinals();
   itens.unshift(...fin);
+  if (ehNatal()) itens.unshift(['🎄 BOAS FESTAS', 'A Galera da Raquete deseja um Feliz Natal e um ótimo 2027 a todos!', 'faixa-natal']);
   if (online) itens.unshift(online);   // pra coordenação, quem está online vem primeiro
   if (!itens.length) itens.push(['GALERA DA RAQUETE', 'Portal do Lago Open de Tênis']);
   return itens.map(([t, x, cls]) => `<span${cls ? ` class="${cls}"` : ''}><b>${esc(t)}</b>${esc(x)}</span>`).join('');
@@ -717,12 +720,11 @@ function renderCarrossel(dir) {
   const sl = slides(); if (!sl.length) { el.innerHTML = ''; return; }
   const i = ((S.slide % sl.length) + sl.length) % sl.length, s = sl[i];
   const linkAnuncio = zap(S.config.anuncie || S.config.fale_conosco || '5519997781210', 'Olá! Quero anunciar no app da Galera da Raquete.');
-  // de dia uma arte, de noite a outra
   const corpo = s.tipo === 'contagem'
     ? (s.dias === 0 ? `<div class="patro contagem" role="img" aria-label="Amanhã começa o Ranking ${s.ano}"><span class="cont-t" style="text-align:center"><small>É AMANHÃ!</small><b class="cond" style="font-size:26px">Ranking ${s.ano} começa amanhã 🎾</b></span></div>`
       : `<div class="patro contagem" role="img" aria-label="Faltam ${s.dias} dias pro Ranking ${s.ano}"><span class="cont-n cond">${s.dias}</span><span class="cont-t"><small>${s.dias === 1 ? 'FALTA' : 'FALTAM'}</small><b class="cond">${s.dias === 1 ? 'dia' : 'dias'} pro Ranking ${s.ano}</b></span></div>`)
     : s.tipo === 'anuncie'
-    ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/${ehNoite() ? 'anuncie-noite-4.jpg' : 'anuncie-dia-4.jpg'}" alt="Anuncie aqui" width="900" height="327"></a>`
+    ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/anuncie-5.jpg" alt="Anuncie aqui" width="1432" height="400"></a>`
     : s.tipo === 'anuncie-velho'
     ? `<a class="patro anuncie" href="${esc(linkAnuncio)}" target="_blank" rel="noopener"><span class="anuncie-ic" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="currentColor" fill-opacity=".25"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span class="anuncie-tx"><b class="cond">ANUNCIE AQUI</b><small>Sua marca pra toda a Galera</small></span></a>`
     : s.tipo === 'p'
@@ -3085,6 +3087,7 @@ async function render() {
     else { document.body.classList.remove('noite'); $app.innerHTML = telaSenha(true); return; }
   }
   document.body.classList.toggle('noite', ehNoite());
+  document.body.classList.toggle('natal', ehNatal());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
   if (rota !== 'jogos' && rota !== 'placar' && rota !== 'wo') S.verMeses = false;
