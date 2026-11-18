@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118192109';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118192109';
-import { REGULAMENTO } from './regulamento.js?v=20261118192109';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118192109';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118192109';
+import * as M from './motor.js?v=20261118193316';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118193316';
+import { REGULAMENTO } from './regulamento.js?v=20261118193316';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118193316';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118193316';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1074,8 +1074,11 @@ function adminProgramacao() {
   </section>`;
 }
 
-function telaResumo() {
-  const js = S.jogos.filter((g) => g.jogador_b);
+// sem mês aberto (Finals / fim de temporada) mostra o último mês rodado; dá pra voltar nos meses anteriores
+async function telaResumo() {
+  const idx = Math.max(0, Math.min(S.meses.length - 1, S.mesResumo || 0)), mes = S.meses[idx];
+  const todos = !mes ? [] : S.mesAtual && mes.id === S.mesAtual.id ? S.jogos : await jogosDoMes(mes.id).catch(() => []);
+  const js = todos.filter((g) => g.jogador_b);
   const jogados = js.filter((g) => g.sets);
   const wos = js.filter((g) => g.wo_de);
   const pneus = [];
@@ -1084,11 +1087,16 @@ function telaResumo() {
     if (x === 0 && y === 6) pneus.push([g.jogador_b, g.jogador_a, g.sets]);
   }));
   const card = (t, n, escuro) => `<div class="card" style="${escuro ? 'background:var(--noite);color:#fff;border:0' : ''}"><small class="dica" style="${escuro ? 'color:rgba(255,255,255,.75)' : ''}">${t}</small><b class="cond" style="display:block;font-size:32px;line-height:1;${escuro ? 'color:var(--bola)' : ''}">${n}</b></div>`;
-  return voltar('Resumo do mês', S.mesAtual ? nomeMes(S.mesAtual.id) : '') + `<div class="conteudo">
+  return voltar('Resumo do mês', 'Números dos jogos do ranking') + `
+  <div style="background:#2A1650;padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff">
+    <button class="ic-btn" data-acao="resumoMes" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
+    <div style="text-align:center"><b class="cond" style="font-size:22px">${mes ? nomeMes(mes.id) : '—'}</b><br><small style="color:var(--bola);font-weight:600">${mes ? (mes.status === 'aberto' ? 'MÊS ATUAL' : 'ENCERRADO') : ''}</small></div>
+    <button class="ic-btn" data-acao="resumoMes" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
+  </div><div class="conteudo">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${card('Jogos disputados', jogados.length)}${card('Pneus (6×0)', pneus.length, true)}
       ${card('Sets disputados', jogados.reduce((s, g) => s + g.sets.length, 0))}${card('Jogos em 3 sets', jogados.filter((g) => g.sets.length === 3).length)}
-      ${card('Pendentes', js.length - jogados.length - wos.length)}${card('Standby (+25)', S.jogos.filter((g) => !g.jogador_b).length)}
+      ${card('Pendentes', js.length - jogados.length - wos.length)}${card('Standby (+25)', todos.filter((g) => !g.jogador_b).length)}
       ${card('WO por lesão', wos.filter((g) => g.wo_motivo === 'lesao').length)}${card('WO por ausência', wos.filter((g) => g.wo_motivo === 'ausencia').length)}
     </div>
     <h2 class="cond" style="font-size:20px;margin-top:8px">Quem tomou pneu</h2>
@@ -2630,6 +2638,7 @@ const ACOES = {
     S.jogosPorMes = {}; S.mesVer = null;
   }, 'Abertura desfeita: o mês saiu e os confrontos foram apagados.'),
   verMeses: (el) => { S.verMeses = el.dataset.v === '1'; if (location.hash !== '#/jogos') location.hash = '#/jogos'; else render(); },
+  resumoMes: (el) => { const i = Number(el.dataset.v); if (S.meses[i]) { S.mesResumo = i; render(); } },
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => {
     const liga = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', liga);
@@ -3125,7 +3134,7 @@ async function render() {
       : rota === 'perfil' ? telaPerfil()
       : rota === 'avisos' ? telaAvisos()
       : rota === 'programacao' ? telaProgramacao()
-      : rota === 'resumo' ? telaResumo()
+      : rota === 'resumo' ? await telaResumo()
       : rota === 'regulamento' ? telaRegulamento()
       : rota === 'admin' ? telaAdmin()
       : telaInicio();
