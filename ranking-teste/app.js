@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118191834';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118191834';
-import { REGULAMENTO } from './regulamento.js?v=20261118191834';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118191834';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118191834';
+import * as M from './motor.js?v=20261118191941';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118191941';
+import { REGULAMENTO } from './regulamento.js?v=20261118191941';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118191941';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118191941';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -721,8 +721,8 @@ function slides() {
   out.forEach((x, i) => { mix.push(x); if (i % 4 === 3 && i < out.length - 1) mix.push({ tipo: festa && vez++ % 2 === 0 ? 'festa' : 'anuncie' }); });
   return mix;
 }
-// propaganda da festa no carrossel: aparece até o dia da festa (05/12) e abre a página do convite
-const FESTA_ATE = '2026-12-05', LINK_FESTA = 'https://galeradaraquete.github.io/';
+// propaganda da festa no carrossel: aparece até o fim das inscrições (30/11) e abre a página do convite
+const FESTA_ATE = '2026-11-30', LINK_FESTA = 'https://galeradaraquete.github.io/';
 function renderCarrossel(dir) {
   const el = document.getElementById('carrossel'); if (!el) return;
   const sl = slides(); if (!sl.length) { el.innerHTML = ''; return; }
@@ -732,7 +732,7 @@ function renderCarrossel(dir) {
     ? (s.dias === 0 ? `<div class="patro contagem" role="img" aria-label="Amanhã começa o Ranking ${s.ano}"><span class="cont-t" style="text-align:center"><small>É AMANHÃ!</small><b class="cond" style="font-size:26px">Ranking ${s.ano} começa amanhã 🎾</b></span></div>`
       : `<div class="patro contagem" role="img" aria-label="Faltam ${s.dias} dias pro Ranking ${s.ano}"><span class="cont-n cond">${s.dias}</span><span class="cont-t"><small>${s.dias === 1 ? 'FALTA' : 'FALTAM'}</small><b class="cond">${s.dias === 1 ? 'dia' : 'dias'} pro Ranking ${s.ano}</b></span></div>`)
     : s.tipo === 'festa'
-    ? `<a class="patro anuncie-img" href="${LINK_FESTA}" target="_blank" rel="noopener" aria-label="Festa de Encerramento e Finals 2026, sábado 05/12 às 18h30: toque pra abrir a página da festa"><img src="icones/festa-2026.jpg" alt="Festa de Encerramento e Finals 2026" width="1432" height="400"></a>`
+    ? `<a class="patro anuncie-img" href="${LINK_FESTA}" target="_blank" rel="noopener" aria-label="Festa de Encerramento e Finals 2026, sábado 05/12 às 18h30: toque pra se inscrever na festa"><img src="icones/festa-2026.jpg" alt="Festa de Encerramento e Finals 2026" width="1432" height="400"></a>`
     : s.tipo === 'anuncie'
     ? `<a class="patro anuncie-img" href="${esc(linkAnuncio)}" target="_blank" rel="noopener" aria-label="Anuncie aqui: falar no WhatsApp"><img src="icones/anuncie-5.jpg" alt="Anuncie aqui" width="1432" height="400"></a>`
     : s.tipo === 'anuncie-velho'
