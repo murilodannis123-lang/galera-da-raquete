@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261116193920';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261116193920';
-import { REGULAMENTO } from './regulamento.js?v=20261116193920';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261116193920';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261116193920';
+import * as M from './motor.js?v=20261118190207';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118190207';
+import { REGULAMENTO } from './regulamento.js?v=20261118190207';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118190207';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118190207';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,6 +16,8 @@ const iniciais = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((p)
 const soDigitos = (s) => String(s || '').replace(/\D/g, '');
 const zap = (cel, txt) => { let d = soDigitos(cel); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt); };
 const ehNoite = () => { const h = new Date().getHours(); return h >= 18 || h < 6; };
+// gorrinho de Natal no logo: de 15 a 28 de dezembro (na versão de teste aparece sempre, pra conferir)
+const ehNatal = () => { const d = new Date(); return (d.getMonth() === 11 && d.getDate() >= 15 && d.getDate() <= 28) || /\/ranking-teste\//.test(location.pathname); };
 
 let sb = null;
 const S = {
@@ -3084,6 +3086,7 @@ async function render() {
     else { document.body.classList.remove('noite'); $app.innerHTML = telaSenha(true); return; }
   }
   document.body.classList.toggle('noite', ehNoite());
+  document.body.classList.toggle('natal', ehNatal());
   const h = location.hash.replace(/^#\/?/, '');
   const [rota, arg] = h.split('/');
   if (rota !== 'jogos' && rota !== 'placar' && rota !== 'wo') S.verMeses = false;
