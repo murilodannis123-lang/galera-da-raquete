@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119145632';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119145632';
-import { REGULAMENTO } from './regulamento.js?v=20261119145632';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119145632';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119145632';
+import * as M from './motor.js?v=20261119150003';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119150003';
+import { REGULAMENTO } from './regulamento.js?v=20261119150003';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119150003';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119150003';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -433,7 +433,31 @@ const BOLINHA = (quem, g) => (trazBola(g) === quem ? ` <span role="img" title="T
 function placarTxt(sets) { return (sets || []).map(([a, b]) => a + '/' + b).join(' '); }
 // pneu = set 6×0: sempre mostra o pneu depois do placar
 const temPneu = (sets) => (sets || []).some(([a, b]) => (a === 6 && b === 0) || (a === 0 && b === 6));
-const PNEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1E1E22"/>${Array.from({ length: 12 }, (_, i) => `<rect x="15" y="1.2" width="2" height="4.2" rx=".6" fill="#55555C" transform="rotate(${i * 30} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="9.6" fill="#2C2C31"/><circle cx="16" cy="16" r="7.2" fill="#C9CCD3"/><circle cx="16" cy="16" r="5.6" fill="#9DA1AA"/>${Array.from({ length: 5 }, (_, i) => `<rect x="15.3" y="10.6" width="1.4" height="4.4" rx=".7" fill="#E7E9EE" transform="rotate(${i * 72} 16 16)"/>`).join('')}<circle cx="16" cy="16" r="1.8" fill="#55555C"/></svg>`;
+// pneu desenhado (borracha com cravos, rodas cromadas); cada desenho tem ids próprios pros degradês
+let PNEU_N = 0;
+const PNEU = (t) => {
+  const k = 'pn' + (++PNEU_N);
+  const cravos = Array.from({ length: 20 }, (_, i) => `<path d="M29.2 1.6h5.6l-.9 5.2h-3.8z" fill="url(#${k}c)" transform="rotate(${i * 18} 32 32)"/>`).join('');
+  const sulcos = Array.from({ length: 20 }, (_, i) => `<path d="M32 2.5v6" stroke="#0B0B0E" stroke-width="1.1" transform="rotate(${i * 18 + 9} 32 32)"/>`).join('');
+  const raios = Array.from({ length: 5 }, (_, i) => `<path d="M29.6 20.5 Q32 18.6 34.4 20.5 L33.3 28 H30.7 Z" fill="url(#${k}r)" transform="rotate(${i * 72} 32 32)"/>`).join('');
+  const parafusos = Array.from({ length: 5 }, (_, i) => `<circle cx="32" cy="28.6" r=".85" fill="#3B3F46" transform="rotate(${i * 72 + 36} 32 32)"/>`).join('');
+  return `<svg width="${t}" height="${t}" viewBox="0 0 64 64" aria-hidden="true"><defs>
+    <radialGradient id="${k}b" cx=".5" cy=".5" r=".5"><stop offset=".62" stop-color="#2B2B31"/><stop offset=".86" stop-color="#1A1A1F"/><stop offset="1" stop-color="#0E0E11"/></radialGradient>
+    <linearGradient id="${k}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3C3C44"/><stop offset="1" stop-color="#22222A"/></linearGradient>
+    <linearGradient id="${k}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#C9CED6"/><stop offset="1" stop-color="#7D838E"/></linearGradient>
+    <linearGradient id="${k}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E9ECF1"/><stop offset=".5" stop-color="#FFFFFF"/><stop offset="1" stop-color="#AEB3BC"/></linearGradient>
+    <radialGradient id="${k}h" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#F4F6F9"/><stop offset="1" stop-color="#8E949E"/></radialGradient></defs>
+    <circle cx="32" cy="32" r="31" fill="#121216" stroke="#ffffff" stroke-opacity=".14" stroke-width="1"/>${cravos}${sulcos}
+    <circle cx="32" cy="32" r="25" fill="url(#${k}b)"/>
+    <circle cx="32" cy="32" r="22.6" fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width="1"/>
+    <path d="M12.5 22 A21.5 21.5 0 0 1 30 10.6" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="32" cy="32" r="16.5" fill="url(#${k}a)"/>
+    <circle cx="32" cy="32" r="14.6" fill="#4A4F57"/>
+    <circle cx="32" cy="32" r="14.6" fill="none" stroke="#2E3238" stroke-width="1"/>
+    ${raios}
+    <circle cx="32" cy="32" r="5.4" fill="url(#${k}h)" stroke="#6B717B" stroke-width=".8"/>${parafusos}
+    <circle cx="32" cy="32" r="1.6" fill="#5A606A"/></svg>`;
+};
 const pneuTag = (sets, t = 16) => (temPneu(sets) ? ` <span title="Pneu (6×0)" style="display:inline-flex;vertical-align:-3px">${PNEU(t)}</span>` : '');
 // troféu dourado + "VENCEDOR" embaixo do nome de quem ganhou
 const TROFEU = (t) => `<svg width="${t}" height="${t}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ouroV" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1A6"/><stop offset=".45" stop-color="#E8B923"/><stop offset="1" stop-color="#A8740E"/></linearGradient></defs><path d="M14 10c-6 0-7 9 1 11M34 10c6 0 7 9-1 11" fill="none" stroke="url(#ouroV)" stroke-width="3" stroke-linecap="round"/><path d="M14 6h20v4c0 9-4 15-10 16-6-1-10-7-10-16z" fill="url(#ouroV)"/><path d="M22 26h4l1 6h-6z" fill="url(#ouroV)"/><rect x="15" y="33" width="18" height="9" rx="2" fill="#5A3E0A"/><rect x="13" y="41" width="22" height="4" rx="2" fill="#3A2806"/></svg>`;
@@ -643,7 +667,7 @@ const MENU = [
   { nome: 'Jogos do ranking', href: () => '#/jogos', ic: IC('<ellipse cx="8.3" cy="7.6" rx="3.9" ry="5" transform="rotate(-35 8.3 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M10.9 11.6l7.6 8.6"/><ellipse cx="15.7" cy="7.6" rx="3.9" ry="5" transform="rotate(35 15.7 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M13.1 11.6l-7.6 8.6"/><circle cx="12" cy="19.6" r="1.6" fill="currentColor" stroke="none"/>') },
   { nome: 'Pontuação', href: () => '#/ranking', ic: IC('<path d="M12 1.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 3.8l2.2-.3z" fill="currentColor" stroke="none"/><rect x="9" y="8.5" width="6" height="12.5" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="2.5" y="12" width="6.5" height="9" rx="1" fill="currentColor" fill-opacity=".12"/><rect x="15" y="14.5" width="6.5" height="6.5" rx="1" fill="currentColor" fill-opacity=".12"/>') },
   { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
-  { nome: 'Rei do Pneu', rotulo: () => '<span class="rei-l"><span class="rei">Rei</span> do Pneu</span>', novo: () => novidadeRei(), href: () => '#/resumo', ic: PNEU(26) },
+  { nome: 'Rei do Pneu', rotulo: () => '<span class="rei-l"><span class="rei">Rei</span> do Pneu</span>', novo: () => novidadeRei(), href: () => '#/resumo', ic: PNEU(30) },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
   { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : algumTorneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
@@ -1126,7 +1150,7 @@ async function telaResumo() {
   const num = (n, t) => `<div style="text-align:center"><b class="cond" style="display:block;font-size:26px;line-height:1">${n}</b><small class="dica">${t}</small></div>`;
   return voltar('Rei do Pneu', 'Quem mais aplicou 6×0 no ranking ' + ano) + `<div class="conteudo">
     <section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:18px 16px">
-      <span style="display:flex">${PNEU(56)}</span>
+      <span style="display:flex;position:relative;margin-top:18px">${PNEU(84)}<span style="position:absolute;top:-20px;left:50%;transform:translateX(-50%) rotate(-10deg);font-size:30px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))" aria-hidden="true">👑</span></span>
       <b class="cond" style="font-size:26px;line-height:1;letter-spacing:.5px">REI DO PNEU ${ano}</b>
       ${lista === null ? '<p style="color:rgba(255,255,255,.75)">Não deu pra carregar agora. Tente de novo.</p>'
         : !reis.length ? '<p style="color:rgba(255,255,255,.75)">Ninguém aplicou pneu ainda.</p>'
