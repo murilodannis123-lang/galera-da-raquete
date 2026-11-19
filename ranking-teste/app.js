@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119145112';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119145112';
-import { REGULAMENTO } from './regulamento.js?v=20261119145112';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119145112';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119145112';
+import * as M from './motor.js?v=20261119145632';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119145632';
+import { REGULAMENTO } from './regulamento.js?v=20261119145632';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119145632';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119145632';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1111,7 +1111,8 @@ async function telaResumo() {
   const premio = Number(ano) >= REI_PNEU_PREMIO
     ? `Quem aplicar mais pneus em ${ano} ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`
     : `Em ${ano} é só pela honra 😄 · a partir de ${REI_PNEU_PREMIO} o Rei do Pneu do ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`;
-  const reis = (lista || []).filter((x) => x.pos === 1), resto = (lista || []).filter((x) => x.pos > 1);
+  // mostra só até o 4º lugar (empatados entram juntos)
+  const reis = (lista || []).filter((x) => x.pos === 1), resto = (lista || []).filter((x) => x.pos > 1 && x.pos <= 4), fora = (lista || []).filter((x) => x.pos > 4).length;
   const eu = S.eu && S.eu.id;
   const linha = (x) => `<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${x.j.id === eu ? 'border:2px solid var(--roxo)' : ''}">
       <b class="cond" style="width:30px;font-size:20px;color:var(--roxo)">${x.pos}º</b>${avatar(x.j, 40)}
@@ -1135,6 +1136,7 @@ async function telaResumo() {
       <small style="color:rgba(255,255,255,.8);line-height:1.4">${premio}</small>
     </section>
     ${resto.map(linha).join('')}
+    ${fora ? `<p class="dica" style="text-align:center">E mais ${fora} ${fora === 1 ? 'jogador aplicou' : 'jogadores aplicaram'} pneu em ${ano}.</p>` : ''}
     <p class="dica" style="text-align:center">Conta cada set 6×0 aplicado nos jogos do ranking. Finals e WO não contam.${PNEUS_HISTORICO[ano] ? ' Janeiro a setembro vieram do app antigo.' : ''}</p>
     <section class="card" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
