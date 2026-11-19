@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119150441';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119150441';
-import { REGULAMENTO } from './regulamento.js?v=20261119150441';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119150441';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119150441';
+import * as M from './motor.js?v=20261119151117';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119151117';
+import { REGULAMENTO } from './regulamento.js?v=20261119151117';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119151117';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119151117';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1121,25 +1121,31 @@ function adminProgramacao() {
 const REI_PNEU_PREMIO = 2027;
 // 2026: janeiro a setembro foram jogados no app antigo (Ranking Online); os pneus desses meses vieram de lá (puxados em 19/11/2026,
 // sem WO). Outubro em diante sai do nosso banco.
-const PNEUS_HISTORICO = { 2026: {"EDUARDO MANCINO": 5, "DANNIS": 1, "VITOR ABATE": 2, "JAYME JUNIOR": 2, "ADIRLEY RODRIGUES": 2, "CAIQUE LOURENÇO": 2, "CAIO CLARO": 1, "JOÃO ALBO": 2, "LEANDRO MEIRA": 2, "MARLON PEREIRA": 1, "JOÃO ZANIBON": 2, "RODRIGO GALVÃO": 2, "GUSTAVO CARON": 1, "PEDRO MEIRA": 1, "GUILHERME AZEVEDO": 3, "LUIS BASSO": 4, "GUSTAVO SABATINE": 2, "WAGNER PEREIRA": 1, "HENRIQUE SABATINE": 1, "ANDRÉ VIP": 1, "ALAN CLARO": 2, "GERSON STEIN": 1, "GABRIEL OTTOBONI": 1, "DIEGO ZANELLI": 1, "RENAN BASSO": 2, "PETTER SAES": 2, "DANIEL RIZZO": 1, "WESLLEY OLIVEIRA": 1} };
+// [mês, quem aplicou, vítima, placar (de quem aplicou), quantos pneus no jogo]
+const PNEUS_HISTORICO = { 2026: [[1, "EDUARDO MANCINO", "RAFAEL MATA", "6/0 6/1", 1], [1, "DANNIS", "CAIO CLARO", "6/1 6/0", 1], [1, "VITOR ABATE", "GUILHERME ABATE", "6/0 6/0", 2], [1, "JAYME JUNIOR", "FELIPE CASAGRANDE", "6/1 6/0", 1], [1, "ADIRLEY RODRIGUES", "DANI GESUALDO", "6/0 6/0", 2], [2, "EDUARDO MANCINO", "EDUARDO BENTO", "6/1 6/0", 1], [2, "CAIQUE LOURENÇO", "MARLON PEREIRA", "6/0 6/0", 2], [2, "CAIO CLARO", "LEANDRO OCKNER", "6/0 6/1", 1], [2, "JOÃO ALBO", "JOÃO MINGATO", "6/0 5/7 10/8", 1], [2, "LEANDRO MEIRA", "ALINE VASCONCELLOS", "6/0 6/0", 2], [3, "EDUARDO MANCINO", "MATEUS ELER", "6/1 6/0", 1], [3, "MARLON PEREIRA", "ANDRÉ VIP", "6/2 6/0", 1], [3, "JOÃO ZANIBON", "LEANDRO MEIRA", "6/0 6/0", 2], [4, "RODRIGO GALVÃO", "VINÍCIUS SQUARIZZI", "6/3 6/0", 1], [4, "GUSTAVO CARON", "VITOR ABATE", "6/0 6/2", 1], [4, "PEDRO MEIRA", "MATEUS RIZZO", "6/0 7/5", 1], [4, "GUILHERME AZEVEDO", "ALINE VASCONCELLOS", "6/1 6/0", 1], [5, "EDUARDO MANCINO", "DANNIS", "6/0 6/0", 2], [5, "GUILHERME AZEVEDO", "JOÃO MINGATO", "6/0 6/2", 1], [5, "LUIS BASSO", "DANI GESUALDO", "6/0 6/0", 2], [5, "GUSTAVO SABATINE", "ALINE VASCONCELLOS", "6/0 6/0", 2], [6, "WAGNER PEREIRA", "VINÍCIUS SQUARIZZI", "7/6 6/0", 1], [6, "HENRIQUE SABATINE", "ARTUR CLARO", "5/7 6/0 10/5", 1], [6, "ANDRÉ VIP", "SEMER", "6/0 6/3", 1], [6, "LUIS BASSO", "LUCAS BENTO", "6/1 6/0", 1], [6, "JOÃO ALBO", "JOÃO MINGATO", "6/2 6/0", 1], [7, "ALAN CLARO", "WAGNER PEREIRA", "6/0 7/6", 1], [7, "RODRIGO GALVÃO", "FERNANDO AFONSO", "6/1 6/0", 1], [7, "GERSON STEIN", "LEANDRO OCKNER", "6/2 6/0", 1], [7, "GABRIEL OTTOBONI", "RODRIGO MEIRA VIP COLCHÕES", "6/4 6/0", 1], [7, "LUIS BASSO", "ADIR SOUSA", "6/3 6/0", 1], [7, "DIEGO ZANELLI", "GABRIELE SABATINE", "4/6 6/0 13/11", 1], [8, "ALAN CLARO", "MATEUS ELER", "6/0 6/2", 1], [8, "RENAN BASSO", "HENRIQUE SABATINE", "6/1 6/0", 1], [8, "PETTER SAES", "GABRIELE SABATINE", "6/0 6/0", 2], [8, "GUILHERME AZEVEDO", "GUSTAVO SABATINE", "6/0 6/1", 1], [9, "DANIEL RIZZO", "CHARLES JORGE", "6/0 5/7 10/6", 1], [9, "RENAN BASSO", "MARLON PEREIRA", "6/0 6/1", 1], [9, "WESLLEY OLIVEIRA", "VINÍCIUS SQUARIZZI", "6/3 6/0", 1], [9, "JAYME JUNIOR", "GABRIELE SABATINE", "1/6 6/0 10/7", 1]] };
 async function pneusDoAno(ano) {
   S.pneusAno = S.pneusAno || {};
   if (!S.pneusAno[ano]) {
-    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', ano + '-01').lte('mes', ano + '-12').order('mes').order('id'));
+    const { data, error } = await todas(() => sb.from('jogos').select('mes,jogador_a,jogador_b,sets,wo_de').gte('mes', ano + '-01').lte('mes', ano + '-12').order('mes').order('id'));
     if (error) throw error;
     S.pneusAno[ano] = data;
   }
-  const cont = {};
+  const cont = {}, vit = {};
+  const soma = (id, n, mes, vitima, placar) => { cont[id] = (cont[id] || 0) + n; (vit[id] = vit[id] || []).push({ mes, vitima, placar, n }); };
   S.pneusAno[ano].forEach((g) => {
     if (g.wo_de || !g.sets || !g.jogador_b) return;   // WO não conta
-    g.sets.forEach(([x, y]) => { if (x === 6 && y === 0) cont[g.jogador_a] = (cont[g.jogador_a] || 0) + 1; if (x === 0 && y === 6) cont[g.jogador_b] = (cont[g.jogador_b] || 0) + 1; });
+    const na = g.sets.filter(([x, y]) => x === 6 && y === 0).length, nb = g.sets.filter(([x, y]) => x === 0 && y === 6).length;
+    if (na) soma(g.jogador_a, na, g.mes, (porId(g.jogador_b) || {}).nome, placarTxt(g.sets));
+    if (nb) soma(g.jogador_b, nb, g.mes, (porId(g.jogador_a) || {}).nome, placarTxt(g.sets.map(([x, y]) => [y, x])));
   });
-  Object.entries(PNEUS_HISTORICO[ano] || {}).forEach(([nome, n]) => {
-    const j = S.jogadores.find((x) => semAcento(x.nome) === semAcento(nome));
-    if (j) cont[j.id] = (cont[j.id] || 0) + n;
+  const doBanco = (nome) => S.jogadores.find((x) => semAcento(x.nome) === semAcento(nome));
+  const bonito = (nome) => (doBanco(nome) || {}).nome || String(nome).toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  (PNEUS_HISTORICO[ano] || []).forEach(([m, quem, vitima, placar, n]) => {
+    const j = doBanco(quem);
+    if (j) soma(j.id, n, ano + '-' + String(m).padStart(2, '0'), bonito(vitima), placar);
   });
   let pos = 0, ant = null;
-  return Object.entries(cont).map(([id, n]) => ({ j: porId(id), n })).filter((x) => x.j)
+  return Object.entries(cont).map(([id, n]) => ({ j: porId(id), n, vitimas: (vit[id] || []).sort((p, q) => p.mes.localeCompare(q.mes)) })).filter((x) => x.j)
     .sort((a, b) => b.n - a.n || a.j.nome.localeCompare(b.j.nome))
     .map((x, i) => { if (x.n !== ant) { pos = i + 1; ant = x.n; } return { ...x, pos }; });
 }
@@ -1154,10 +1160,14 @@ async function telaResumo() {
   // mostra só até o 4º lugar (empatados entram juntos)
   const reis = (lista || []).filter((x) => x.pos === 1), resto = (lista || []).filter((x) => x.pos > 1 && x.pos <= 4), fora = (lista || []).filter((x) => x.pos > 4).length;
   const eu = S.eu && S.eu.id;
-  const linha = (x) => `<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${x.j.id === eu ? 'border:2px solid var(--roxo)' : ''}">
+  // tocar no nome abre as vítimas (de quem ele tirou os pneus)
+  const MESES_C = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const vitimas = (x, escuro) => S.reiAberto !== x.j.id ? '' : `<div class="vitimas${escuro ? ' esc' : ''}"><b class="cond">😈 Essas foram as vítimas</b>
+      ${x.vitimas.map((v) => `<div class="vit"><span class="vit-m">${MESES_C[Number(v.mes.slice(5, 7)) - 1]}</span><span class="vit-n">${esc(v.vitima || '?')}</span><span class="vit-p">${esc(v.placar)}</span>${v.n > 1 ? `<span class="vit-x">×${v.n}</span>` : ''}</div>`).join('')}</div>`;
+  const linha = (x) => `<button type="button" data-acao="reiVitimas" data-id="${x.j.id}" aria-expanded="${S.reiAberto === x.j.id}" class="card rei-linha" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;${x.j.id === eu ? 'border:2px solid var(--roxo)' : ''}">
       <b class="cond" style="width:30px;font-size:20px;color:var(--roxo)">${x.pos}º</b>${avatar(x.j, 40)}
       <span style="flex-grow:1;font-weight:600">${esc(x.j.nome)}${x.j.id === eu ? ' <small class="dica">(você)</small>' : ''}</span>
-      <b class="cond" style="font-size:24px">${x.n}</b><small class="dica">${x.n === 1 ? 'pneu' : 'pneus'}</small></div>`;
+      <b class="cond" style="font-size:24px">${x.n}</b><small class="dica">${x.n === 1 ? 'pneu' : 'pneus'}</small><span class="rei-seta" aria-hidden="true">${S.reiAberto === x.j.id ? '▴' : '▾'}</span>${vitimas(x)}</button>`;
   // resuminho do mês (setas pra ver os meses anteriores)
   const idx = Math.max(0, Math.min(S.meses.length - 1, S.mesResumo || 0)), mes = S.meses[idx];
   const todos = !mes ? [] : S.mesAtual && mes.id === S.mesAtual.id ? S.jogos : await jogosDoMes(mes.id).catch(() => []);
@@ -1170,9 +1180,10 @@ async function telaResumo() {
       <b class="cond" style="font-size:26px;line-height:1;letter-spacing:.5px">REI DO PNEU ${ano}</b>
       ${lista === null ? '<p style="color:rgba(255,255,255,.75)">Não deu pra carregar agora. Tente de novo.</p>'
         : !reis.length ? '<p style="color:rgba(255,255,255,.75)">Ninguém aplicou pneu ainda.</p>'
-        : reis.map((x) => `<div style="display:flex;align-items:center;gap:12px;background:rgba(216,241,69,.14);border-radius:14px;padding:10px 14px;width:100%;box-sizing:border-box;text-align:left">
+        : reis.map((x) => `<button type="button" data-acao="reiVitimas" data-id="${x.j.id}" aria-expanded="${S.reiAberto === x.j.id}" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:rgba(216,241,69,.14);border:0;border-radius:14px;padding:10px 14px;width:100%;box-sizing:border-box;text-align:left;font:inherit;color:inherit;cursor:pointer">
             ${avatar(x.j, 56)}<span style="flex-grow:1"><small style="color:var(--bola);font-weight:700">👑 ${reis.length > 1 ? 'EMPATADO NA LIDERANÇA' : 'LÍDER'}</small><br><b style="font-size:17px">${esc(x.j.nome)}</b></span>
-            <span style="text-align:center"><b class="cond" style="font-size:34px;line-height:1;color:var(--bola)">${x.n}</b><br><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></span></div>`).join('')}
+            <span style="text-align:center"><b class="cond" style="font-size:34px;line-height:1;color:var(--bola)">${x.n}</b><br><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></span><span class="rei-seta" style="color:var(--bola)" aria-hidden="true">${S.reiAberto === x.j.id ? '▴' : '▾'}</span>${vitimas(x, true)}</button>`).join('')}
+      ${reis.length ? '<small style="color:rgba(255,255,255,.6)">Toque no nome pra ver as vítimas</small>' : ''}
       <small style="color:rgba(255,255,255,.8);line-height:1.4">${premio}</small>
     </section>
     ${resto.map(linha).join('')}
@@ -2723,6 +2734,7 @@ const ACOES = {
     S.jogosPorMes = {}; S.mesVer = null;
   }, 'Abertura desfeita: o mês saiu e os confrontos foram apagados.'),
   verMeses: (el) => { S.verMeses = el.dataset.v === '1'; if (location.hash !== '#/jogos') location.hash = '#/jogos'; else render(); },
+  reiVitimas: (el) => { S.reiAberto = S.reiAberto === el.dataset.id ? null : el.dataset.id; render(); },
   resumoMes: (el) => { const i = Number(el.dataset.v); if (S.meses[i]) { S.mesResumo = i; render(); } },
   mesVer: (el) => { const m = S.meses[Number(el.dataset.v)]; if (m) { S.mesVer = m.id; render(); } },
   alterna: (el) => {
