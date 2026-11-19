@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119143357';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119143357';
-import { REGULAMENTO } from './regulamento.js?v=20261119143357';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119143357';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119143357';
+import * as M from './motor.js?v=20261119143657';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119143657';
+import { REGULAMENTO } from './regulamento.js?v=20261119143657';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119143657';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119143657';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1079,10 +1079,12 @@ function adminProgramacao() {
 // Rei do Pneu: quem aplicou mais 6×0 no ano, só nos jogos do ranking mensal (Finals e WO não contam).
 // Prêmio (um tubo de bolas) a partir do ranking 2027; em 2026 a classificação vale só pela honra.
 const REI_PNEU_PREMIO = 2027;
+// 2026 é o esquenta: conta só outubro (último mês do ranking 2026). De 2027 em diante conta o ano todo.
+const periodoPneu = (ano) => (Number(ano) < REI_PNEU_PREMIO ? [ano + '-10', ano + '-10'] : [ano + '-01', ano + '-12']);
 async function pneusDoAno(ano) {
   S.pneusAno = S.pneusAno || {};
   if (!S.pneusAno[ano]) {
-    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', ano + '-01').lte('mes', ano + '-12').order('mes').order('id'));
+    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', periodoPneu(ano)[0]).lte('mes', periodoPneu(ano)[1]).order('mes').order('id'));
     if (error) throw error;
     S.pneusAno[ano] = data;
   }
@@ -1103,7 +1105,7 @@ async function telaResumo() {
   const lista = await pneusDoAno(ano).catch(() => null);
   const premio = Number(ano) >= REI_PNEU_PREMIO
     ? `Quem aplicar mais pneus em ${ano} ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`
-    : `Em ${ano} é só pela honra 😄 · a partir de ${REI_PNEU_PREMIO} o Rei do Pneu do ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`;
+    : `Esquenta: em ${ano} vale só outubro e é pela honra 😄 · a partir de ${REI_PNEU_PREMIO} vale o ano todo e o Rei do Pneu ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`;
   const reis = (lista || []).filter((x) => x.pos === 1), resto = (lista || []).filter((x) => x.pos > 1);
   const eu = S.eu && S.eu.id;
   const linha = (x) => `<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${x.j.id === eu ? 'border:2px solid var(--roxo)' : ''}">
@@ -1116,10 +1118,10 @@ async function telaResumo() {
   const js = todos.filter((g) => g.jogador_b), jogados = js.filter((g) => g.sets && !g.wo_de), wos = js.filter((g) => g.wo_de);
   const pneusMes = jogados.reduce((n, g) => n + g.sets.filter(([x, y]) => (x === 6 && y === 0) || (x === 0 && y === 6)).length, 0);
   const num = (n, t) => `<div style="text-align:center"><b class="cond" style="display:block;font-size:26px;line-height:1">${n}</b><small class="dica">${t}</small></div>`;
-  return voltar('Rei do Pneu', 'Quem mais aplicou 6×0 no ranking ' + ano) + `<div class="conteudo">
+  return voltar('Rei do Pneu', 'Quem mais aplicou 6×0 no ranking ' + (Number(ano) < REI_PNEU_PREMIO ? 'em outubro de ' : '') + ano) + `<div class="conteudo">
     <section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:18px 16px">
       <span style="display:flex">${PNEU(56)}</span>
-      <b class="cond" style="font-size:26px;line-height:1;letter-spacing:.5px">REI DO PNEU ${ano}</b>
+      <b class="cond" style="font-size:26px;line-height:1;letter-spacing:.5px">REI DO PNEU ${Number(ano) < REI_PNEU_PREMIO ? '· OUTUBRO ' : ''}${ano}</b>
       ${lista === null ? '<p style="color:rgba(255,255,255,.75)">Não deu pra carregar agora. Tente de novo.</p>'
         : !reis.length ? '<p style="color:rgba(255,255,255,.75)">Ninguém aplicou pneu ainda.</p>'
         : reis.map((x) => `<div style="display:flex;align-items:center;gap:12px;background:rgba(216,241,69,.14);border-radius:14px;padding:10px 14px;width:100%;box-sizing:border-box;text-align:left">

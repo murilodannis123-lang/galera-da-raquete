@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118214117';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118214117';
-import { REGULAMENTO } from './regulamento.js?v=20261118214117';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118214117';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118214117';
+import * as M from './motor.js?v=20261119143657';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119143657';
+import { REGULAMENTO } from './regulamento.js?v=20261119143657';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119143657';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119143657';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -596,7 +596,7 @@ function telaInicio() {
   </section>
   ${cardFinals()}
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => (!foraDoRanking() || LIVRE_FORA.includes(t.nome)) && (!soTorneio() || LIVRE_TORNEIO.includes(t.nome))).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => (!foraDoRanking() || LIVRE_FORA.includes(t.nome)) && (!soTorneio() || LIVRE_TORNEIO.includes(t.nome))).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}>${t.novo && t.novo() ? '<span class="novo">NOVO</span>' : ''}<span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -636,12 +636,14 @@ const woBlocoF = (g, editar) => `<div class="wo-bloco">
       <span>${editar ? `<a href="#/fwo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome || '?')}</a>` : 'de ' + esc((porId(g.wo_de) || {}).nome || '?')}</span></div>
     ${g.wo_obs ? `<p class="wo-obs">“${esc(g.wo_obs)}”</p>` : ''}</div>`;
 const IC = (d) => `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+// selo "NOVO" no Rei do Pneu: some quando a pessoa abre a tela (ou em fev/2027)
+const novidadeRei = () => { if (hojeISO() > '2027-01-31') return false; try { return !localStorage.getItem('viu-rei-pneu'); } catch (e) { return true; } };
 const MENU = [
   { nome: 'Meu perfil', href: () => '#/perfil', ic: IC('<circle cx="12" cy="12" r="10.5" stroke-opacity=".35"/><circle cx="12" cy="9" r="3.6" fill="currentColor" fill-opacity=".22"/><path d="M5.6 19.2c1-3 3.4-4.7 6.4-4.7s5.4 1.7 6.4 4.7" fill="currentColor" fill-opacity=".22"/>') },
   { nome: 'Jogos do ranking', href: () => '#/jogos', ic: IC('<ellipse cx="8.3" cy="7.6" rx="3.9" ry="5" transform="rotate(-35 8.3 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M10.9 11.6l7.6 8.6"/><ellipse cx="15.7" cy="7.6" rx="3.9" ry="5" transform="rotate(35 15.7 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M13.1 11.6l-7.6 8.6"/><circle cx="12" cy="19.6" r="1.6" fill="currentColor" stroke="none"/>') },
   { nome: 'Pontuação', href: () => '#/ranking', ic: IC('<path d="M12 1.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 3.8l2.2-.3z" fill="currentColor" stroke="none"/><rect x="9" y="8.5" width="6" height="12.5" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="2.5" y="12" width="6.5" height="9" rx="1" fill="currentColor" fill-opacity=".12"/><rect x="15" y="14.5" width="6.5" height="6.5" rx="1" fill="currentColor" fill-opacity=".12"/>') },
   { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
-  { nome: 'Resumo do mês', href: () => '#/resumo', ic: IC('<path d="M3 3v18h18"/><path d="M6 10l5-4 4 2 5-4"/><circle cx="20" cy="4" r="1.4" fill="currentColor" stroke="none"/>') },
+  { nome: 'Rei do Pneu', rotulo: () => '<span class="rei-l"><span class="rei">Rei</span> do Pneu</span>', novo: () => novidadeRei(), href: () => '#/resumo', ic: PNEU(26) },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
   { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : algumTorneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
@@ -1074,66 +1076,69 @@ function adminProgramacao() {
   </section>`;
 }
 
-// Rei do Pneu: quem aplicou mais 6×0 no ano, só nos jogos do ranking mensal (Finals não conta). Pneu de WO não conta. Prêmio: um tubo de bolas.
-// começa a valer no ranking 2027: aparece a partir de 02/01/2027 e só conta de 2027 em diante (na versão de teste aparece sempre, pra conferir)
-const REI_PNEU_DESDE = '2027-01-02';
-const reiPneuLiberado = (ano) => /\/ranking-teste\//.test(location.pathname) || (hojeISO() >= REI_PNEU_DESDE && Number(ano) >= 2027);
+// Rei do Pneu: quem aplicou mais 6×0 no ano, só nos jogos do ranking mensal (Finals e WO não contam).
+// Prêmio (um tubo de bolas) a partir do ranking 2027; em 2026 a classificação vale só pela honra.
+const REI_PNEU_PREMIO = 2027;
+// 2026 é o esquenta: conta só outubro (último mês do ranking 2026). De 2027 em diante conta o ano todo.
+const periodoPneu = (ano) => (Number(ano) < REI_PNEU_PREMIO ? [ano + '-10', ano + '-10'] : [ano + '-01', ano + '-12']);
 async function pneusDoAno(ano) {
   S.pneusAno = S.pneusAno || {};
   if (!S.pneusAno[ano]) {
-    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', ano + '-01').lte('mes', ano + '-12').order('mes').order('id'));
+    const { data, error } = await todas(() => sb.from('jogos').select('jogador_a,jogador_b,sets,wo_de').gte('mes', periodoPneu(ano)[0]).lte('mes', periodoPneu(ano)[1]).order('mes').order('id'));
     if (error) throw error;
     S.pneusAno[ano] = data;
   }
-  const jogos = S.pneusAno[ano];
   const cont = {};
-  jogos.forEach((g) => {
+  S.pneusAno[ano].forEach((g) => {
     if (g.wo_de || !g.sets || !g.jogador_b) return;   // WO não conta
     g.sets.forEach(([x, y]) => { if (x === 6 && y === 0) cont[g.jogador_a] = (cont[g.jogador_a] || 0) + 1; if (x === 0 && y === 6) cont[g.jogador_b] = (cont[g.jogador_b] || 0) + 1; });
   });
-  return Object.entries(cont).map(([id, n]) => ({ j: porId(id), n })).filter((x) => x.j).sort((a, b) => b.n - a.n || a.j.nome.localeCompare(b.j.nome));
-}
-function blocoReiPneu(ano, lista) {
   let pos = 0, ant = null;
-  const linhas = lista.slice(0, 10).map((x, i) => { if (x.n !== ant) { pos = i + 1; ant = x.n; } return { ...x, pos }; });
-  return `<section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:10px">
-    <div style="display:flex;align-items:center;gap:12px"><span style="flex-shrink:0;display:flex">${PNEU(40)}</span><div><b class="cond" style="font-size:22px;line-height:1">Rei do Pneu ${ano}</b><br><small style="color:rgba(255,255,255,.75)">Quem aplicar mais pneus (6×0) no ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾 · só jogos do ranking, pneu de WO não conta</small></div></div>
-    ${linhas.length ? linhas.map((x) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:${x.pos === 1 ? 'rgba(216,241,69,.16)' : 'rgba(255,255,255,.06)'}">
-      <b class="cond" style="width:28px;font-size:20px;color:${x.pos === 1 ? 'var(--bola)' : '#fff'}">${x.pos === 1 ? '👑' : x.pos + 'º'}</b>${avatar(x.j, 34)}
-      <span style="flex-grow:1;font-weight:600">${esc(x.j.nome)}</span><b class="cond" style="font-size:22px;color:var(--bola)">${x.n}</b><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></div>`).join('')
-      : '<p style="color:rgba(255,255,255,.75);font-size:14px">Ninguém aplicou pneu ainda.</p>'}
-  </section>`;
+  return Object.entries(cont).map(([id, n]) => ({ j: porId(id), n })).filter((x) => x.j)
+    .sort((a, b) => b.n - a.n || a.j.nome.localeCompare(b.j.nome))
+    .map((x, i) => { if (x.n !== ant) { pos = i + 1; ant = x.n; } return { ...x, pos }; });
 }
-// sem mês aberto (Finals / fim de temporada) mostra o último mês rodado; dá pra voltar nos meses anteriores
+// tela "Rei do Pneu" (antigo Resumo do mês): classificação do ano + um resuminho do mês embaixo
 async function telaResumo() {
+  try { localStorage.setItem('viu-rei-pneu', '1'); } catch (e) { /* sem armazenamento: o selo continua */ }
+  const ano = String(anoRanking());
+  const lista = await pneusDoAno(ano).catch(() => null);
+  const premio = Number(ano) >= REI_PNEU_PREMIO
+    ? `Quem aplicar mais pneus em ${ano} ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`
+    : `Esquenta: em ${ano} vale só outubro e é pela honra 😄 · a partir de ${REI_PNEU_PREMIO} vale o ano todo e o Rei do Pneu ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾`;
+  const reis = (lista || []).filter((x) => x.pos === 1), resto = (lista || []).filter((x) => x.pos > 1);
+  const eu = S.eu && S.eu.id;
+  const linha = (x) => `<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${x.j.id === eu ? 'border:2px solid var(--roxo)' : ''}">
+      <b class="cond" style="width:30px;font-size:20px;color:var(--roxo)">${x.pos}º</b>${avatar(x.j, 40)}
+      <span style="flex-grow:1;font-weight:600">${esc(x.j.nome)}${x.j.id === eu ? ' <small class="dica">(você)</small>' : ''}</span>
+      <b class="cond" style="font-size:24px">${x.n}</b><small class="dica">${x.n === 1 ? 'pneu' : 'pneus'}</small></div>`;
+  // resuminho do mês (setas pra ver os meses anteriores)
   const idx = Math.max(0, Math.min(S.meses.length - 1, S.mesResumo || 0)), mes = S.meses[idx];
   const todos = !mes ? [] : S.mesAtual && mes.id === S.mesAtual.id ? S.jogos : await jogosDoMes(mes.id).catch(() => []);
-  const anoP = mes ? mes.id.slice(0, 4) : String(ANO());
-  const rei = reiPneuLiberado(anoP) ? await pneusDoAno(anoP).catch(() => null) : null;
-  const js = todos.filter((g) => g.jogador_b);
-  const jogados = js.filter((g) => g.sets);
-  const wos = js.filter((g) => g.wo_de);
-  const pneus = [];
-  jogados.forEach((g) => g.sets.forEach(([x, y]) => {
-    if (x === 6 && y === 0) pneus.push([g.jogador_a, g.jogador_b, g.sets]);
-    if (x === 0 && y === 6) pneus.push([g.jogador_b, g.jogador_a, g.sets]);
-  }));
-  const card = (t, n, escuro) => `<div class="card" style="${escuro ? 'background:var(--noite);color:#fff;border:0' : ''}"><small class="dica" style="${escuro ? 'color:rgba(255,255,255,.75)' : ''}">${t}</small><b class="cond" style="display:block;font-size:32px;line-height:1;${escuro ? 'color:var(--bola)' : ''}">${n}</b></div>`;
-  return voltar('Resumo do mês', 'Números dos jogos do ranking') + `
-  <div style="background:#2A1650;padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff">
-    <button class="ic-btn" data-acao="resumoMes" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
-    <div style="text-align:center"><b class="cond" style="font-size:22px">${mes ? nomeMes(mes.id) : '—'}</b><br><small style="color:var(--bola);font-weight:600">${mes ? (mes.status === 'aberto' ? 'MÊS ATUAL' : 'ENCERRADO') : ''}</small></div>
-    <button class="ic-btn" data-acao="resumoMes" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
-  </div><div class="conteudo">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      ${card('Jogos disputados', jogados.length)}${card('Pneus (6×0)', pneus.length, true)}
-      ${card('Sets disputados', jogados.reduce((s, g) => s + g.sets.length, 0))}${card('Jogos em 3 sets', jogados.filter((g) => g.sets.length === 3).length)}
-      ${card('Pendentes', js.length - jogados.length - wos.length)}${card('Standby (+25)', todos.filter((g) => !g.jogador_b).length)}
-      ${card('WO por lesão', wos.filter((g) => g.wo_motivo === 'lesao').length)}${card('WO por ausência', wos.filter((g) => g.wo_motivo === 'ausencia').length)}
-    </div>
-    ${rei ? blocoReiPneu(anoP, rei) : ''}
-    <h2 class="cond" style="font-size:20px;margin-top:8px">Quem tomou pneu em ${mes ? nomeMes(mes.id).split(' ')[0].toLowerCase() : 'este mês'}</h2>
-    ${pneus.map(([v, p, sets]) => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc((porId(v) || {}).nome)}</b> <span class="dica">aplicou em</span> <b>${esc((porId(p) || {}).nome)}</b><br><small class="dica">${esc(placarTxt(sets))}</small></span><span style="display:flex;align-items:center;gap:6px">${PNEU(30)}<span class="tag" style="background:var(--bola);color:var(--noite);font-size:14px">6×0</span></span></div>`).join('') || '<p class="dica">Nenhum pneu ainda neste mês.</p>'}
+  const js = todos.filter((g) => g.jogador_b), jogados = js.filter((g) => g.sets && !g.wo_de), wos = js.filter((g) => g.wo_de);
+  const pneusMes = jogados.reduce((n, g) => n + g.sets.filter(([x, y]) => (x === 6 && y === 0) || (x === 0 && y === 6)).length, 0);
+  const num = (n, t) => `<div style="text-align:center"><b class="cond" style="display:block;font-size:26px;line-height:1">${n}</b><small class="dica">${t}</small></div>`;
+  return voltar('Rei do Pneu', 'Quem mais aplicou 6×0 no ranking ' + (Number(ano) < REI_PNEU_PREMIO ? 'em outubro de ' : '') + ano) + `<div class="conteudo">
+    <section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:18px 16px">
+      <span style="display:flex">${PNEU(56)}</span>
+      <b class="cond" style="font-size:26px;line-height:1;letter-spacing:.5px">REI DO PNEU ${Number(ano) < REI_PNEU_PREMIO ? '· OUTUBRO ' : ''}${ano}</b>
+      ${lista === null ? '<p style="color:rgba(255,255,255,.75)">Não deu pra carregar agora. Tente de novo.</p>'
+        : !reis.length ? '<p style="color:rgba(255,255,255,.75)">Ninguém aplicou pneu ainda.</p>'
+        : reis.map((x) => `<div style="display:flex;align-items:center;gap:12px;background:rgba(216,241,69,.14);border-radius:14px;padding:10px 14px;width:100%;box-sizing:border-box;text-align:left">
+            ${avatar(x.j, 56)}<span style="flex-grow:1"><small style="color:var(--bola);font-weight:700">👑 ${reis.length > 1 ? 'EMPATADO NA LIDERANÇA' : 'LÍDER'}</small><br><b style="font-size:17px">${esc(x.j.nome)}</b></span>
+            <span style="text-align:center"><b class="cond" style="font-size:34px;line-height:1;color:var(--bola)">${x.n}</b><br><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></span></div>`).join('')}
+      <small style="color:rgba(255,255,255,.8);line-height:1.4">${premio}</small>
+    </section>
+    ${resto.map(linha).join('')}
+    <p class="dica" style="text-align:center">Conta cada set 6×0 aplicado nos jogos do ranking. Finals e WO não contam.</p>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="ic-mini" data-acao="resumoMes" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
+        <b class="cond" style="font-size:18px">Resumo de ${mes ? nomeMes(mes.id) : '—'}</b>
+        <button class="ic-mini" data-acao="resumoMes" data-v="${idx - 1}" ${idx <= 0 ? 'disabled style="opacity:.3"' : ''} aria-label="Próximo mês">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${num(jogados.length, 'jogos')}${num(pneusMes, pneusMes === 1 ? 'pneu' : 'pneus')}${num(wos.length, wos.length === 1 ? 'WO' : 'WOs')}</div>
+    </section>
   </div>`;
 }
 
