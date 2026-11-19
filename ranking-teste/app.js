@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119143111';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119143111';
-import { REGULAMENTO } from './regulamento.js?v=20261119143111';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119143111';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119143111';
+import * as M from './motor.js?v=20261119143357';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119143357';
+import { REGULAMENTO } from './regulamento.js?v=20261119143357';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119143357';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119143357';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -596,7 +596,7 @@ function telaInicio() {
   </section>
   ${cardFinals()}
   ${!eu.senha_trocada && !lembreteFechado() ? `<div class="lembrete" role="note"><a href="#/senha">🔒 Você ainda usa a senha inicial. <u>Trocar agora</u></a><button type="button" data-acao="fecharLembrete" aria-label="Fechar o lembrete">✕</button></div>` : ''}
-  <nav class="menu" aria-label="Menu">${MENU.filter((t) => (!foraDoRanking() || LIVRE_FORA.includes(t.nome)) && (!soTorneio() || LIVRE_TORNEIO.includes(t.nome))).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}><span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
+  <nav class="menu" aria-label="Menu">${MENU.filter((t) => (!foraDoRanking() || LIVRE_FORA.includes(t.nome)) && (!soTorneio() || LIVRE_TORNEIO.includes(t.nome))).map((t) => `<${t.href ? 'a' : 'button'} class="tile" ${t.href ? `href="${t.href()}"${t.fora ? ' target="_blank" rel="noopener"' : ''}` : `data-acao="embreve"`}>${t.novo && t.novo() ? '<span class="novo">NOVO</span>' : ''}<span class="ic">${t.ic}</span>${t.rotulo ? t.rotulo() : t.nome}</${t.href ? 'a' : 'button'}>`).join('')}</nav>
   ${avisoCobranca()}
   <div id="carrossel"></div>
   <div class="faixa" role="marquee" aria-label="Notícias do ranking"><div class="tk">${faixa()}<span class="tk2" aria-hidden="true">${faixa()}</span></div></div>`;
@@ -636,12 +636,14 @@ const woBlocoF = (g, editar) => `<div class="wo-bloco">
       <span>${editar ? `<a href="#/fwo/${g.id}">de ${esc((porId(g.wo_de) || {}).nome || '?')}</a>` : 'de ' + esc((porId(g.wo_de) || {}).nome || '?')}</span></div>
     ${g.wo_obs ? `<p class="wo-obs">“${esc(g.wo_obs)}”</p>` : ''}</div>`;
 const IC = (d) => `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+// selo "NOVO" no Rei do Pneu: some quando a pessoa abre a tela (ou em fev/2027)
+const novidadeRei = () => { if (hojeISO() > '2027-01-31') return false; try { return !localStorage.getItem('viu-rei-pneu'); } catch (e) { return true; } };
 const MENU = [
   { nome: 'Meu perfil', href: () => '#/perfil', ic: IC('<circle cx="12" cy="12" r="10.5" stroke-opacity=".35"/><circle cx="12" cy="9" r="3.6" fill="currentColor" fill-opacity=".22"/><path d="M5.6 19.2c1-3 3.4-4.7 6.4-4.7s5.4 1.7 6.4 4.7" fill="currentColor" fill-opacity=".22"/>') },
   { nome: 'Jogos do ranking', href: () => '#/jogos', ic: IC('<ellipse cx="8.3" cy="7.6" rx="3.9" ry="5" transform="rotate(-35 8.3 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M10.9 11.6l7.6 8.6"/><ellipse cx="15.7" cy="7.6" rx="3.9" ry="5" transform="rotate(35 15.7 7.6)" fill="currentColor" fill-opacity=".18"/><path d="M13.1 11.6l-7.6 8.6"/><circle cx="12" cy="19.6" r="1.6" fill="currentColor" stroke="none"/>') },
   { nome: 'Pontuação', href: () => '#/ranking', ic: IC('<path d="M12 1.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 3.8l2.2-.3z" fill="currentColor" stroke="none"/><rect x="9" y="8.5" width="6" height="12.5" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="2.5" y="12" width="6.5" height="9" rx="1" fill="currentColor" fill-opacity=".12"/><rect x="15" y="14.5" width="6.5" height="6.5" rx="1" fill="currentColor" fill-opacity=".12"/>') },
   { nome: 'Programação', rotulo: () => 'Programação ' + anoProg(), href: () => '#/programacao', ic: IC('<rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".12"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="3" fill="currentColor" fill-opacity=".35"/>') },
-  { nome: 'Rei do Pneu', href: () => '#/resumo', ic: PNEU(26) },
+  { nome: 'Rei do Pneu', rotulo: () => '<span class="rei-l"><span class="rei">Rei</span> do Pneu</span>', novo: () => novidadeRei(), href: () => '#/resumo', ic: PNEU(26) },
   { nome: 'Desafio', rotulo: () => 'Desafio ' + anoDesafio(), href: () => '#/desafio', ic: IC('<rect x="3.5" y="9" width="17" height="11.5" rx="2" fill="currentColor" fill-opacity=".14"/><path d="M2.5 9h19v3.5h-19zM12 9v11.5"/><path d="M12 9c-1.5-3.6-5.6-4.6-5.6-2.1C6.4 8.6 9.8 9 12 9zm0 0c1.5-3.6 5.6-4.6 5.6-2.1C17.6 8.6 14.2 9 12 9z"/>') },
   { nome: 'Fale conosco', fora: true, href: () => zap(S.config.fale_conosco, 'Olá! Tenho uma dúvida ou sugestão sobre o app do ranking:') || '#/', ic: IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="17" y="13" width="4" height="6" rx="1.5" fill="currentColor" fill-opacity=".3"/><path d="M19 19c0 1.7-2 2.5-5 2.5"/>') },
   { nome: 'Torneios', rotulo: () => (finalsAgora() ? '<span class="tile-tag" aria-label="Torneios: Finals rolando">FINALS</span>' : algumTorneioAberto() ? '<span class="tile-tag" aria-label="Torneios: inscrições abertas">INSCRIÇÕES</span>' : 'Torneios'), href: () => '#/torneios', ic: TROFEU(26) },
@@ -1096,6 +1098,7 @@ async function pneusDoAno(ano) {
 }
 // tela "Rei do Pneu" (antigo Resumo do mês): classificação do ano + um resuminho do mês embaixo
 async function telaResumo() {
+  try { localStorage.setItem('viu-rei-pneu', '1'); } catch (e) { /* sem armazenamento: o selo continua */ }
   const ano = String(anoRanking());
   const lista = await pneusDoAno(ano).catch(() => null);
   const premio = Number(ano) >= REI_PNEU_PREMIO
