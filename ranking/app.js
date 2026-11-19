@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119151117';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119151117';
-import { REGULAMENTO } from './regulamento.js?v=20261119151117';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119151117';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119151117';
+import * as M from './motor.js?v=20261119152216';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119152216';
+import { REGULAMENTO } from './regulamento.js?v=20261119152216';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119152216';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119152216';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1188,7 +1188,7 @@ async function telaResumo() {
     </section>
     ${resto.map(linha).join('')}
     ${fora ? `<p class="dica" style="text-align:center">E mais ${fora} ${fora === 1 ? 'jogador aplicou' : 'jogadores aplicaram'} pneu em ${ano}.</p>` : ''}
-    <p class="dica" style="text-align:center">Conta cada set 6×0 aplicado nos jogos do ranking. Finals e WO não contam.${PNEUS_HISTORICO[ano] ? ' Janeiro a setembro vieram do app antigo.' : ''}</p>
+    <p class="dica" style="text-align:center">Conta cada set 6×0 aplicado nos jogos do ranking. Finals e WO não contam.</p>
     <section class="card" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <button class="ic-mini" data-acao="resumoMes" data-v="${idx + 1}" ${idx >= S.meses.length - 1 ? 'disabled style="opacity:.3"' : ''} aria-label="Mês anterior">‹</button>
