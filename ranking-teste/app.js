@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118193546';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118193546';
-import { REGULAMENTO } from './regulamento.js?v=20261118193546';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118193546';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118193546';
+import * as M from './motor.js?v=20261118213336';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118213336';
+import { REGULAMENTO } from './regulamento.js?v=20261118213336';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118213336';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118213336';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1074,7 +1074,7 @@ function adminProgramacao() {
   </section>`;
 }
 
-// Rei do Pneu: quem aplicou mais 6×0 no ano (jogos do ranking + Finals). Pneu de WO não conta. Prêmio: um tubo de bolas.
+// Rei do Pneu: quem aplicou mais 6×0 no ano, só nos jogos do ranking mensal (Finals não conta). Pneu de WO não conta. Prêmio: um tubo de bolas.
 async function pneusDoAno(ano) {
   S.pneusAno = S.pneusAno || {};
   if (!S.pneusAno[ano]) {
@@ -1082,7 +1082,7 @@ async function pneusDoAno(ano) {
     if (error) throw error;
     S.pneusAno[ano] = data;
   }
-  const jogos = S.pneusAno[ano].concat(S.fjogos.filter((g) => g.ano === Number(ano)));
+  const jogos = S.pneusAno[ano];
   const cont = {};
   jogos.forEach((g) => {
     if (g.wo_de || !g.sets || !g.jogador_b) return;   // WO não conta
@@ -1094,7 +1094,7 @@ function blocoReiPneu(ano, lista) {
   let pos = 0, ant = null;
   const linhas = lista.slice(0, 10).map((x, i) => { if (x.n !== ant) { pos = i + 1; ant = x.n; } return { ...x, pos }; });
   return `<section class="card" style="background:var(--noite);color:#fff;border:0;display:flex;flex-direction:column;gap:10px">
-    <div style="display:flex;align-items:center;gap:12px"><span style="flex-shrink:0;display:flex">${PNEU(40)}</span><div><b class="cond" style="font-size:22px;line-height:1">Rei do Pneu ${ano}</b><br><small style="color:rgba(255,255,255,.75)">Quem aplicar mais pneus (6×0) no ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾 · pneu de WO não conta</small></div></div>
+    <div style="display:flex;align-items:center;gap:12px"><span style="flex-shrink:0;display:flex">${PNEU(40)}</span><div><b class="cond" style="font-size:22px;line-height:1">Rei do Pneu ${ano}</b><br><small style="color:rgba(255,255,255,.75)">Quem aplicar mais pneus (6×0) no ano ganha <b style="color:var(--bola)">um tubo de bolas</b> 🎾 · só jogos do ranking, pneu de WO não conta</small></div></div>
     ${linhas.length ? linhas.map((x) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:${x.pos === 1 ? 'rgba(216,241,69,.16)' : 'rgba(255,255,255,.06)'}">
       <b class="cond" style="width:28px;font-size:20px;color:${x.pos === 1 ? 'var(--bola)' : '#fff'}">${x.pos === 1 ? '👑' : x.pos + 'º'}</b>${avatar(x.j, 34)}
       <span style="flex-grow:1;font-weight:600">${esc(x.j.nome)}</span><b class="cond" style="font-size:22px;color:var(--bola)">${x.n}</b><small style="color:rgba(255,255,255,.7)">${x.n === 1 ? 'pneu' : 'pneus'}</small></div>`).join('')
