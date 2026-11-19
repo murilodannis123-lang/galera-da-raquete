@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<script src="redireciona.js?v=20261119150441"></script>
+<script src="redireciona.js?v=20261119151117"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ekiihkdxbrwrvtnsbens.supabase.co https://rankingonline.com.br; font-src 'self'; connect-src 'self' https://ekiihkdxbrwrvtnsbens.supabase.co wss://ekiihkdxbrwrvtnsbens.supabase.co; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -110,6 +110,17 @@ body.natal .logo-btn::after{content:"";position:absolute;width:72px;height:60px;
 .ptv-set b{color:#B4AAC6}.ptv-set b.w{color:var(--roxo)}
 .ptv-set i{font-style:normal;font-size:16px;color:#C9BFDD}
 /* pneu (6×0) em dourado: no texto do placar e na faixa de notícias */
+.rei-linha{border:1px solid var(--linha);background:#fff}
+.rei-seta{font-size:13px;color:var(--tinta2);margin-left:2px}
+.vitimas{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:6px;padding-top:10px;border-top:1px dashed var(--linha)}
+.vitimas>b{font-size:15px;color:var(--roxo)}
+.vitimas.esc{border-top-color:rgba(255,255,255,.2)}.vitimas.esc>b{color:var(--bola)}
+.vit{display:flex;align-items:center;gap:8px;font-size:14px}
+.vit-m{flex:none;width:34px;font:800 11px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta2)}
+.vitimas.esc .vit-m{color:rgba(255,255,255,.6)}
+.vit-n{flex-grow:1;font-weight:600}
+.vit-p{font-weight:700;color:var(--tinta2);white-space:nowrap}.vitimas.esc .vit-p{color:rgba(255,255,255,.75)}
+.vit-x{flex:none;background:#F2B705;color:#2A1A00;font:800 11px/1 Inter,sans-serif;padding:3px 6px;border-radius:999px}
 .pneu-gira{animation:pneuGira 7s linear infinite;transform-origin:50% 50%}
 @keyframes pneuGira{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.pneu-gira{animation:none}}
@@ -394,6 +405,6 @@ small.brilho{font-weight:700;background:linear-gradient(100deg,rgba(255,255,255,
 <body>
 <main id="app" class="app" aria-live="polite"><div class="splash"><img src="icones/logo.png" alt="Galera da Raquete Portal do Lago" width="120" height="120"><span>Carregando…</span></div></main>
 <script src="vendor/supabase-2.45.4/supabase.js" defer></script>
-<script type="module" src="app.js?v=20261119150441"></script>
+<script type="module" src="app.js?v=20261119151117"></script>
 </body>
 </html>
