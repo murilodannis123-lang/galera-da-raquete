@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261118213336';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118213336';
-import { REGULAMENTO } from './regulamento.js?v=20261118213336';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118213336';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118213336';
+import * as M from './motor.js?v=20261118214117';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261118214117';
+import { REGULAMENTO } from './regulamento.js?v=20261118214117';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261118214117';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261118214117';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1075,6 +1075,9 @@ function adminProgramacao() {
 }
 
 // Rei do Pneu: quem aplicou mais 6×0 no ano, só nos jogos do ranking mensal (Finals não conta). Pneu de WO não conta. Prêmio: um tubo de bolas.
+// começa a valer no ranking 2027: aparece a partir de 02/01/2027 e só conta de 2027 em diante (na versão de teste aparece sempre, pra conferir)
+const REI_PNEU_DESDE = '2027-01-02';
+const reiPneuLiberado = (ano) => /\/ranking-teste\//.test(location.pathname) || (hojeISO() >= REI_PNEU_DESDE && Number(ano) >= 2027);
 async function pneusDoAno(ano) {
   S.pneusAno = S.pneusAno || {};
   if (!S.pneusAno[ano]) {
@@ -1105,7 +1108,8 @@ function blocoReiPneu(ano, lista) {
 async function telaResumo() {
   const idx = Math.max(0, Math.min(S.meses.length - 1, S.mesResumo || 0)), mes = S.meses[idx];
   const todos = !mes ? [] : S.mesAtual && mes.id === S.mesAtual.id ? S.jogos : await jogosDoMes(mes.id).catch(() => []);
-  const anoP = mes ? mes.id.slice(0, 4) : String(ANO()), rei = await pneusDoAno(anoP).catch(() => null);
+  const anoP = mes ? mes.id.slice(0, 4) : String(ANO());
+  const rei = reiPneuLiberado(anoP) ? await pneusDoAno(anoP).catch(() => null) : null;
   const js = todos.filter((g) => g.jogador_b);
   const jogados = js.filter((g) => g.sets);
   const wos = js.filter((g) => g.wo_de);
