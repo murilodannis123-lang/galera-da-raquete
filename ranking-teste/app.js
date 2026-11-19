@@ -1,9 +1,9 @@
 // Galera da Raquete · Ranking — app (PWA) ligado ao Supabase
-import * as M from './motor.js?v=20261119150211';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119150211';
-import { REGULAMENTO } from './regulamento.js?v=20261119150211';
-import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119150211';
-import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119150211';
+import * as M from './motor.js?v=20261119150441';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=20261119150441';
+import { REGULAMENTO } from './regulamento.js?v=20261119150441';
+import { PRIVACIDADE, PRIVACIDADE_DATA } from './privacidade.js?v=20261119150441';
+import { TERMOS, TERMOS_DATA } from './termos.js?v=20261119150441';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -467,9 +467,9 @@ const placarOuro = (sets) => (temPneu(sets) ? `<span class="ouro">${esc(placarTx
 const placarHTML = (sets) => placarOuro(sets) + pneuTag(sets);
 // placar estilo TV: cada set num quadrinho (número da esquerda = jogador da esquerda), quem venceu o set em verde-limão
 const placarTV = (sets, href) => {
-  const cols = sets.map(([a, b], i) => `<span class="ptv-set${(a === 6 && b === 0) || (a === 0 && b === 6) ? ' pneu' : ''}"><small>${i === 2 ? 'TIE-BREAK' : i + 1 + 'º SET'}</small><span><b class="${a > b ? 'w' : ''}">${a}</b><i>–</i><b class="${b > a ? 'w' : ''}">${b}</b></span></span>`).join('');
+  const cols = sets.map(([a, b], i) => `<span class="ptv-set"><small>${i === 2 ? 'TIE-BREAK' : i + 1 + 'º SET'}</small><span><b class="${a > b ? 'w' : ''}">${a}</b><i>–</i><b class="${b > a ? 'w' : ''}">${b}</b></span></span>`).join('');
   const tag = href ? 'a' : 'div';
-  return `<${tag} class="ptv"${href ? ` href="${href}" aria-label="Placar ${esc(placarTxt(sets))}, tocar pra corrigir"` : ` aria-label="Placar ${esc(placarTxt(sets))}"`}><span class="ptv-l">PLACAR</span><span class="ptv-sets">${cols}</span>${temPneu(sets) ? `<span class="ptv-pneu" title="Pneu (6×0)">${PNEU(20)}<small class="ouro">PNEU</small></span>` : ''}</${tag}>`;
+  return `<${tag} class="ptv"${href ? ` href="${href}" aria-label="Placar ${esc(placarTxt(sets))}, tocar pra corrigir"` : ` aria-label="Placar ${esc(placarTxt(sets))}"`}><span class="ptv-l">PLACAR</span><span class="ptv-sets">${cols}</span>${temPneu(sets) ? `<span class="ptv-pneu" title="Pneu (6×0)">${PNEU(20)}<small>PNEU</small></span>` : ''}</${tag}>`;
 };
 function prazo() {
   if (!S.mesAtual) return null;
